@@ -1,4 +1,6 @@
 import express from 'express';
+import path from 'path';
+import fs from 'fs';
 import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
@@ -55,6 +57,15 @@ export function createApp(): express.Express {
   app.use('/api/exports', exportsRouter);
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }));
+
+  // In production the API serves the built frontend so a single Node process
+  // runs the whole application behind the Hostinger reverse proxy.
+  const webDist = path.resolve(__dirname, '../../web/dist');
+  if (fs.existsSync(webDist)) {
+    app.use(express.static(webDist));
+    app.get(/^\/(?!api\/).*/, (_req, res) => res.sendFile(path.join(webDist, 'index.html')));
+  }
+
   app.use(errorHandler);
   return app;
 }
