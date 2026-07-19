@@ -26,9 +26,11 @@ esac
 SIZE="$(du -h "${OUT}" | cut -f1)"
 log "Backup written: ${OUT} (${SIZE})"
 
-# Basic sanity: a dump below 1 KB is almost certainly broken.
+# Sanity: the archive must be valid gzip and non-trivial. (An empty database
+# on first deployment legitimately dumps to a few hundred bytes.)
+gunzip -t "${OUT}" || fail "Backup file is not a valid gzip archive"
 BYTES="$(stat -c%s "${OUT}")"
-[ "${BYTES}" -ge 1024 ] || fail "Backup file suspiciously small (${BYTES} bytes)"
+[ "${BYTES}" -ge 200 ] || fail "Backup file suspiciously small (${BYTES} bytes)"
 
 # Retention pruning
 DELETED="$(find "${BACKUP_DIR}" -name 'db-*.sql.gz' -mtime "+${RETENTION_DAYS}" -print -delete | wc -l)"
