@@ -24,8 +24,8 @@ jobs:
         run: |
           set -e
           violations=""
-          # .env files (the template .env.example is allowed)
-          if git ls-files | grep -E '(^|/)\.env(\..+)?$' | grep -v '\.env\.example$'; then
+          # .env files (committed *.example templates are allowed)
+          if git ls-files | grep -E '(^|/)\.env(\..+)?$' | grep -v '\.example$'; then
             violations="$violations env-files"
           fi
           # SQLite databases, uploaded files, generated exports
