@@ -1,0 +1,1 @@
+# kynox-inventory-analytics
