@@ -1,0 +1,19 @@
+{
+  "name": "@kynox/ai-engine",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p .",
+    "typecheck": "tsc -p . --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@kynox/shared-types": "*"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "kynox-supply-chain-intelligence",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kynox Supply Chain & Materials Intelligence Platform",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build:packages && npm run build:api && npm run build:web",
+    "build:packages": "npm run build -w @kynox/shared-types -w @kynox/analytics-engine -w @kynox/data-quality -w @kynox/ai-engine",
+    "build:api": "npm run build -w @kynox/api",
+    "build:web": "npm run build -w @kynox/web",
+    "dev:api": "npm run dev -w @kynox/api",
+    "dev:web": "npm run dev -w @kynox/web",
+    "start": "npm run start -w @kynox/api",
+    "migrate": "npm run migrate -w @kynox/api",
+    "seed": "npm run seed -w @kynox/api",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}
