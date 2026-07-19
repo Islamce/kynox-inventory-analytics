@@ -24,6 +24,15 @@ export const config = {
     model: process.env.AI_MODEL || undefined,
     apiKey: process.env.AI_PROVIDER === 'openai' ? process.env.OPENAI_API_KEY : process.env.ANTHROPIC_API_KEY,
     baseUrl: process.env.AI_BASE_URL || undefined,
+    // Governed runtime limits (all overridable per environment):
+    maxPromptChars: Number(process.env.AI_MAX_PROMPT_CHARS || 2000),
+    maxEvidenceRecords: Number(process.env.AI_MAX_EVIDENCE_RECORDS || 40),
+    maxResponseTokens: Number(process.env.AI_MAX_RESPONSE_TOKENS || 4096),
+    timeoutMs: Number(process.env.AI_TIMEOUT_MS || 60_000),
+    retries: Number(process.env.AI_RETRY_COUNT || 1),
+    userDailyLimit: Number(process.env.AI_USER_DAILY_LIMIT || 50),
+    orgDailyLimit: Number(process.env.AI_ORG_DAILY_LIMIT || 500),
+    orgDailyTokenLimit: Number(process.env.AI_ORG_DAILY_TOKEN_LIMIT || 2_000_000),
   },
   version: '1.0.0',
   /** Days after which orphaned uploads / generated exports are deleted by the cleanup job. */

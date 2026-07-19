@@ -117,10 +117,17 @@ function sanitizeInsights(raw: unknown): AiInsight[] {
   return insights.sort((a, b) => a.priority - b.priority);
 }
 
+export interface OrchestratorLimits {
+  maxResponseTokens?: number;
+  timeoutMs?: number;
+  retries?: number;
+}
+
 export async function askOrchestrator(
   provider: AiProvider | null,
   question: string,
   pkg: EvidencePackage,
+  limits: OrchestratorLimits = {},
 ): Promise<AiChatResponse> {
   if (!provider) throw new AiNotConfiguredError();
 
@@ -149,12 +156,17 @@ export async function askOrchestrator(
     }, null, 2),
   ].join('\n');
 
-  const rawText = await provider.complete(
+  const completion = await provider.complete(
     [{ role: 'system', content: system }, { role: 'user', content: user }],
-    { maxTokens: 4096, temperature: 0.2 },
+    {
+      maxTokens: limits.maxResponseTokens ?? 4096,
+      temperature: 0.2,
+      timeoutMs: limits.timeoutMs,
+      retries: limits.retries,
+    },
   );
 
-  const parsed = extractJson(rawText) as { answer?: unknown };
+  const parsed = extractJson(completion.text) as { answer?: unknown };
   const insights = sanitizeInsights(parsed);
   const answer = typeof parsed.answer === 'string' ? parsed.answer : 'The AI response could not be interpreted.';
   const checks = governanceChecks(insights, pkg);
@@ -169,5 +181,6 @@ export async function askOrchestrator(
     governance: { passed, checks },
     model: provider.model,
     provider: provider.name,
+    usage: { inputTokens: completion.inputTokens, outputTokens: completion.outputTokens },
   };
 }

@@ -361,6 +361,8 @@ export interface AiChatResponse {
   };
   model: string;
   provider: string;
+  /** Token usage as reported by the provider (null when unreported). */
+  usage: { inputTokens: number | null; outputTokens: number | null };
 }
 
 // ---------------------------------------------------------------------------

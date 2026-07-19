@@ -84,7 +84,7 @@ describe('orchestrator', () => {
   it('parses structured responses and applies governance', async () => {
     const mockProvider: AiProvider = {
       name: 'mock', model: 'mock-1',
-      complete: async () => JSON.stringify({
+      complete: async () => ({ inputTokens: 100, outputTokens: 200, text: JSON.stringify({
         answer: 'Excess is 40000.',
         insights: [{
           finding: 'Excess concentration',
@@ -100,18 +100,19 @@ describe('orchestrator', () => {
           assumptions: [],
           dataLimitations: [],
         }],
-      }),
+      }) }),
     };
     const res = await askOrchestrator(mockProvider, 'How much excess?', emptyPkg);
     expect(res.governance.passed).toBe(true);
     expect(res.insights).toHaveLength(1);
     expect(res.answer).toContain('40000');
+    expect(res.usage.inputTokens).toBe(100);
   });
 
   it('withholds insights that fail governance', async () => {
     const mockProvider: AiProvider = {
       name: 'mock', model: 'mock-1',
-      complete: async () => JSON.stringify({
+      complete: async () => ({ inputTokens: null, outputTokens: null, text: JSON.stringify({
         answer: 'Made-up claim.',
         insights: [{
           finding: 'Fabricated',
@@ -119,7 +120,7 @@ describe('orchestrator', () => {
           recommendedAction: 'Do something',
           confidence: 'high',
         }],
-      }),
+      }) }),
     };
     const res = await askOrchestrator(mockProvider, 'q', emptyPkg);
     expect(res.governance.passed).toBe(false);

@@ -13,10 +13,40 @@ export const aiRouter = Router();
 aiRouter.use(requireAuth, requirePermission('use_ai'));
 
 const chatSchema = z.object({
-  question: z.string().min(3).max(2000),
+  question: z.string().min(3).max(20_000), // hard schema cap; the configurable limit is enforced below
   stockDatasetId: z.number().int().positive().optional(),
   movementsDatasetId: z.number().int().positive().optional(),
 });
+
+/**
+ * Daily usage limits (requests per user, requests + tokens per organisation).
+ * Counted from ai_logs, so limits survive restarts and are auditable.
+ */
+async function enforceDailyLimits(userId: number): Promise<void> {
+  const dayStart = new Date();
+  dayStart.setUTCHours(0, 0, 0, 0);
+
+  const [{ userCount }] = await db('ai_logs')
+    .where({ user_id: userId }).where('created_at', '>=', dayStart)
+    .count({ userCount: '*' });
+  if (Number(userCount) >= config.ai.userDailyLimit) {
+    throw new HttpError(429, `Daily AI request limit reached (${config.ai.userDailyLimit} per user). Try again tomorrow or ask an administrator to raise AI_USER_DAILY_LIMIT.`);
+  }
+
+  const [{ orgCount }] = await db('ai_logs')
+    .where('created_at', '>=', dayStart)
+    .count({ orgCount: '*' });
+  if (Number(orgCount) >= config.ai.orgDailyLimit) {
+    throw new HttpError(429, 'Organisation-wide daily AI request limit reached.');
+  }
+
+  const [{ tokens }] = await db('ai_logs')
+    .where('created_at', '>=', dayStart)
+    .sum({ tokens: db.raw('coalesce(input_tokens,0) + coalesce(output_tokens,0)') });
+  if (Number(tokens ?? 0) >= config.ai.orgDailyTokenLimit) {
+    throw new HttpError(429, 'Organisation-wide daily AI token budget exhausted.');
+  }
+}
 
 /**
  * Governed natural-language analytics. The pipeline is:
@@ -28,7 +58,11 @@ aiRouter.post('/chat', asyncHandler(async (req, res) => {
   const enabled = await svc.getConfig('ai_feature_enabled', true);
   if (!enabled) throw new HttpError(503, 'AI features are disabled by the administrator.');
   const body = chatSchema.parse(req.body);
+  if (body.question.length > config.ai.maxPromptChars) {
+    throw new HttpError(400, `Question exceeds the configured maximum of ${config.ai.maxPromptChars} characters.`);
+  }
   const provider = createProvider(config.ai);
+  if (provider) await enforceDailyLimits(req.user!.id);
 
   const metrics: AiEvidence[] = [];
   const findings: Record<string, unknown> = {};
@@ -99,12 +133,17 @@ aiRouter.post('/chat', asyncHandler(async (req, res) => {
     datasetName,
     period,
     filters: {},
-    metrics,
+    // Data minimisation: cap the evidence records sent to the external provider.
+    metrics: metrics.slice(0, config.ai.maxEvidenceRecords),
     findings,
     dataLimitations: limitations,
   };
 
-  const response = await askOrchestrator(provider, body.question, pkg);
+  const response = await askOrchestrator(provider, body.question, pkg, {
+    maxResponseTokens: config.ai.maxResponseTokens,
+    timeoutMs: config.ai.timeoutMs,
+    retries: config.ai.retries,
+  });
 
   await db('ai_logs').insert({
     user_id: req.user!.id,
@@ -114,6 +153,8 @@ aiRouter.post('/chat', asyncHandler(async (req, res) => {
     model: response.model,
     governance_passed: response.governance.passed,
     insight_count: response.insights.length,
+    input_tokens: response.usage.inputTokens,
+    output_tokens: response.usage.outputTokens,
   });
   await audit({
     action: 'ai_query', userId: req.user!.id, entityType: 'dataset', entityId: pkg.datasetId ?? undefined,
