@@ -16,7 +16,7 @@ exports.up = async function up(knex) {
 
   await knex.schema.createTable('audit_log', (t) => {
     t.increments('id').primary();
-    t.integer('user_id').nullable().references('id').inTable('users');
+    t.integer('user_id').unsigned().nullable().references('id').inTable('users');
     t.string('action', 80).notNullable();
     t.string('entity_type', 80).nullable();
     t.string('entity_id', 80).nullable();
@@ -32,7 +32,7 @@ exports.up = async function up(knex) {
 
   await knex.schema.createTable('uploads', (t) => {
     t.increments('id').primary();
-    t.integer('user_id').notNullable().references('id').inTable('users');
+    t.integer('user_id').unsigned().notNullable().references('id').inTable('users');
     t.string('stored_name', 255).notNullable();
     t.string('original_name', 255).notNullable();
     t.integer('size_bytes').notNullable();
@@ -65,14 +65,14 @@ exports.up = async function up(knex) {
     t.integer('row_count').notNullable().defaultTo(0);
     t.string('company', 120).nullable();
     t.string('plant_tag', 120).nullable();
-    t.integer('created_by').notNullable().references('id').inTable('users');
+    t.integer('created_by').unsigned().notNullable().references('id').inTable('users');
     t.datetime('created_at').notNullable().defaultTo(knex.fn.now());
     t.index(['kind', 'status']);
   });
 
   await knex.schema.createTable('stock_items', (t) => {
     t.increments('id').primary();
-    t.integer('dataset_id').notNullable().references('id').inTable('datasets').onDelete('CASCADE');
+    t.integer('dataset_id').unsigned().notNullable().references('id').inTable('datasets').onDelete('CASCADE');
     t.string('material', 80).notNullable();
     t.string('material_description', 255).nullable();
     t.string('material_type', 40).nullable();
@@ -107,7 +107,7 @@ exports.up = async function up(knex) {
 
   await knex.schema.createTable('movements', (t) => {
     t.increments('id').primary();
-    t.integer('dataset_id').notNullable().references('id').inTable('datasets').onDelete('CASCADE');
+    t.integer('dataset_id').unsigned().notNullable().references('id').inTable('datasets').onDelete('CASCADE');
     t.string('material', 80).notNullable();
     t.string('material_description', 255).nullable();
     t.string('plant', 40).nullable();
@@ -131,7 +131,7 @@ exports.up = async function up(knex) {
 
   await knex.schema.createTable('material_master', (t) => {
     t.increments('id').primary();
-    t.integer('dataset_id').notNullable().references('id').inTable('datasets').onDelete('CASCADE');
+    t.integer('dataset_id').unsigned().notNullable().references('id').inTable('datasets').onDelete('CASCADE');
     t.string('material', 80).notNullable();
     t.string('material_description', 255).nullable();
     t.string('material_type', 40).nullable();
@@ -153,7 +153,7 @@ exports.up = async function up(knex) {
 
   await knex.schema.createTable('physical_inventory', (t) => {
     t.increments('id').primary();
-    t.integer('dataset_id').notNullable().references('id').inTable('datasets').onDelete('CASCADE');
+    t.integer('dataset_id').unsigned().notNullable().references('id').inTable('datasets').onDelete('CASCADE');
     t.string('material', 80).notNullable();
     t.string('plant', 40).nullable();
     t.string('storage_location', 40).nullable();
@@ -171,14 +171,14 @@ exports.up = async function up(knex) {
   await knex.schema.createTable('config', (t) => {
     t.string('key', 80).primary();
     t.text('value').notNullable();               // JSON
-    t.integer('updated_by').nullable().references('id').inTable('users');
+    t.integer('updated_by').unsigned().nullable().references('id').inTable('users');
     t.datetime('updated_at').notNullable().defaultTo(knex.fn.now());
   });
 
   await knex.schema.createTable('ai_logs', (t) => {
     t.increments('id').primary();
-    t.integer('user_id').notNullable().references('id').inTable('users');
-    t.integer('dataset_id').nullable().references('id').inTable('datasets');
+    t.integer('user_id').unsigned().notNullable().references('id').inTable('users');
+    t.integer('dataset_id').unsigned().nullable().references('id').inTable('datasets');
     t.text('question').notNullable();
     t.string('provider', 30).nullable();
     t.string('model', 80).nullable();
@@ -189,8 +189,8 @@ exports.up = async function up(knex) {
 
   await knex.schema.createTable('exports', (t) => {
     t.increments('id').primary();
-    t.integer('user_id').notNullable().references('id').inTable('users');
-    t.integer('dataset_id').nullable().references('id').inTable('datasets');
+    t.integer('user_id').unsigned().notNullable().references('id').inTable('users');
+    t.integer('dataset_id').unsigned().nullable().references('id').inTable('datasets');
     t.string('export_type', 40).notNullable();
     t.string('filename', 255).notNullable();
     t.datetime('created_at').notNullable().defaultTo(knex.fn.now());

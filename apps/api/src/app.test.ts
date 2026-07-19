@@ -12,8 +12,12 @@ import request from 'supertest';
 import bcrypt from 'bcryptjs';
 
 const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kynox-test-'));
-process.env.DB_CLIENT = 'better-sqlite3';
-process.env.DB_FILE = path.join(tmpDir, 'test.sqlite');
+// Honour an externally configured database (CI runs this suite against
+// PostgreSQL); default to a throwaway SQLite file otherwise.
+if (!process.env.DB_CLIENT || process.env.DB_CLIENT === 'better-sqlite3') {
+  process.env.DB_CLIENT = 'better-sqlite3';
+  process.env.DB_FILE = path.join(tmpDir, 'test.sqlite');
+}
 process.env.JWT_SECRET = 'test-secret-for-integration-tests';
 process.env.UPLOAD_DIR = path.join(tmpDir, 'uploads');
 process.env.EXPORT_DIR = path.join(tmpDir, 'exports');

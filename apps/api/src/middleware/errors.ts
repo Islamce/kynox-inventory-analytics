@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { ZodError } from 'zod';
+import { MulterError } from 'multer';
 import { AiNotConfiguredError } from '@kynox/ai-engine';
 import { logger } from '../logger';
 
@@ -29,6 +30,11 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   }
   if (err instanceof AiNotConfiguredError) {
     res.status(503).json({ error: err.message });
+    return;
+  }
+  if (err instanceof MulterError) {
+    const status = err.code === 'LIMIT_FILE_SIZE' ? 413 : 400;
+    res.status(status).json({ error: err.code === 'LIMIT_FILE_SIZE' ? 'File exceeds the upload size limit' : 'Invalid upload' });
     return;
   }
   logger.error({ err, path: req.path }, 'Unhandled error');

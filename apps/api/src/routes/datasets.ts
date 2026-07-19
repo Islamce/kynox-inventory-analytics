@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import path from 'path';
 import { z } from 'zod';
-import { db } from '../db';
+import { db, insertGetId } from '../db';
 import { config } from '../config';
 import { requireAuth, requirePermission } from '../middleware/auth';
 import { asyncHandler, HttpError } from '../middleware/errors';
@@ -144,6 +144,10 @@ datasetsRouter.post('/', requirePermission('approve_cleansing'), asyncHandler(as
   const body = createSchema.parse(req.body);
   const uploadRow = await db('uploads').where({ id: body.uploadId }).first();
   if (!uploadRow) throw new HttpError(404, 'Upload not found');
+  // Object-level access: only the uploader or an admin may turn an upload into a dataset.
+  if (uploadRow.user_id !== req.user!.id && req.user!.role !== 'system_admin' && req.user!.role !== 'data_admin') {
+    throw new HttpError(403, 'You can only create datasets from uploads you created');
+  }
 
   const sheets = parseWorkbook(path.join(config.uploadDir, uploadRow.stored_name));
   const sheet = sheets.find((s) => s.name === uploadRow.sheet) ?? sheets[0];
@@ -175,7 +179,7 @@ datasetsRouter.post('/', requirePermission('approve_cleansing'), asyncHandler(as
   const version = prev ? prev.version + 1 : 1;
 
   const datasetId = await db.transaction(async (trx) => {
-    const [id] = await trx('datasets').insert({
+    const id = await insertGetId(trx, 'datasets', {
       name: body.name,
       version,
       kind,

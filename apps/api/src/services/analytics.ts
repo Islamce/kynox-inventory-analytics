@@ -97,9 +97,10 @@ export async function loadStockByMaterial(datasetId: number, plant?: string): Pr
       if (r[k] != null) cur[k] = Math.max(cur[k] ?? 0, r[k]);
     }
     const maxDate = (a: string | null, b: string | null) => (!a ? b : !b ? a : (a > b ? a : b));
-    cur.last_receipt = maxDate(cur.last_receipt, r.last_receipt_date);
-    cur.last_issue = maxDate(cur.last_issue, r.last_issue_date);
-    cur.last_movement = maxDate(cur.last_movement, r.last_movement_date);
+    // toIsoDate: Postgres returns Date objects, SQLite/MySQL strings — normalise before comparing.
+    cur.last_receipt = maxDate(cur.last_receipt, toIsoDate(r.last_receipt_date));
+    cur.last_issue = maxDate(cur.last_issue, toIsoDate(r.last_issue_date));
+    cur.last_movement = maxDate(cur.last_movement, toIsoDate(r.last_movement_date));
     if (!cur.description && r.material_description) cur.description = r.material_description;
     byMat.set(r.material, cur);
   }
@@ -116,8 +117,29 @@ export interface MovementAgg {
   series: { date: string; quantity: number; value: number }[]; // issues only
 }
 
-const ISSUE_TYPES = new Set(['201', '221', '261', '281', '291', '601', 'Y01']);
+/**
+ * Movement-type semantics (SAP convention: even type = reversal of odd type).
+ * - Issues (consumption): cost-centre/order/project/delivery issues.
+ * - Issue reversals SUBTRACT from consumption instead of being ignored, so
+ *   returns do not inflate demand.
+ * - Transfers (301/303/305/311/313/315) touch neither consumption nor
+ *   receipts: internal relocation is not external demand.
+ */
+const ISSUE_TYPES = new Set(['201', '221', '231', '241', '251', '261', '281', '291', '601', 'Y01']);
+const ISSUE_REVERSAL_TYPES = new Set(['202', '222', '232', '242', '252', '262', '282', '292', '602']);
 const RECEIPT_TYPES = new Set(['101', '501', '531', '561']);
+const RECEIPT_REVERSAL_TYPES = new Set(['102', '502', '532', '562']);
+const TRANSFER_TYPES = new Set(['301', '303', '305', '311', '313', '315']);
+
+/** Normalises a DB-returned date (string on SQLite/MySQL, Date on Postgres) to ISO YYYY-MM-DD. */
+export function toIsoDate(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  const s = String(v);
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);
+}
 
 /**
  * Aggregates movements per material. Issues are recognised by movement type
@@ -136,17 +158,33 @@ export async function loadMovementsByMaterial(datasetId: number, plant?: string)
     const qty = r.movement_qty ?? 0;
     const val = r.movement_value ?? 0;
     const mvt = r.movement_type ?? '';
-    const posting = typeof r.posting_date === 'string' ? r.posting_date : new Date(r.posting_date).toISOString().slice(0, 10);
+    const posting = toIsoDate(r.posting_date);
+    if (posting === null) continue;
+    if (mvt && TRANSFER_TYPES.has(mvt)) {
+      // Internal transfer: counts as movement activity, never as demand or supply.
+      if (!cur.lastMovementDate || posting > cur.lastMovementDate) cur.lastMovementDate = posting;
+      byMat.set(r.material, cur);
+      continue;
+    }
     const isIssue = mvt ? ISSUE_TYPES.has(mvt) : qty < 0;
+    const isIssueReversal = mvt ? ISSUE_REVERSAL_TYPES.has(mvt) : false;
     const isReceipt = mvt ? RECEIPT_TYPES.has(mvt) : qty > 0;
+    const isReceiptReversal = mvt ? RECEIPT_REVERSAL_TYPES.has(mvt) : false;
     if (isIssue) {
       const q0 = Math.abs(qty);
       cur.issuedQty += q0;
       cur.issuedValue += Math.abs(val);
       cur.series.push({ date: posting, quantity: q0, value: Math.abs(val) });
       if (!cur.lastIssueDate || posting > cur.lastIssueDate) cur.lastIssueDate = posting;
+    } else if (isIssueReversal) {
+      const q0 = Math.abs(qty);
+      cur.issuedQty -= q0;
+      cur.issuedValue -= Math.abs(val);
+      cur.series.push({ date: posting, quantity: -q0, value: -Math.abs(val) });
     } else if (isReceipt) {
       cur.receivedQty += Math.abs(qty);
+    } else if (isReceiptReversal) {
+      cur.receivedQty -= Math.abs(qty);
     }
     if (!cur.lastMovementDate || posting > cur.lastMovementDate) cur.lastMovementDate = posting;
     byMat.set(r.material, cur);
@@ -157,8 +195,8 @@ export async function loadMovementsByMaterial(datasetId: number, plant?: string)
 export async function movementsPeriod(datasetId: number): Promise<{ start: string; end: string; days: number }> {
   const row = await db('movements').where({ dataset_id: datasetId })
     .min({ start: 'posting_date' }).max({ end: 'posting_date' }).first();
-  const start = row?.start ? String(row.start).slice(0, 10) : new Date().toISOString().slice(0, 10);
-  const end = row?.end ? String(row.end).slice(0, 10) : start;
+  const start = toIsoDate(row?.start) ?? new Date().toISOString().slice(0, 10);
+  const end = toIsoDate(row?.end) ?? start;
   const days = Math.max(1, Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86_400_000) + 1);
   return { start, end, days };
 }
@@ -210,7 +248,7 @@ export async function agingAnalysis(stockDatasetId: number, basis: AgingDateBasi
   const ds = await requireDataset(stockDatasetId, 'stock');
   const buckets = await getConfig<AgingBucket[]>('aging_buckets', DEFAULT_AGING_BUCKETS);
   const stock = await loadStockByMaterial(stockDatasetId);
-  const asOfDate = asOf ?? ds.period_end ?? new Date().toISOString().slice(0, 10);
+  const asOfDate = asOf ?? toIsoDate(ds.period_end) ?? new Date().toISOString().slice(0, 10);
   const results = inventoryAging(
     stock.map((s) => ({
       material: s.material, quantity: s.quantity, value: s.value,
@@ -271,7 +309,7 @@ export async function movementCategoryAnalysis(stockDatasetId: number, movements
   const slowTurnoverThreshold = await getConfig('slow_turnover_threshold', 1);
   const stock = await loadStockByMaterial(stockDatasetId);
 
-  const asOf = ds.period_end ?? new Date().toISOString().slice(0, 10);
+  const asOf = toIsoDate(ds.period_end) ?? new Date().toISOString().slice(0, 10);
   let period = { days: 365 };
   let movements = new Map<string, MovementAgg>();
   if (movementsDatasetId) {

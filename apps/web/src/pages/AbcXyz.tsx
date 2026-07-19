@@ -80,7 +80,9 @@ function AbcSection({ stockId, metric, movementsId }: { stockId: number; metric:
           tooltip: { trigger: 'axis', formatter: (p: unknown) => {
             const arr = p as { dataIndex: number }[];
             const r = data.results[arr[0].dataIndex];
-            return `${r.material}<br/>Value: ${r.metricValue.toLocaleString()}<br/>Cumulative: ${r.cumulativePct}% (${r.abcClass})`;
+            // Material codes come from uploaded files — escape them before HTML interpolation.
+            const safe = String(r.material).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return `${safe}<br/>Value: ${r.metricValue.toLocaleString()}<br/>Cumulative: ${r.cumulativePct}% (${r.abcClass})`;
           } },
         }} />
       </Card>

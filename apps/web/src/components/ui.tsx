@@ -148,8 +148,14 @@ export function DataTable<T extends Record<string, unknown>>({ columns, rows, pa
   const visible = filtered.slice((current - 1) * pageSize, current * pageSize);
 
   const exportCsv = () => {
-    const header = columns.map((c) => `"${c.label}"`).join(',');
-    const lines = filtered.map((r) => columns.map((c) => `"${String(r[c.key] ?? '').replace(/"/g, '""')}"`).join(','));
+    // Prefix formula-triggering characters so Excel treats them as text (CSV injection protection).
+    const cell = (v: unknown) => {
+      let s = String(v ?? '');
+      if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+      return `"${s.replace(/"/g, '""')}"`;
+    };
+    const header = columns.map((c) => cell(c.label)).join(',');
+    const lines = filtered.map((r) => columns.map((c) => cell(r[c.key])).join(','));
     const blob = new Blob(['﻿' + [header, ...lines].join('\n')], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);

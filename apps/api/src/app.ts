@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import { config } from './config';
 import { db } from './db';
 import { errorHandler } from './middleware/errors';
+import { correlationMiddleware } from './middleware/correlation';
 import { authRouter } from './routes/auth';
 import { adminRouter } from './routes/admin';
 import { uploadsRouter } from './routes/uploads';
@@ -23,6 +24,7 @@ export function createApp(): express.Express {
   app.use(helmet());
   app.use(cors({ origin: config.corsOrigin.split(','), credentials: false }));
   app.use(express.json({ limit: '2mb' }));
+  app.use(correlationMiddleware);
 
   const apiLimiter = rateLimit({
     windowMs: 60_000,

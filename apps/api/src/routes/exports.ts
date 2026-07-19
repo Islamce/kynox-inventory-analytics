@@ -13,6 +13,22 @@ import * as svc from '../services/analytics';
 
 fs.mkdirSync(config.exportDir, { recursive: true });
 
+/**
+ * Spreadsheet formula-injection protection: values beginning with =, +, -, @
+ * (or tab/CR variants) would execute as formulas when the export is opened in
+ * Excel. Such strings are prefixed with a single quote, which Excel renders
+ * as plain text.
+ */
+function sanitizeCell(v: unknown): unknown {
+  if (typeof v !== 'string') return v;
+  if (/^[=+\-@\t\r]/.test(v)) return `'${v}`;
+  return v;
+}
+
+function sanitizeRows(rows: object[]): Record<string, unknown>[] {
+  return rows.map((r) => Object.fromEntries(Object.entries(r).map(([k, v]) => [k, sanitizeCell(v)])));
+}
+
 export const exportsRouter = Router();
 exportsRouter.use(requireAuth, requirePermission('export'));
 
@@ -36,7 +52,7 @@ exportsRouter.get('/dataset/:id', asyncHandler(async (req, res) => {
   const rows = await db(TABLE_FOR_KIND[ds.kind]).where({ dataset_id: ds.id }).select('*');
   const cleaned = rows.map(({ id: _id, dataset_id: _d, ...rest }: Record<string, unknown>) => rest);
 
-  const ws = XLSX.utils.json_to_sheet(cleaned);
+  const ws = XLSX.utils.json_to_sheet(sanitizeRows(cleaned));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Data');
 
@@ -79,13 +95,13 @@ exportsRouter.get('/analysis/:stockDatasetId', asyncHandler(async (req, res) => 
     { kpi: 'Non-moving value', value: categories.summary.nonMoving.value },
     { kpi: 'Shortage-risk materials', value: shortage.results.length },
   ]), 'KPIs');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(position.byGroup), 'By Group');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(aging.summary), 'Aging');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(categories.results), 'Movement Categories');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(shortage.results), 'Shortage Risks');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sanitizeRows(position.byGroup)), 'By Group');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sanitizeRows(aging.summary)), 'Aging');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sanitizeRows(categories.results)), 'Movement Categories');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sanitizeRows(shortage.results)), 'Shortage Risks');
   if (movementsId) {
     const excess = await svc.excessAnalysis(stockId, 'above_coverage_target', movementsId);
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(excess.results), 'Excess Stock');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sanitizeRows(excess.results)), 'Excess Stock');
   }
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([
     { field: 'Dataset', value: `${ds.name}` },

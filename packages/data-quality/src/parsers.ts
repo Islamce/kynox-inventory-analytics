@@ -104,6 +104,14 @@ export function parseDate(raw: unknown): DateParse {
       return { value: date.toISOString().slice(0, 10), format: p.format };
     }
   }
+  // Excel serial date delivered as text (raw CSV parsing): 5 digits ~1954..2118.
+  if (/^\d{5}$/.test(s)) {
+    const n = Number(s);
+    if (n > 20000 && n < 80000) {
+      const d = new Date(EXCEL_EPOCH_MS + n * 86_400_000);
+      return { value: d.toISOString().slice(0, 10), format: 'Excel serial (text)' };
+    }
+  }
   return { value: null, format: null };
 }
 

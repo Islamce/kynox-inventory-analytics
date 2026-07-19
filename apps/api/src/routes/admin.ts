@@ -2,7 +2,7 @@ import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { ALL_ROLES } from '@kynox/shared-types';
-import { db } from '../db';
+import { db, insertGetId } from '../db';
 import { requireAuth, requirePermission } from '../middleware/auth';
 import { asyncHandler, HttpError } from '../middleware/errors';
 import { audit } from '../services/audit';
@@ -28,7 +28,7 @@ adminRouter.post('/users', requirePermission('manage_users'), asyncHandler(async
   const body = createUserSchema.parse(req.body);
   const exists = await db('users').where({ email: body.email }).first();
   if (exists) throw new HttpError(409, 'A user with this email already exists');
-  const [id] = await db('users').insert({
+  const id = await insertGetId(db, 'users', {
     email: body.email,
     name: body.name,
     password_hash: bcrypt.hashSync(body.password, 12),

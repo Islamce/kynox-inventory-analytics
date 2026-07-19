@@ -333,7 +333,52 @@ const countDifferenceMismatch: Rule = (ctx) => {
   );
 };
 
+const conflictingUnits: Rule = (ctx) => {
+  if (!ctx.rows.some((r) => r.base_unit !== undefined)) return null;
+  const byMaterial = new Map<string, Set<string>>();
+  ctx.rows.forEach((r) => {
+    const mat = normalizeText(r.material);
+    const unit = normalizeText(r.base_unit).toUpperCase();
+    if (!mat || !unit) return;
+    if (!byMaterial.has(mat)) byMaterial.set(mat, new Set());
+    byMaterial.get(mat)!.add(unit);
+  });
+  const conflicting = [...byMaterial.entries()].filter(([, units]) => units.size > 1);
+  const hits = conflicting.slice(0, MAX_SAMPLES).map(([mat, units]) => ({
+    row: -1, column: 'base_unit', value: `${mat}: ${[...units].join(' | ')}`,
+  }));
+  return makeIssue(
+    'conflicting_units', 'high', 'Same material with different units of measure',
+    'Quantities recorded in different units cannot be aggregated without conversion factors, which are not present in the upload.',
+    'Provide a single unit per material or supply conversion factors; quantity totals for these materials are unreliable until then.',
+    false,
+    'Quantity aggregations for the affected materials mix incompatible units.',
+    hits, conflicting.length,
+  );
+};
+
+const mixedCurrencies: Rule = (ctx) => {
+  if (!ctx.rows.some((r) => r.currency !== undefined)) return null;
+  const currencies = new Set<string>();
+  ctx.rows.forEach((r) => {
+    const c = normalizeText(r.currency).toUpperCase();
+    if (c) currencies.add(c);
+  });
+  if (currencies.size <= 1) return null;
+  return makeIssue(
+    'mixed_currencies', 'high', 'Multiple currencies in one dataset',
+    `Values appear in ${currencies.size} currencies (${[...currencies].join(', ')}). Value totals would silently mix currencies without conversion.`,
+    'Extract the report in a single (local) currency, or split by currency; value-based KPIs assume one currency.',
+    false,
+    'All value aggregations (inventory value, excess value, ABC by value) are unreliable across currencies.',
+    [{ row: -1, column: 'currency', value: [...currencies].join(', ') }],
+    ctx.rows.length,
+  );
+};
+
 export const ALL_RULES: Rule[] = [
+  conflictingUnits,
+  mixedCurrencies,
   missingMaterial,
   duplicateRows,
   invalidQuantities,

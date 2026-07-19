@@ -26,4 +26,37 @@ export const config = {
     baseUrl: process.env.AI_BASE_URL || undefined,
   },
   version: '1.0.0',
+  /** Days after which orphaned uploads / generated exports are deleted by the cleanup job. */
+  uploadRetentionDays: Number(process.env.UPLOAD_RETENTION_DAYS || 90),
+  exportRetentionDays: Number(process.env.EXPORT_RETENTION_DAYS || 14),
 };
+
+/**
+ * Production startup validation. The application refuses to start in
+ * production when critical variables are missing or unsafe, instead of
+ * limping along with development defaults.
+ */
+export function validateProductionConfig(): string[] {
+  const problems: string[] = [];
+  if (process.env.NODE_ENV !== 'production') return problems;
+
+  if (!process.env.JWT_SECRET) {
+    problems.push('JWT_SECRET is not set.');
+  } else if (process.env.JWT_SECRET.length < 32) {
+    problems.push('JWT_SECRET is shorter than 32 characters; generate one with: openssl rand -base64 48');
+  }
+  const client = process.env.DB_CLIENT || 'better-sqlite3';
+  if (client === 'better-sqlite3') {
+    problems.push('DB_CLIENT=better-sqlite3 is not supported in production; use pg or mysql2.');
+  } else if (client === 'pg' || client === 'mysql2') {
+    for (const v of ['DB_HOST', 'DB_NAME', 'DB_USER', 'DB_PASSWORD']) {
+      if (!process.env[v]) problems.push(`${v} is not set (required for DB_CLIENT=${client}).`);
+    }
+  } else {
+    problems.push(`Unsupported DB_CLIENT '${client}'.`);
+  }
+  if (!process.env.CORS_ORIGIN) {
+    problems.push('CORS_ORIGIN is not set; set it to https://analytics.kynox.io');
+  }
+  return problems;
+}

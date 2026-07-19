@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
 import { z } from 'zod';
-import { db } from '../db';
+import { db, insertGetId } from '../db';
 import { config } from '../config';
 import { requireAuth, requirePermission } from '../middleware/auth';
 import { asyncHandler, HttpError } from '../middleware/errors';
@@ -42,10 +42,17 @@ const upload = multer({
 export const uploadsRouter = Router();
 uploadsRouter.use(requireAuth);
 
-/** Loads an upload row or 404s. */
-async function getUpload(id: number) {
+/**
+ * Loads an upload row, enforcing object-level access: only the uploader or a
+ * system administrator may read or modify an upload (IDOR protection —
+ * permission checks alone would let any mapper touch other users' files).
+ */
+async function getUpload(id: number, user: { id: number; role: string }) {
   const row = await db('uploads').where({ id }).first();
   if (!row) throw new HttpError(404, 'Upload not found');
+  if (row.user_id !== user.id && user.role !== 'system_admin' && user.role !== 'data_admin') {
+    throw new HttpError(403, 'You can only access uploads you created');
+  }
   return row;
 }
 
@@ -65,7 +72,7 @@ uploadsRouter.post('/', requirePermission('upload'), upload.single('file'), asyn
   const mapping = mapColumns(sheet.headers);
   const detection = detectReportType(mapping, sheet.name, req.file.originalname);
 
-  const [id] = await db('uploads').insert({
+  const id = await insertGetId(db, 'uploads', {
     user_id: req.user!.id,
     stored_name: req.file.filename,
     original_name: sanitizeFilename(req.file.originalname),
@@ -116,7 +123,7 @@ uploadsRouter.get('/', asyncHandler(async (req, res) => {
 const sheetSchema = z.object({ sheet: z.string().min(1).max(128) });
 
 uploadsRouter.put('/:id/sheet', requirePermission('edit_mapping'), asyncHandler(async (req, res) => {
-  const row = await getUpload(Number(req.params.id));
+  const row = await getUpload(Number(req.params.id), req.user!);
   const { sheet } = sheetSchema.parse(req.body);
   const sheets = parseWorkbook(fileFor(row));
   const target = sheets.find((s) => s.name === sheet);
@@ -144,7 +151,7 @@ const mappingSchema = z.object({
 });
 
 uploadsRouter.put('/:id/mapping', requirePermission('edit_mapping'), asyncHandler(async (req, res) => {
-  const row = await getUpload(Number(req.params.id));
+  const row = await getUpload(Number(req.params.id), req.user!);
   const body = mappingSchema.parse(req.body);
   const prev = JSON.parse(row.mapping ?? '[]');
   const mapping: ColumnMapping[] = body.mapping.map((m) => ({
@@ -172,7 +179,7 @@ uploadsRouter.put('/:id/mapping', requirePermission('edit_mapping'), asyncHandle
 // ---- Step 4: preview --------------------------------------------------------
 
 uploadsRouter.get('/:id/preview', asyncHandler(async (req, res) => {
-  const row = await getUpload(Number(req.params.id));
+  const row = await getUpload(Number(req.params.id), req.user!);
   const sheets = parseWorkbook(fileFor(row));
   const sheet = sheets.find((s) => s.name === row.sheet) ?? sheets[0];
   const sample = sheet.rows.slice(0, 50);
@@ -208,7 +215,7 @@ uploadsRouter.get('/:id/preview', asyncHandler(async (req, res) => {
 // ---- Step 5+6: validate and propose cleansing -------------------------------
 
 uploadsRouter.post('/:id/validate', requirePermission('run_analysis'), asyncHandler(async (req, res) => {
-  const row = await getUpload(Number(req.params.id));
+  const row = await getUpload(Number(req.params.id), req.user!);
   const sheets = parseWorkbook(fileFor(row));
   const sheet = sheets.find((s) => s.name === row.sheet) ?? sheets[0];
   const mapping: ColumnMapping[] = JSON.parse(row.mapping ?? '[]');

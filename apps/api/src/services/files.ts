@@ -43,7 +43,13 @@ export function parseWorkbook(filePath: string, maxRows = 200_000): ParsedSheet[
   if (!fs.existsSync(filePath)) throw new HttpError(404, 'Uploaded file no longer exists');
   let workbook: XLSX.WorkBook;
   try {
-    workbook = XLSX.readFile(filePath, { cellDates: false, dense: true });
+    // Buffer-based parsing: works identically in the CJS and ESM builds of
+    // SheetJS (the ESM build has no filesystem binding).
+    const buffer = fs.readFileSync(filePath);
+    // raw: true stops SheetJS from guessing number formats in CSV files —
+    // its guesser corrupts EU-format values ("1.234,5" would become 1.2345).
+    // All number/date interpretation is done explicitly by @kynox/data-quality.
+    workbook = XLSX.read(buffer, { cellDates: false, dense: true, raw: true });
   } catch {
     throw new HttpError(400, 'The file could not be parsed as a spreadsheet. It may be corrupt.');
   }

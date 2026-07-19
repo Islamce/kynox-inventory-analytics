@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build, type-check and test (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify no secrets or runtime artefacts are committed
+        run: |
+          set -e
+          violations=""
+          # .env files (the template .env.example is allowed)
+          if git ls-files | grep -E '(^|/)\.env(\..+)?$' | grep -v '\.env\.example$'; then
+            violations="$violations env-files"
+          fi
+          # SQLite databases, uploaded files, generated exports
+          if git ls-files | grep -E '\.(sqlite|sqlite3|db)$'; then
+            violations="$violations database-files"
+          fi
+          if git ls-files 'uploads/*' | grep -v '^uploads/\.gitkeep$'; then
+            violations="$violations uploads"
+          fi
+          if git ls-files 'exports/*' | grep -v '^exports/\.gitkeep$'; then
+            violations="$violations exports"
+          fi
+          # Obvious secret patterns in tracked files
+          if git grep -nE '(sk-ant-api|sk-proj-|AKIA[0-9A-Z]{16}|-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----)' -- ':!*.yml' ; then
+            violations="$violations secret-patterns"
+          fi
+          if [ -n "$violations" ]; then
+            echo "::error::Forbidden files or secrets committed:$violations"
+            exit 1
+          fi
+          echo "No forbidden files or secret patterns found."
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Clean dependency installation
+        run: npm ci
+
+      - name: Type-check all workspaces
+        run: npm run typecheck
+
+      - name: Build all workspaces
+        run: npm run build
+
+      - name: Unit tests (analytics-engine, data-quality, ai-engine)
+        run: |
+          npm test -w @kynox/analytics-engine
+          npm test -w @kynox/data-quality
+          npm test -w @kynox/ai-engine
+
+      - name: API integration tests (includes frontend-serving smoke via SPA route tests)
+        run: npm test -w @kynox/api
+
+      - name: Migration rollback verification (SQLite)
+        run: |
+          export JWT_SECRET=ci-migration-secret
+          npm run migrate -w @kynox/api
+          npm run migrate:rollback -w @kynox/api
+          npm run migrate -w @kynox/api
+
+      - name: Dependency security audit
+        run: npm audit --audit-level=high
+
+  postgres-integration:
+    name: API integration tests on PostgreSQL
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kynox
+          POSTGRES_PASSWORD: kynox-ci-password
+          POSTGRES_DB: kynox_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U kynox"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:packages
+      - name: Run API tests against PostgreSQL
+        env:
+          DB_CLIENT: pg
+          DB_HOST: localhost
+          DB_PORT: '5432'
+          DB_NAME: kynox_test
+          DB_USER: kynox
+          DB_PASSWORD: kynox-ci-password
+        run: npm test -w @kynox/api
