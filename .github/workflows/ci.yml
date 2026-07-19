@@ -56,6 +56,9 @@ jobs:
       - name: Clean dependency installation
         run: npm ci
 
+      - name: Build shared packages (their .d.ts files are needed by dependent type-checks)
+        run: npm run build:packages
+
       - name: Type-check all workspaces
         run: npm run typecheck
 
