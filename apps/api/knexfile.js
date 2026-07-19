@@ -9,11 +9,17 @@ const path = require('path');
 
 const client = process.env.DB_CLIENT || 'better-sqlite3';
 
+const sqliteFile = process.env.DB_FILE || path.resolve(__dirname, '../../database/kynox.sqlite');
+if (client === 'better-sqlite3') {
+  // git does not track empty directories, so ensure the SQLite location exists.
+  require('fs').mkdirSync(path.dirname(sqliteFile), { recursive: true });
+}
+
 const connections = {
   'better-sqlite3': {
     client: 'better-sqlite3',
     connection: {
-      filename: process.env.DB_FILE || path.resolve(__dirname, '../../database/kynox.sqlite'),
+      filename: sqliteFile,
     },
     useNullAsDefault: true,
   },
