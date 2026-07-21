@@ -18,7 +18,14 @@ const server = app.listen(config.port, () => {
   logger.info({ port: config.port, env: config.env }, 'Kynox Supply Chain Intelligence API started');
 });
 
-startCleanupSchedule();
+// Best-effort in-process retention timer. On managed hosting where the process
+// may not stay alive, disable it (ENABLE_INPROCESS_CLEANUP=false) and drive
+// cleanup from an external scheduler via POST /api/maintenance/cleanup.
+if (config.enableInProcessCleanup) {
+  startCleanupSchedule();
+} else {
+  logger.info('In-process cleanup timer disabled; use POST /api/maintenance/cleanup from an external scheduler');
+}
 
 // Process-level safety nets: log with full context, then exit so the process
 // manager restarts a clean instance (state after an unknown error is untrusted).

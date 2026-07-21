@@ -115,3 +115,80 @@ jobs:
           DB_USER: kynox
           DB_PASSWORD: kynox-ci-password
         run: npm test -w @kynox/api
+
+  hostinger-build-simulation:
+    name: Hostinger managed-hosting build + start (MySQL)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root-ci-password
+          MYSQL_DATABASE: kynox_analytics
+          MYSQL_USER: kynox_app
+          MYSQL_PASSWORD: app-ci-password
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd "mysqladmin ping -h localhost -proot-ci-password"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # Reproduce the managed-host flow: clean install from the committed
+      # lockfile, full monorepo build, controlled migrate, then start the ROOT
+      # entry (node app.js) exactly as Hostinger will, and probe the endpoints.
+      - name: Clean install (as managed host)
+        run: |
+          rm -rf node_modules
+          npm ci
+      - name: Full production build
+        run: npm run build
+      - name: Grant app user (CI MySQL)
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -proot-ci-password \
+            -e "GRANT ALL ON kynox_analytics.* TO 'kynox_app'@'%'; FLUSH PRIVILEGES;"
+      - name: Controlled migration (separate command, not on startup)
+        env:
+          DB_CLIENT: mysql2
+          DB_HOST: 127.0.0.1
+          DB_PORT: '3306'
+          DB_NAME: kynox_analytics
+          DB_USER: kynox_app
+          DB_PASSWORD: app-ci-password
+        run: npm run migrate
+      - name: Start root entry (node app.js) and probe health/readiness/version
+        env:
+          NODE_ENV: production
+          APP_ENV: production
+          PORT: '4200'
+          APP_URL: https://analytics.kynox.io
+          CORS_ORIGIN: https://analytics.kynox.io
+          DB_CLIENT: mysql2
+          DB_HOST: 127.0.0.1
+          DB_PORT: '3306'
+          DB_NAME: kynox_analytics
+          DB_USER: kynox_app
+          DB_PASSWORD: app-ci-password
+          DB_SSL: 'false'
+          JWT_SECRET: ci-hostinger-simulation-secret-at-least-32-chars
+          UPLOAD_DIR: ./uploads
+          EXPORT_DIR: ./exports
+          AI_PROVIDER: none
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          npm start &
+          APP_PID=$!
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:4200/api/health >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          set -e
+          echo "health:";    curl -fsS http://127.0.0.1:4200/api/health
+          echo; echo "readiness:"; curl -fsS http://127.0.0.1:4200/api/readiness
+          echo; echo "version:";   curl -fsS http://127.0.0.1:4200/api/version
+          echo; echo "SPA root:";  curl -fsS http://127.0.0.1:4200/ | grep -q 'id="root"' && echo "SPA served"
+          echo "unauth 401:"; test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:4200/api/datasets)" = "401" && echo "ok"
+          kill $APP_PID 2>/dev/null || true

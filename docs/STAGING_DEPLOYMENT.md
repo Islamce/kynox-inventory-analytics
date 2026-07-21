@@ -1,4 +1,13 @@
-# Staging Deployment Runbook — staging-analytics.kynox.io
+# Staging Deployment Runbook — staging-analytics.kynox.io (APPENDIX — VPS path)
+
+> **NOT APPLICABLE to the current managed Hostinger hosting plan.** This runbook
+> describes a **VPS**-style deployment (pm2 / Nginx / symlink releases /
+> PostgreSQL) used for the local rehearsal. The primary supported path is
+> **Hostinger Managed Node.js Web App + Hostinger MySQL** —
+> **`docs/HOSTINGER_MANAGED_DEPLOYMENT.md`**. Keep this only as optional future
+> VPS guidance.
+
+---
 
 Target: **staging only**. Production (`analytics.kynox.io`) is out of scope of
 this runbook. Nothing here touches `www.kynox.io` or `wms.kynox.io`.

@@ -15,6 +15,7 @@ import { datasetsRouter } from './routes/datasets';
 import { analyticsRouter } from './routes/analytics';
 import { aiRouter } from './routes/ai';
 import { exportsRouter } from './routes/exports';
+import { maintenanceRouter } from './routes/maintenance';
 
 export function createApp(): express.Express {
   const app = express();
@@ -39,7 +40,14 @@ export function createApp(): express.Express {
     res.json({ status: 'ok' });
   });
   app.get('/api/version', (_req, res) => {
-    res.json({ name: 'kynox-supply-chain-intelligence', version: config.version });
+    // Release SHA is injected at deploy time (RELEASE_SHA); environment name is
+    // APP_ENV. Neither exposes secrets or internal paths.
+    res.json({
+      name: 'kynox-supply-chain-intelligence',
+      version: config.version,
+      releaseSha: process.env.RELEASE_SHA || null,
+      environment: process.env.APP_ENV || config.env,
+    });
   });
   app.get('/api/readiness', async (_req, res) => {
     try {
@@ -57,6 +65,7 @@ export function createApp(): express.Express {
   app.use('/api/analytics', analyticsRouter);
   app.use('/api/ai', aiRouter);
   app.use('/api/exports', exportsRouter);
+  app.use('/api/maintenance', maintenanceRouter);
 
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Not found' }));
 

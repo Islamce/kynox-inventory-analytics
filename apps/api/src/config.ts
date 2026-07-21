@@ -38,6 +38,15 @@ export const config = {
   /** Days after which orphaned uploads / generated exports are deleted by the cleanup job. */
   uploadRetentionDays: Number(process.env.UPLOAD_RETENTION_DAYS || 90),
   exportRetentionDays: Number(process.env.EXPORT_RETENTION_DAYS || 14),
+  /**
+   * In-process retention timer. On managed hosting (Hostinger) the process may
+   * not stay alive continuously, so this is best-effort only. Set
+   * ENABLE_INPROCESS_CLEANUP=false and trigger POST /api/maintenance/cleanup
+   * from an external scheduler (GitHub Actions) for reliable cleanup.
+   */
+  enableInProcessCleanup: (process.env.ENABLE_INPROCESS_CLEANUP || 'true') !== 'false',
+  /** Shared secret for the external maintenance endpoint; disabled when unset. */
+  maintenanceToken: process.env.MAINTENANCE_TOKEN || '',
 };
 
 /**

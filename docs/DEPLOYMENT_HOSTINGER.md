@@ -1,4 +1,15 @@
-# Hostinger Deployment Guide — analytics.kynox.io
+# Hostinger VPS Deployment Guide — analytics.kynox.io (APPENDIX — not the primary path)
+
+> **NOT APPLICABLE to the current managed Hostinger hosting plan.** The primary,
+> supported deployment path is **Hostinger Managed Node.js Web App + Hostinger
+> MySQL** — see **`docs/HOSTINGER_MANAGED_DEPLOYMENT.md`** and
+> **`docs/HOSTINGER_HPanel_CHECKLIST.md`**. This document (pm2 / Nginx / Certbot
+> / symlink releases / PostgreSQL) is retained only as **optional future VPS
+> guidance** should the platform later move to a Hostinger VPS. Do not follow it
+> for the managed Node.js Web App deployment.
+
+---
+
 
 This deployment is fully independent of `www.kynox.io` and the existing WMS.
 Nothing here touches their files, databases or DNS records other than adding
