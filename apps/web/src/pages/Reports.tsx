@@ -63,7 +63,7 @@ export function ReportsPage() {
                 type="button"
                 disabled={busy !== null}
                 onClick={() => void download('pdf', `/api/exports/report/${ws.stockDatasetId}${movQs}`, 'management-report.pdf')}
-                className="bg-sky-700 hover:bg-sky-800 disabled:opacity-60 text-white rounded-lg px-4 py-2 text-sm font-medium"
+                className="bg-brand hover:bg-brand-hover disabled:opacity-60 text-white rounded-lg px-4 py-2 text-sm font-medium"
               >
                 {busy === 'pdf' ? 'Generating…' : 'Management report (PDF)'}
               </button>
@@ -71,7 +71,7 @@ export function ReportsPage() {
                 type="button"
                 disabled={busy !== null}
                 onClick={() => void download('analysis', `/api/exports/analysis/${ws.stockDatasetId}${movQs}`, 'analysis-workbook.xlsx')}
-                className="bg-slate-800 hover:bg-slate-900 disabled:opacity-60 text-white rounded-lg px-4 py-2 text-sm font-medium"
+                className="bg-[var(--kx-neutral-700)] hover:bg-[var(--kx-neutral-800)] disabled:opacity-60 text-white rounded-lg px-4 py-2 text-sm font-medium"
               >
                 {busy === 'analysis' ? 'Generating…' : 'Analysis workbook (XLSX)'}
               </button>
@@ -97,8 +97,8 @@ export function ReportsPage() {
                   key: 'actions', label: 'Actions',
                   render: (r) => (
                     <span className="flex gap-2">
-                      <button type="button" className="text-sky-700 hover:underline" onClick={() => void download(`x${r.id}`, `/api/exports/dataset/${r.id}`, `dataset-${r.id}.xlsx`)}>XLSX</button>
-                      <button type="button" className="text-sky-700 hover:underline" onClick={() => void download(`c${r.id}`, `/api/exports/dataset/${r.id}?format=csv`, `dataset-${r.id}.csv`)}>CSV</button>
+                      <button type="button" className="text-brand hover:underline" onClick={() => void download(`x${r.id}`, `/api/exports/dataset/${r.id}`, `dataset-${r.id}.xlsx`)}>XLSX</button>
+                      <button type="button" className="text-brand hover:underline" onClick={() => void download(`c${r.id}`, `/api/exports/dataset/${r.id}?format=csv`, `dataset-${r.id}.csv`)}>CSV</button>
                       <button type="button" className="text-red-600 hover:underline" onClick={() => void remove(Number(r.id), String(r.name))}>Delete</button>
                     </span>
                   ),

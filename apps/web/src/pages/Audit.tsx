@@ -34,11 +34,11 @@ export function AuditPage() {
     <div className="space-y-4">
       <h1 className="text-xl font-bold">Audit & Governance</h1>
       <div className="flex items-center gap-2 text-sm">
-        <label htmlFor="audit-action" className="text-slate-500">Action filter</label>
-        <select id="audit-action" className="border border-slate-300 rounded-lg px-2 py-1 bg-white" value={action} onChange={(e) => { setAction(e.target.value); setPage(1); }}>
+        <label htmlFor="audit-action" className="text-muted">Action filter</label>
+        <select id="audit-action" className="border border-line-strong rounded-lg px-2 py-1 bg-surface" value={action} onChange={(e) => { setAction(e.target.value); setPage(1); }}>
           {ACTIONS.map((a) => <option key={a} value={a}>{a || 'all actions'}</option>)}
         </select>
-        <span className="text-slate-400">{total.toLocaleString()} entries</span>
+        <span className="text-subtle">{total.toLocaleString()} entries</span>
       </div>
       {loading && <Spinner />}
       {error && <ErrorState message={error} />}
@@ -61,16 +61,16 @@ export function AuditPage() {
                   const prev = r.prev_value ? `prev: ${r.prev_value}` : '';
                   const next = r.new_value ? `new: ${r.new_value}` : '';
                   const text = [prev, next].filter(Boolean).join(' → ');
-                  return text ? <span className="text-xs text-slate-500 font-mono">{text.slice(0, 160)}{text.length > 160 ? '…' : ''}</span> : '—';
+                  return text ? <span className="text-xs text-muted font-mono">{text.slice(0, 160)}{text.length > 160 ? '…' : ''}</span> : '—';
                 },
               },
             ]}
             rows={entries as unknown as Record<string, unknown>[]}
           />
           <div className="flex items-center gap-2 mt-2 text-sm">
-            <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-2 py-1 border border-slate-300 rounded-lg disabled:opacity-40">Prev</button>
-            <span className="text-slate-500">Page {page} / {Math.max(1, Math.ceil(total / 50))}</span>
-            <button type="button" disabled={page >= Math.ceil(total / 50)} onClick={() => setPage(page + 1)} className="px-2 py-1 border border-slate-300 rounded-lg disabled:opacity-40">Next</button>
+            <button type="button" disabled={page <= 1} onClick={() => setPage(page - 1)} className="px-2 py-1 border border-line-strong rounded-lg disabled:opacity-40">Prev</button>
+            <span className="text-muted">Page {page} / {Math.max(1, Math.ceil(total / 50))}</span>
+            <button type="button" disabled={page >= Math.ceil(total / 50)} onClick={() => setPage(page + 1)} className="px-2 py-1 border border-line-strong rounded-lg disabled:opacity-40">Next</button>
           </div>
         </Card>
       )}

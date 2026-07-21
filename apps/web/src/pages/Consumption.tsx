@@ -29,21 +29,21 @@ export function ConsumptionPage() {
     <div className="space-y-4">
       <h1 className="text-xl font-bold">Consumption Analytics</h1>
       <div className="flex flex-wrap items-center gap-2 text-sm">
-        <label htmlFor="cons-gran" className="text-slate-500">Granularity</label>
-        <select id="cons-gran" className="border border-slate-300 rounded-lg px-2 py-1 bg-white" value={granularity} onChange={(e) => setGranularity(e.target.value)}>
+        <label htmlFor="cons-gran" className="text-muted">Granularity</label>
+        <select id="cons-gran" className="border border-line-strong rounded-lg px-2 py-1 bg-surface" value={granularity} onChange={(e) => setGranularity(e.target.value)}>
           <option value="month">Monthly</option>
           <option value="week">Weekly</option>
           <option value="day">Daily</option>
         </select>
         <input
-          className="border border-slate-300 rounded-lg px-3 py-1 bg-white w-56"
+          className="border border-line-strong rounded-lg px-3 py-1 bg-surface w-56"
           placeholder="Filter to one material (exact code)"
           value={material}
           onChange={(e) => setMaterial(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') setApplied(material.trim()); }}
         />
-        <button type="button" className="px-3 py-1 rounded-lg border border-slate-300 hover:bg-slate-50" onClick={() => setApplied(material.trim())}>Apply</button>
-        {applied && <button type="button" className="text-sky-700" onClick={() => { setMaterial(''); setApplied(''); }}>Clear</button>}
+        <button type="button" className="px-3 py-1 rounded-lg border border-line-strong hover:bg-sunken" onClick={() => setApplied(material.trim())}>Apply</button>
+        {applied && <button type="button" className="text-brand" onClick={() => { setMaterial(''); setApplied(''); }}>Clear</button>}
       </div>
       {loading && <Spinner />}
       {error && <ErrorState message={error} />}
@@ -51,8 +51,8 @@ export function ConsumptionPage() {
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-2">
             {Object.entries(data.stats).map(([k, v]) => (
-              <div key={k} className="bg-white border border-slate-200 rounded-lg p-3 text-center">
-                <p className="text-xs text-slate-500 capitalize">{k.replace(/([A-Z])/g, ' $1')}</p>
+              <div key={k} className="bg-surface border border-line rounded-lg p-3 text-center">
+                <p className="text-xs text-muted capitalize">{k.replace(/([A-Z])/g, ' $1')}</p>
                 <p className="font-bold tabular-nums">{typeof v === 'number' ? v.toLocaleString() : v}</p>
               </div>
             ))}
@@ -93,7 +93,7 @@ export function ConsumptionPage() {
               <DataTable
                 exportName="top-consumers"
                 columns={[
-                  { key: 'material', label: 'Material', render: (r) => <Link className="text-sky-700" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
+                  { key: 'material', label: 'Material', render: (r) => <Link className="text-brand" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
                   { key: 'issuedQty', label: 'Issued qty', numeric: true },
                   { key: 'issuedValue', label: 'Issued value', numeric: true },
                 ]}

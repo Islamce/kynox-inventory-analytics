@@ -42,14 +42,14 @@ export function PlanningPage() {
       <h1 className="text-xl font-bold">Planning & Forecasting</h1>
       <div className="flex items-center gap-2">
         <input
-          className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white w-64"
+          className="border border-line-strong rounded-lg px-3 py-1.5 text-sm bg-surface w-64"
           placeholder="Material code (exact)"
           value={material}
           onChange={(e) => setMaterial(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') setApplied(material.trim()); }}
           aria-label="Material code for planning"
         />
-        <button type="button" className="bg-sky-700 hover:bg-sky-800 text-white rounded-lg px-4 py-1.5 text-sm" onClick={() => setApplied(material.trim())}>
+        <button type="button" className="bg-brand hover:bg-brand-hover text-white rounded-lg px-4 py-1.5 text-sm" onClick={() => setApplied(material.trim())}>
           Analyse
         </button>
       </div>
@@ -59,7 +59,7 @@ export function PlanningPage() {
 
       {forecast.data && (
         forecast.data.insufficientData
-          ? <Card title="Forecast"><p className="text-sm text-slate-600">{forecast.data.note}</p></Card>
+          ? <Card title="Forecast"><p className="text-sm text-muted">{forecast.data.note}</p></Card>
           : (
             <Card title={`Recommended method: ${forecast.data.best}`} subtitle={forecast.data.note}>
               {forecast.data.forecast && (
@@ -83,7 +83,7 @@ export function PlanningPage() {
               <div className="overflow-auto mt-3">
                 <table className="text-sm w-full max-w-2xl">
                   <thead>
-                    <tr className="text-left text-slate-500 border-b border-slate-200">
+                    <tr className="text-left text-muted border-b border-line">
                       <th className="py-1">Method</th>
                       <th className="text-right">WAPE %</th>
                       <th className="text-right">MAE</th>
@@ -94,7 +94,7 @@ export function PlanningPage() {
                   </thead>
                   <tbody>
                     {forecast.data.comparisons.map((c) => (
-                      <tr key={c.method} className={`border-b border-slate-100 ${c.recommended ? 'font-semibold bg-emerald-50' : ''}`}>
+                      <tr key={c.method} className={`border-b border-line ${c.recommended ? 'font-semibold bg-emerald-50' : ''}`}>
                         <td className="py-1">{c.method}{c.recommended ? ' ✓ recommended' : ''}</td>
                         <td className="text-right tabular-nums">{c.accuracy.wape ?? '—'}</td>
                         <td className="text-right tabular-nums">{c.accuracy.mae}</td>
@@ -113,34 +113,34 @@ export function PlanningPage() {
       {planning.data && (
         <Card title="Safety stock & reorder point proposal" subtitle="Statistical service-level method — recommendations only, with formula and assumptions shown">
           {planning.data.insufficientData
-            ? <p className="text-sm text-slate-600">{planning.data.note}</p>
+            ? <p className="text-sm text-muted">{planning.data.note}</p>
             : planning.data.proposed && (
               <div className="text-sm space-y-3">
                 <div className="grid md:grid-cols-3 gap-3">
-                  <div className="bg-slate-50 rounded-lg p-3">
-                    <p className="text-xs text-slate-500">Safety stock</p>
+                  <div className="bg-sunken rounded-lg p-3">
+                    <p className="text-xs text-muted">Safety stock</p>
                     <p className="text-xl font-bold tabular-nums">{planning.data.proposed.safetyStock.safetyStock.toLocaleString()}</p>
-                    <p className="text-xs text-slate-400">{planning.data.proposed.safetyStock.formula}</p>
-                    <p className="text-xs text-slate-400 mt-1">Current: {planning.data.current?.safetyStock ?? 'not maintained'}</p>
+                    <p className="text-xs text-subtle">{planning.data.proposed.safetyStock.formula}</p>
+                    <p className="text-xs text-subtle mt-1">Current: {planning.data.current?.safetyStock ?? 'not maintained'}</p>
                   </div>
-                  <div className="bg-slate-50 rounded-lg p-3">
-                    <p className="text-xs text-slate-500">Reorder point</p>
+                  <div className="bg-sunken rounded-lg p-3">
+                    <p className="text-xs text-muted">Reorder point</p>
                     <p className="text-xl font-bold tabular-nums">{planning.data.proposed.reorderPoint.reorderPoint.toLocaleString()}</p>
-                    <p className="text-xs text-slate-400">{planning.data.proposed.reorderPoint.formula}</p>
-                    <p className="text-xs text-slate-400 mt-1">Lead-time demand: {planning.data.proposed.reorderPoint.leadTimeDemand.toLocaleString()}</p>
+                    <p className="text-xs text-subtle">{planning.data.proposed.reorderPoint.formula}</p>
+                    <p className="text-xs text-subtle mt-1">Lead-time demand: {planning.data.proposed.reorderPoint.leadTimeDemand.toLocaleString()}</p>
                   </div>
-                  <div className="bg-slate-50 rounded-lg p-3">
-                    <p className="text-xs text-slate-500">Min / Max / Order qty</p>
+                  <div className="bg-sunken rounded-lg p-3">
+                    <p className="text-xs text-muted">Min / Max / Order qty</p>
                     <p className="text-xl font-bold tabular-nums">
                       {planning.data.proposed.minMax.minStock.toLocaleString()} / {planning.data.proposed.minMax.maxStock.toLocaleString()}
                     </p>
-                    <p className="text-xs text-slate-400">{planning.data.proposed.minMax.formula}</p>
-                    <p className="text-xs text-slate-400 mt-1">Order quantity: {planning.data.proposed.minMax.orderQuantity.toLocaleString()}</p>
+                    <p className="text-xs text-subtle">{planning.data.proposed.minMax.formula}</p>
+                    <p className="text-xs text-subtle mt-1">Order quantity: {planning.data.proposed.minMax.orderQuantity.toLocaleString()}</p>
                   </div>
                 </div>
                 <div>
-                  <p className="font-medium text-slate-700">Assumptions</p>
-                  <ul className="list-disc ms-5 text-xs text-slate-500">
+                  <p className="font-medium text-body">Assumptions</p>
+                  <ul className="list-disc ms-5 text-xs text-muted">
                     {(planning.data.assumptions ?? []).map((a) => <li key={a}>{a}</li>)}
                     {planning.data.proposed.safetyStock.assumptions.map((a) => <li key={a}>{a}</li>)}
                   </ul>

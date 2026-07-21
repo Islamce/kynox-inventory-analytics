@@ -1,46 +1,87 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
+import { Icon, type IconName } from '../design/icons';
 
 // ---------------------------------------------------------------------------
-// Small shared UI primitives: cards, badges, states, KPI tiles, data table.
+// Shared UI primitives for the Kynox design system. Everything here is driven
+// by semantic tokens (surface/body/muted/line/brand/status) so light and dark
+// themes are handled automatically. Security-relevant behaviour preserved:
+// the DataTable CSV export keeps its formula-injection guard byte-for-byte.
 // ---------------------------------------------------------------------------
 
-export function Card({ title, subtitle, children, actions }: {
-  title?: string; subtitle?: string; children: ReactNode; actions?: ReactNode;
+export function Card({ title, subtitle, children, actions, className }: {
+  title?: string; subtitle?: string; children: ReactNode; actions?: ReactNode; className?: string;
 }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+    <section className={`bg-surface rounded-xl shadow-[var(--kx-shadow-sm)] border border-line p-4 ${className ?? ''}`}>
       {(title || actions) && (
-        <div className="flex items-start justify-between mb-3">
+        <div className="flex items-start justify-between gap-3 mb-3">
           <div>
-            {title && <h3 className="font-semibold text-slate-800">{title}</h3>}
-            {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+            {title && <h3 className="font-semibold text-body">{title}</h3>}
+            {subtitle && <p className="text-xs text-muted mt-0.5">{subtitle}</p>}
           </div>
           {actions}
         </div>
       )}
       {children}
+    </section>
+  );
+}
+
+/** Page header with title, optional description and trailing actions. */
+export function PageHeader({ title, description, actions }: {
+  title: string; description?: ReactNode; actions?: ReactNode;
+}) {
+  return (
+    <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
+      <div>
+        <h1 className="text-xl font-bold text-body tracking-tight">{title}</h1>
+        {description && <p className="text-sm text-muted mt-1">{description}</p>}
+      </div>
+      {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
   );
 }
 
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
+const variantClasses: Record<Variant, string> = {
+  primary: 'bg-brand text-on-brand hover:bg-brand-hover border-transparent',
+  secondary: 'bg-surface text-body border-line hover:bg-sunken',
+  ghost: 'bg-transparent text-body border-transparent hover:bg-sunken',
+  danger: 'bg-danger text-white border-transparent hover:opacity-90',
+};
+
+export function Button({
+  variant = 'secondary', icon, children, className, ...props
+}: { variant?: Variant; icon?: IconName } & ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      className={`inline-flex items-center justify-center gap-2 h-9 px-3.5 rounded-lg border text-sm font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none ${variantClasses[variant]} ${className ?? ''}`}
+      {...props}
+    >
+      {icon && <Icon name={icon} size={16} />}
+      {children}
+    </button>
+  );
+}
+
 const badgeColors: Record<string, string> = {
-  critical: 'bg-red-100 text-red-800',
-  high: 'bg-orange-100 text-orange-800',
-  medium: 'bg-amber-100 text-amber-800',
-  low: 'bg-sky-100 text-sky-800',
-  info: 'bg-slate-100 text-slate-700',
-  good: 'bg-emerald-100 text-emerald-800',
-  A: 'bg-red-100 text-red-800',
-  B: 'bg-amber-100 text-amber-800',
-  C: 'bg-emerald-100 text-emerald-800',
-  X: 'bg-emerald-100 text-emerald-800',
-  Y: 'bg-amber-100 text-amber-800',
-  Z: 'bg-red-100 text-red-800',
+  critical: 'bg-danger-soft text-danger',
+  high: 'bg-warning-soft text-warning',
+  medium: 'bg-warning-soft text-warning',
+  low: 'bg-info-soft text-info',
+  info: 'bg-sunken text-muted',
+  good: 'bg-success-soft text-success',
+  A: 'bg-danger-soft text-danger',
+  B: 'bg-warning-soft text-warning',
+  C: 'bg-success-soft text-success',
+  X: 'bg-success-soft text-success',
+  Y: 'bg-warning-soft text-warning',
+  Z: 'bg-danger-soft text-danger',
 };
 
 export function Badge({ value, label }: { value: string; label?: string }) {
   return (
-    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${badgeColors[value] ?? 'bg-slate-100 text-slate-700'}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${badgeColors[value] ?? 'bg-sunken text-muted'}`}>
       {label ?? value}
     </span>
   );
@@ -48,8 +89,8 @@ export function Badge({ value, label }: { value: string; label?: string }) {
 
 export function Spinner({ label = 'Loading…' }: { label?: string }) {
   return (
-    <div className="flex items-center gap-2 text-slate-500 text-sm py-8 justify-center" role="status">
-      <span className="inline-block w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+    <div className="flex items-center gap-2 text-muted text-sm py-8 justify-center" role="status">
+      <span className="inline-block w-4 h-4 border-2 border-line-strong border-t-brand rounded-full animate-spin" />
       {label}
     </div>
   );
@@ -57,17 +98,21 @@ export function Spinner({ label = 'Loading…' }: { label?: string }) {
 
 export function ErrorState({ message }: { message: string }) {
   return (
-    <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 text-sm" role="alert">
-      {message}
+    <div className="bg-danger-soft border border-danger/30 text-danger rounded-lg p-4 text-sm flex items-start gap-2" role="alert">
+      <Icon name="close" size={16} className="mt-0.5 shrink-0" />
+      <span>{message}</span>
     </div>
   );
 }
 
-export function EmptyState({ title, hint }: { title: string; hint?: string }) {
+export function EmptyState({ title, hint, icon = 'search' }: { title: string; hint?: string; icon?: IconName }) {
   return (
-    <div className="text-center py-10 text-slate-500">
-      <p className="font-medium">{title}</p>
-      {hint && <p className="text-sm mt-1">{hint}</p>}
+    <div className="text-center py-12 text-muted">
+      <span className="mx-auto mb-3 grid place-items-center w-11 h-11 rounded-full bg-sunken text-subtle">
+        <Icon name={icon} size={20} />
+      </span>
+      <p className="font-medium text-body">{title}</p>
+      {hint && <p className="text-sm mt-1 max-w-sm mx-auto">{hint}</p>}
     </div>
   );
 }
@@ -81,21 +126,21 @@ export function Kpi({ name, value, unit, status, definition, formula, onClick }:
   formula?: string;
   onClick?: () => void;
 }) {
-  const statusBar = {
-    good: 'bg-emerald-500', warning: 'bg-amber-500', critical: 'bg-red-500', neutral: 'bg-slate-300',
+  const accent = {
+    good: 'var(--kx-success)', warning: 'var(--kx-warning)', critical: 'var(--kx-danger)', neutral: 'var(--kx-line-strong)',
   }[status ?? 'neutral'];
   return (
     <button
       type="button"
       onClick={onClick}
       title={definition ? `${definition}${formula ? `\nFormula: ${formula}` : ''}` : undefined}
-      className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 text-left w-full hover:shadow-md transition-shadow cursor-pointer"
+      className="group relative bg-surface rounded-xl shadow-[var(--kx-shadow-sm)] border border-line p-4 text-left w-full hover:border-line-strong hover:shadow-[var(--kx-shadow-md)] transition-all cursor-pointer overflow-hidden"
     >
-      <div className={`h-1 rounded-full mb-3 ${statusBar}`} aria-hidden />
-      <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">{name}</p>
-      <p className="text-2xl font-bold text-slate-900 mt-1">
+      <span className="absolute inset-x-0 top-0 h-0.5" style={{ backgroundColor: accent }} aria-hidden />
+      <p className="text-[11px] text-muted font-semibold uppercase tracking-wide">{name}</p>
+      <p className="text-2xl font-bold text-body mt-1.5 tabular-nums">
         {value === null || value === undefined ? '—' : typeof value === 'number' ? value.toLocaleString() : value}
-        {unit && <span className="text-sm font-normal text-slate-500 ms-1">{unit}</span>}
+        {unit && <span className="text-sm font-normal text-muted ms-1">{unit}</span>}
       </p>
     </button>
   );
@@ -166,33 +211,34 @@ export function DataTable<T extends Record<string, unknown>>({ columns, rows, pa
 
   return (
     <div>
-      <div className="flex items-center justify-between gap-2 mb-2">
+      <div className="flex items-center justify-between gap-2 mb-2.5">
         {searchable && (
-          <input
-            className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm w-64 bg-white"
-            placeholder="Search…"
-            value={filter}
-            onChange={(e) => { setFilter(e.target.value); setPage(1); }}
-            aria-label="Filter table rows"
-          />
+          <div className="relative w-64 max-w-full">
+            <Icon name="search" size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-subtle" />
+            <input
+              className="w-full border border-line rounded-lg pl-8 pr-3 py-1.5 text-sm bg-bg text-body placeholder:text-subtle focus:border-brand"
+              placeholder="Search…"
+              value={filter}
+              onChange={(e) => { setFilter(e.target.value); setPage(1); }}
+              aria-label="Filter table rows"
+            />
+          </div>
         )}
-        <div className="flex items-center gap-2 text-sm text-slate-500">
-          <span>{filtered.length.toLocaleString()} rows</span>
+        <div className="flex items-center gap-2 text-sm text-muted">
+          <span className="tabular-nums">{filtered.length.toLocaleString()} rows</span>
           {exportName && (
-            <button type="button" onClick={exportCsv} className="px-2 py-1 rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700">
-              Export CSV
-            </button>
+            <Button variant="secondary" icon="reports" onClick={exportCsv} className="h-8 px-3">Export CSV</Button>
           )}
         </div>
       </div>
-      <div className="overflow-auto max-h-[32rem] border border-slate-200 rounded-lg">
+      <div className="overflow-auto max-h-[32rem] border border-line rounded-xl">
         <table className="data-table w-full text-sm">
           <thead>
-            <tr className="bg-slate-50 text-slate-600">
+            <tr className="bg-sunken text-muted">
               {columns.map((c) => (
                 <th
                   key={c.key}
-                  className={`px-3 py-2 font-medium cursor-pointer select-none whitespace-nowrap ${c.numeric ? 'text-right' : 'text-left'} bg-slate-50`}
+                  className={`px-3 py-2.5 font-semibold cursor-pointer select-none whitespace-nowrap bg-sunken ${c.numeric ? 'text-right' : 'text-left'}`}
                   onClick={() => {
                     if (sortKey === c.key) setSortAsc(!sortAsc);
                     else { setSortKey(c.key); setSortAsc(true); }
@@ -205,25 +251,25 @@ export function DataTable<T extends Record<string, unknown>>({ columns, rows, pa
           </thead>
           <tbody>
             {visible.map((r, i) => (
-              <tr key={i} className="border-t border-slate-100 hover:bg-slate-50">
+              <tr key={i} className="border-t border-line hover:bg-sunken/60">
                 {columns.map((c) => (
-                  <td key={c.key} className={`px-3 py-1.5 whitespace-nowrap ${c.numeric ? 'text-right tabular-nums' : 'text-left'}`}>
+                  <td key={c.key} className={`px-3 py-2 whitespace-nowrap text-body ${c.numeric ? 'text-right tabular-nums' : 'text-left'}`}>
                     {c.render ? c.render(r) : typeof r[c.key] === 'number' ? (r[c.key] as number).toLocaleString() : String(r[c.key] ?? '—')}
                   </td>
                 ))}
               </tr>
             ))}
             {visible.length === 0 && (
-              <tr><td colSpan={columns.length} className="px-3 py-6 text-center text-slate-400">No rows match the current filter.</td></tr>
+              <tr><td colSpan={columns.length} className="px-3 py-6 text-center text-subtle">No rows match the current filter.</td></tr>
             )}
           </tbody>
         </table>
       </div>
       {pages > 1 && (
-        <div className="flex items-center gap-2 mt-2 text-sm">
-          <button type="button" disabled={current <= 1} onClick={() => setPage(current - 1)} className="px-2 py-1 border border-slate-300 rounded-lg disabled:opacity-40">Prev</button>
-          <span className="text-slate-500">Page {current} / {pages}</span>
-          <button type="button" disabled={current >= pages} onClick={() => setPage(current + 1)} className="px-2 py-1 border border-slate-300 rounded-lg disabled:opacity-40">Next</button>
+        <div className="flex items-center gap-2 mt-2.5 text-sm">
+          <Button variant="secondary" className="h-8 px-3" disabled={current <= 1} onClick={() => setPage(current - 1)}>Prev</Button>
+          <span className="text-muted tabular-nums">Page {current} / {pages}</span>
+          <Button variant="secondary" className="h-8 px-3" disabled={current >= pages} onClick={() => setPage(current + 1)}>Next</Button>
         </div>
       )}
     </div>

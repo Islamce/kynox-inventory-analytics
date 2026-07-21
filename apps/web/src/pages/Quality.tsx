@@ -52,7 +52,7 @@ export function QualityPage() {
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-xl font-bold">Data Quality Center</h1>
         <select
-          className="border border-slate-300 rounded-lg px-3 py-1.5 text-sm bg-white"
+          className="border border-line-strong rounded-lg px-3 py-1.5 text-sm bg-surface"
           value={selected ?? ''}
           onChange={(e) => setSelected(Number(e.target.value))}
           aria-label="Select dataset"
@@ -68,8 +68,8 @@ export function QualityPage() {
               ? (
                 <div className="grid grid-cols-3 md:grid-cols-7 gap-2 text-center text-sm">
                   {Object.entries(detail.qualityScores).map(([k, v]) => (
-                    <div key={k} className="bg-slate-50 rounded-lg p-3">
-                      <p className="text-xs text-slate-500 capitalize">{k}</p>
+                    <div key={k} className="bg-sunken rounded-lg p-3">
+                      <p className="text-xs text-muted capitalize">{k}</p>
                       <p className={`text-lg font-bold ${v >= 90 ? 'text-emerald-700' : v >= 70 ? 'text-amber-600' : 'text-red-600'}`}>{v}</p>
                     </div>
                   ))}
@@ -84,19 +84,19 @@ export function QualityPage() {
               : (
                 <ul className="space-y-3">
                   {detail.qualityIssues.map((issue) => (
-                    <li key={issue.ruleId} className="border border-slate-200 rounded-lg p-3 text-sm">
+                    <li key={issue.ruleId} className="border border-line rounded-lg p-3 text-sm">
                       <div className="flex items-center gap-2">
                         <Badge value={issue.severity} />
                         <span className="font-medium">{issue.title}</span>
-                        <span className="text-slate-400">· {issue.affectedRows.toLocaleString()} row(s)</span>
+                        <span className="text-subtle">· {issue.affectedRows.toLocaleString()} row(s)</span>
                       </div>
-                      <p className="text-slate-600 mt-1">{issue.description}</p>
-                      <p className="text-slate-500 mt-1"><span className="font-medium">Business impact:</span> {issue.businessImpact}</p>
-                      <p className="text-slate-500"><span className="font-medium">Recommended correction:</span> {issue.recommendation}</p>
+                      <p className="text-muted mt-1">{issue.description}</p>
+                      <p className="text-muted mt-1"><span className="font-medium">Business impact:</span> {issue.businessImpact}</p>
+                      <p className="text-muted"><span className="font-medium">Recommended correction:</span> {issue.recommendation}</p>
                       {issue.samples.length > 0 && (
                         <details className="mt-1">
-                          <summary className="cursor-pointer text-sky-700">Affected locations (sample)</summary>
-                          <ul className="text-xs text-slate-500 mt-1 ms-4 list-disc">
+                          <summary className="cursor-pointer text-brand">Affected locations (sample)</summary>
+                          <ul className="text-xs text-muted mt-1 ms-4 list-disc">
                             {issue.samples.slice(0, 10).map((s, i) => (
                               <li key={i}>Row {s.row >= 0 ? s.row + 2 : '—'}, column "{s.column}": {String(s.value ?? '(empty)')}</li>
                             ))}
@@ -112,7 +112,7 @@ export function QualityPage() {
           <Card title="Applied cleansing (transformation log)">
             {detail.cleansingLog.length === 0
               ? <EmptyState title="No cleansing was applied" />
-              : <ul className="list-disc ms-5 text-sm text-slate-600">{detail.cleansingLog.map((l) => <li key={l}>{l}</li>)}</ul>}
+              : <ul className="list-disc ms-5 text-sm text-muted">{detail.cleansingLog.map((l) => <li key={l}>{l}</li>)}</ul>}
           </Card>
         </>
       )}

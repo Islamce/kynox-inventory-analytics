@@ -16,7 +16,7 @@ export function AdminPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold">Administration</h1>
-      {canManageUsers ? <UsersSection /> : <p className="text-sm text-slate-500">User management requires the System Administrator role.</p>}
+      {canManageUsers ? <UsersSection /> : <p className="text-sm text-muted">User management requires the System Administrator role.</p>}
       <ConfigSection readOnly={me?.role !== 'system_admin'} />
     </div>
   );
@@ -64,13 +64,13 @@ function UsersSection() {
     <Card title="Users & roles" subtitle="All changes are recorded in the audit log">
       {error && <div className="mb-3"><ErrorState message={error} /></div>}
       <form onSubmit={create} className="grid md:grid-cols-5 gap-2 mb-4 text-sm">
-        <input required type="email" placeholder="Email" className="border border-slate-300 rounded-lg px-3 py-1.5" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-        <input required placeholder="Name" className="border border-slate-300 rounded-lg px-3 py-1.5" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        <input required type="password" placeholder="Password (min 10 chars)" minLength={10} className="border border-slate-300 rounded-lg px-3 py-1.5" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
-        <select className="border border-slate-300 rounded-lg px-2 py-1.5 bg-white" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} aria-label="Role for new user">
+        <input required type="email" placeholder="Email" className="border border-line-strong rounded-lg px-3 py-1.5" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+        <input required placeholder="Name" className="border border-line-strong rounded-lg px-3 py-1.5" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        <input required type="password" placeholder="Password (min 10 chars)" minLength={10} className="border border-line-strong rounded-lg px-3 py-1.5" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+        <select className="border border-line-strong rounded-lg px-2 py-1.5 bg-surface" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} aria-label="Role for new user">
           {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
         </select>
-        <button type="submit" className="bg-sky-700 hover:bg-sky-800 text-white rounded-lg px-3 py-1.5 font-medium">Add user</button>
+        <button type="submit" className="bg-brand hover:bg-brand-hover text-white rounded-lg px-3 py-1.5 font-medium">Add user</button>
       </form>
       <DataTable
         searchable={false}
@@ -82,7 +82,7 @@ function UsersSection() {
             key: 'role', label: 'Role',
             render: (r) => (
               <select
-                className="border border-slate-300 rounded-lg px-2 py-1 bg-white text-xs"
+                className="border border-line-strong rounded-lg px-2 py-1 bg-surface text-xs"
                 value={String(r.role)}
                 onChange={(e) => void update(Number(r.id), { role: e.target.value })}
                 aria-label={`Role for ${r.email}`}
@@ -161,16 +161,16 @@ function ConfigRow({ name, value, readOnly, saved, onSave }: {
   const [raw, setRaw] = useState(JSON.stringify(value));
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">
-      <span className="w-56 font-medium text-slate-700">{name}</span>
+      <span className="w-56 font-medium text-body">{name}</span>
       <input
-        className="flex-1 min-w-64 border border-slate-300 rounded-lg px-3 py-1.5 font-mono text-xs"
+        className="flex-1 min-w-64 border border-line-strong rounded-lg px-3 py-1.5 font-mono text-xs"
         value={raw}
         readOnly={readOnly}
         onChange={(e) => setRaw(e.target.value)}
         aria-label={`Configuration ${name}`}
       />
       {!readOnly && (
-        <button type="button" className="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50" onClick={() => void onSave(name, raw)}>
+        <button type="button" className="px-3 py-1.5 rounded-lg border border-line-strong hover:bg-sunken" onClick={() => void onSave(name, raw)}>
           Save
         </button>
       )}

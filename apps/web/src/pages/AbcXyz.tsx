@@ -16,9 +16,9 @@ export function AbcXyzPage() {
     <div className="space-y-4">
       <h1 className="text-xl font-bold">ABC–XYZ Analysis</h1>
       <div className="flex items-center gap-2 text-sm">
-        <label htmlFor="abc-metric" className="text-slate-500">ABC metric</label>
+        <label htmlFor="abc-metric" className="text-muted">ABC metric</label>
         <select
-          id="abc-metric" className="border border-slate-300 rounded-lg px-2 py-1 bg-white"
+          id="abc-metric" className="border border-line-strong rounded-lg px-2 py-1 bg-surface"
           value={metric}
           onChange={(e) => setMetric(e.target.value as typeof metric)}
         >
@@ -32,7 +32,7 @@ export function AbcXyzPage() {
             <XyzSection movementsId={ws.movementsDatasetId} />
             <MatrixSection stockId={ws.stockDatasetId} movementsId={ws.movementsDatasetId} />
           </>
-        : <p className="text-sm bg-sky-50 border border-sky-200 text-sky-900 rounded-lg px-3 py-2">Link a movements dataset to enable XYZ classification and the ABC–XYZ matrix.</p>}
+        : <p className="text-sm bg-info-soft border border-info/30 text-brand rounded-lg px-3 py-2">Link a movements dataset to enable XYZ classification and the ABC–XYZ matrix.</p>}
     </div>
   );
 }
@@ -54,10 +54,10 @@ function AbcSection({ stockId, metric, movementsId }: { stockId: number; metric:
           <Card key={s.abcClass}>
             <div className="flex items-center gap-2 mb-1">
               <Badge value={s.abcClass} label={`Class ${s.abcClass}`} />
-              <span className="text-sm text-slate-500">{s.materialCount} materials · {s.metricSharePct}% of value</span>
+              <span className="text-sm text-muted">{s.materialCount} materials · {s.metricSharePct}% of value</span>
             </div>
             <p className="text-lg font-bold tabular-nums">{s.metricValue.toLocaleString()}</p>
-            <p className="text-xs text-slate-500 mt-1">{s.recommendedPolicy}</p>
+            <p className="text-xs text-muted mt-1">{s.recommendedPolicy}</p>
           </Card>
         ))}
       </div>
@@ -90,7 +90,7 @@ function AbcSection({ stockId, metric, movementsId }: { stockId: number; metric:
         <DataTable
           exportName="abc-classification"
           columns={[
-            { key: 'material', label: 'Material', render: (r) => <Link className="text-sky-700" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
+            { key: 'material', label: 'Material', render: (r) => <Link className="text-brand" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
             { key: 'abcClass', label: 'Class', render: (r) => <Badge value={String(r.abcClass)} /> },
             { key: 'metricValue', label: 'Metric value', numeric: true },
             { key: 'cumulativePct', label: 'Cumulative %', numeric: true },
@@ -114,7 +114,7 @@ function XyzSection({ movementsId }: { movementsId: number }) {
       <DataTable
         exportName="xyz-classification"
         columns={[
-          { key: 'material', label: 'Material', render: (r) => <Link className="text-sky-700" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
+          { key: 'material', label: 'Material', render: (r) => <Link className="text-brand" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
           { key: 'xyzClass', label: 'Class', render: (r) => <Badge value={String(r.xyzClass)} /> },
           { key: 'cov', label: 'CoV', numeric: true, render: (r) => r.cov === null ? 'undefined' : String(r.cov) },
           { key: 'zeroPeriodShare', label: 'Zero periods', numeric: true, render: (r) => `${Math.round(Number(r.zeroPeriodShare) * 100)}%` },
@@ -139,10 +139,10 @@ function MatrixSection({ stockId, movementsId }: { stockId: number; movementsId:
     <Card title="ABC–XYZ matrix" subtitle="Count of materials per segment with recommended control policy (hover a cell)">
       <div className="grid grid-cols-4 gap-1 max-w-2xl text-sm">
         <div />
-        {['X (stable)', 'Y (variable)', 'Z (unpredictable)'].map((h) => <div key={h} className="text-center text-xs text-slate-500 py-1">{h}</div>)}
+        {['X (stable)', 'Y (variable)', 'Z (unpredictable)'].map((h) => <div key={h} className="text-center text-xs text-muted py-1">{h}</div>)}
         {(['A', 'B', 'C'] as const).map((a) => (
           [
-            <div key={`${a}-label`} className="flex items-center justify-center text-xs text-slate-500">{a} (value)</div>,
+            <div key={`${a}-label`} className="flex items-center justify-center text-xs text-muted">{a} (value)</div>,
             ...(['X', 'Y', 'Z'] as const).map((x) => {
               const cell = cellFor(`${a}${x}`);
               const intensity = cell ? cell.materialCount / maxCount : 0;
@@ -150,7 +150,7 @@ function MatrixSection({ stockId, movementsId }: { stockId: number; movementsId:
               return (
                 <div
                   key={`${a}${x}`}
-                  className="rounded-lg p-3 text-center border border-slate-200"
+                  className="rounded-lg p-3 text-center border border-line"
                   style={{ backgroundColor: cell && cell.materialCount > 0 ? shade : '#f8fafc', color: intensity > 0.5 ? '#fff' : '#0b0b0b' }}
                   title={cell ? `${cell.segment}: ${cell.materialCount} materials, stock value ${cell.stockValue.toLocaleString()}\n${cell.recommendedPolicy}` : undefined}
                 >
@@ -163,13 +163,13 @@ function MatrixSection({ stockId, movementsId }: { stockId: number; movementsId:
         ))}
       </div>
       <details className="mt-3 text-sm">
-        <summary className="cursor-pointer text-sky-700">Recommended policies per segment</summary>
+        <summary className="cursor-pointer text-brand">Recommended policies per segment</summary>
         <ul className="mt-2 space-y-1">
           {data.cells.map((c) => (
-            <li key={c.segment}><span className="font-semibold">{c.segment}</span> ({c.materialCount}): <span className="text-slate-600">{c.recommendedPolicy}</span></li>
+            <li key={c.segment}><span className="font-semibold">{c.segment}</span> ({c.materialCount}): <span className="text-muted">{c.recommendedPolicy}</span></li>
           ))}
         </ul>
-        <p className="text-xs text-slate-400 mt-2">Policies are configurable recommendations, not universal facts.</p>
+        <p className="text-xs text-subtle mt-2">Policies are configurable recommendations, not universal facts.</p>
       </details>
     </Card>
   );

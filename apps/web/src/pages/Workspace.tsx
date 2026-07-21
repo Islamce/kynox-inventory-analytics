@@ -112,7 +112,7 @@ export function WorkspacePage() {
       <h1 className="text-xl font-bold">Data Workspace</h1>
       <ol className="flex flex-wrap gap-2 text-sm">
         {['Upload', 'Detect & map', 'Validate & cleanse', 'Dataset ready'].map((label, i) => (
-          <li key={label} className={`px-3 py-1 rounded-full ${step === i + 1 ? 'bg-sky-700 text-white' : step > i + 1 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'}`}>
+          <li key={label} className={`px-3 py-1 rounded-full ${step === i + 1 ? 'bg-brand text-white' : step > i + 1 ? 'bg-emerald-100 text-emerald-800' : 'bg-sunken text-muted'}`}>
             {i + 1}. {label}
           </li>
         ))}
@@ -123,13 +123,13 @@ export function WorkspacePage() {
       {step === 1 && !busy && (
         <Card title="Upload a report" subtitle="XLSX, XLS or CSV — SAP exports (MB52, MB51, material master, physical inventory…) are auto-detected">
           <label
-            className="border-2 border-dashed border-slate-300 rounded-xl p-10 flex flex-col items-center gap-2 cursor-pointer hover:border-sky-400"
+            className="border-2 border-dashed border-line-strong rounded-xl p-10 flex flex-col items-center gap-2 cursor-pointer hover:border-brand"
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) void doUpload(f); }}
           >
             <span className="text-3xl" aria-hidden>📥</span>
-            <span className="text-slate-600">Drag & drop a file here, or click to browse</span>
-            <span className="text-xs text-slate-400">Max 50 MB · original file is never modified</span>
+            <span className="text-muted">Drag & drop a file here, or click to browse</span>
+            <span className="text-xs text-subtle">Max 50 MB · original file is never modified</span>
             <input
               type="file" className="hidden" accept=".xlsx,.xls,.csv"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) void doUpload(f); }}
@@ -147,13 +147,13 @@ export function WorkspacePage() {
                 <Badge value={upload.detection.confidence >= 0.7 ? 'good' : 'medium'} label={`${Math.round(upload.detection.confidence * 100)}% confidence`} />
               </p>
               <div className="flex items-center gap-2">
-                <label htmlFor="rtype" className="text-slate-500">Override:</label>
-                <select id="rtype" className="border border-slate-300 rounded-lg px-2 py-1 bg-white" value={reportType} onChange={(e) => setReportType(e.target.value)}>
+                <label htmlFor="rtype" className="text-muted">Override:</label>
+                <select id="rtype" className="border border-line-strong rounded-lg px-2 py-1 bg-surface" value={reportType} onChange={(e) => setReportType(e.target.value)}>
                   {REPORT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
             </div>
-            <ul className="mt-2 text-xs text-slate-500 list-disc ms-5">
+            <ul className="mt-2 text-xs text-muted list-disc ms-5">
               {upload.detection.reasons.map((r) => <li key={r}>{r}</li>)}
               {upload.detection.alternatives.length > 0 && (
                 <li>Alternatives: {upload.detection.alternatives.map((a) => `${a.reportType} (${Math.round(a.confidence * 100)}%)`).join(', ')}</li>
@@ -162,23 +162,23 @@ export function WorkspacePage() {
           </Card>
 
           <Card title="Column mapping" subtitle="Every source column and its canonical target — adjust anything the automation got wrong">
-            <div className="overflow-auto max-h-96 border border-slate-200 rounded-lg">
+            <div className="overflow-auto max-h-96 border border-line rounded-lg">
               <table className="w-full text-sm data-table">
                 <thead>
-                  <tr className="bg-slate-50 text-slate-600">
-                    <th className="text-left px-3 py-2 bg-slate-50">Source column</th>
-                    <th className="text-left px-3 py-2 bg-slate-50">Canonical field</th>
-                    <th className="text-left px-3 py-2 bg-slate-50">Method</th>
-                    <th className="text-right px-3 py-2 bg-slate-50">Confidence</th>
+                  <tr className="bg-sunken text-muted">
+                    <th className="text-left px-3 py-2 bg-sunken">Source column</th>
+                    <th className="text-left px-3 py-2 bg-sunken">Canonical field</th>
+                    <th className="text-left px-3 py-2 bg-sunken">Method</th>
+                    <th className="text-right px-3 py-2 bg-sunken">Confidence</th>
                   </tr>
                 </thead>
                 <tbody>
                   {mapping.map((m, i) => (
-                    <tr key={m.sourceColumn} className="border-t border-slate-100">
+                    <tr key={m.sourceColumn} className="border-t border-line">
                       <td className="px-3 py-1.5">{m.sourceColumn}</td>
                       <td className="px-3 py-1.5">
                         <select
-                          className="border border-slate-300 rounded-lg px-2 py-1 bg-white w-56"
+                          className="border border-line-strong rounded-lg px-2 py-1 bg-surface w-56"
                           value={m.canonicalField ?? ''}
                           aria-label={`Mapping for ${m.sourceColumn}`}
                           onChange={(e) => {
@@ -190,7 +190,7 @@ export function WorkspacePage() {
                           {CANONICAL_FIELDS.map((f) => <option key={f} value={f}>{f || '— unmapped —'}</option>)}
                         </select>
                       </td>
-                      <td className="px-3 py-1.5 text-slate-500">{m.method}</td>
+                      <td className="px-3 py-1.5 text-muted">{m.method}</td>
                       <td className="px-3 py-1.5 text-right tabular-nums">{Math.round(m.confidence * 100)}%</td>
                     </tr>
                   ))}
@@ -198,7 +198,7 @@ export function WorkspacePage() {
               </table>
             </div>
             <div className="mt-3 flex justify-end">
-              <button type="button" onClick={() => void saveMapping()} className="bg-sky-700 hover:bg-sky-800 text-white rounded-lg px-4 py-2 text-sm font-medium">
+              <button type="button" onClick={() => void saveMapping()} className="bg-brand hover:bg-brand-hover text-white rounded-lg px-4 py-2 text-sm font-medium">
                 Confirm mapping & validate →
               </button>
             </div>
@@ -211,8 +211,8 @@ export function WorkspacePage() {
           <Card title="Data quality result" subtitle={`${validation.rowCount.toLocaleString()} rows · dataset kind: ${validation.kind}`}>
             <div className="grid grid-cols-3 md:grid-cols-7 gap-2 text-center text-sm">
               {Object.entries(validation.scores).map(([k, v]) => (
-                <div key={k} className="bg-slate-50 rounded-lg p-2">
-                  <p className="text-xs text-slate-500 capitalize">{k}</p>
+                <div key={k} className="bg-sunken rounded-lg p-2">
+                  <p className="text-xs text-muted capitalize">{k}</p>
                   <p className={`font-bold ${v >= 90 ? 'text-emerald-700' : v >= 70 ? 'text-amber-600' : 'text-red-600'}`}>{v}</p>
                 </div>
               ))}
@@ -226,19 +226,19 @@ export function WorkspacePage() {
               : (
                 <ul className="space-y-3">
                   {validation.issues.map((issue) => (
-                    <li key={issue.ruleId} className="border border-slate-200 rounded-lg p-3 text-sm">
+                    <li key={issue.ruleId} className="border border-line rounded-lg p-3 text-sm">
                       <div className="flex items-center gap-2">
                         <Badge value={issue.severity} />
                         <span className="font-medium">{issue.title}</span>
-                        <span className="text-slate-400">· {issue.affectedRows.toLocaleString()} row(s)</span>
+                        <span className="text-subtle">· {issue.affectedRows.toLocaleString()} row(s)</span>
                       </div>
-                      <p className="text-slate-600 mt-1">{issue.description}</p>
-                      <p className="text-slate-500 mt-1"><span className="font-medium">Impact:</span> {issue.businessImpact}</p>
-                      <p className="text-slate-500"><span className="font-medium">Recommendation:</span> {issue.recommendation}</p>
+                      <p className="text-muted mt-1">{issue.description}</p>
+                      <p className="text-muted mt-1"><span className="font-medium">Impact:</span> {issue.businessImpact}</p>
+                      <p className="text-muted"><span className="font-medium">Recommendation:</span> {issue.recommendation}</p>
                       {issue.samples.length > 0 && (
                         <details className="mt-1">
-                          <summary className="cursor-pointer text-sky-700">Sample locations</summary>
-                          <ul className="text-xs text-slate-500 mt-1 ms-4 list-disc">
+                          <summary className="cursor-pointer text-brand">Sample locations</summary>
+                          <ul className="text-xs text-muted mt-1 ms-4 list-disc">
                             {issue.samples.slice(0, 8).map((s, i) => (
                               <li key={i}>Row {s.row >= 0 ? s.row + 2 : '—'}, column "{s.column}": {String(s.value ?? '(empty)')}</li>
                             ))}
@@ -266,7 +266,7 @@ export function WorkspacePage() {
                     }}
                     className="mt-0.5"
                   />
-                  <label htmlFor={`prop-${p.id}`} className={p.type === 'flag_only' ? 'text-slate-400' : ''}>
+                  <label htmlFor={`prop-${p.id}`} className={p.type === 'flag_only' ? 'text-subtle' : ''}>
                     {p.description}{' '}
                     {p.safe ? <Badge value="good" label="safe" /> : <Badge value="medium" label="review carefully" />}
                   </label>
@@ -275,21 +275,21 @@ export function WorkspacePage() {
             </ul>
             <div className="grid md:grid-cols-3 gap-3 mt-4">
               <div>
-                <label className="block text-xs text-slate-500 mb-1" htmlFor="ds-name">Dataset name</label>
-                <input id="ds-name" className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm" value={datasetName} onChange={(e) => setDatasetName(e.target.value)} />
+                <label className="block text-xs text-muted mb-1" htmlFor="ds-name">Dataset name</label>
+                <input id="ds-name" className="w-full border border-line-strong rounded-lg px-3 py-1.5 text-sm" value={datasetName} onChange={(e) => setDatasetName(e.target.value)} />
               </div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1" htmlFor="ds-start">Period start</label>
-                <input id="ds-start" type="date" className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
+                <label className="block text-xs text-muted mb-1" htmlFor="ds-start">Period start</label>
+                <input id="ds-start" type="date" className="w-full border border-line-strong rounded-lg px-3 py-1.5 text-sm" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
               </div>
               <div>
-                <label className="block text-xs text-slate-500 mb-1" htmlFor="ds-end">Period end</label>
-                <input id="ds-end" type="date" className="w-full border border-slate-300 rounded-lg px-3 py-1.5 text-sm" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
+                <label className="block text-xs text-muted mb-1" htmlFor="ds-end">Period end</label>
+                <input id="ds-end" type="date" className="w-full border border-line-strong rounded-lg px-3 py-1.5 text-sm" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
               </div>
             </div>
             <div className="mt-3 flex justify-between">
-              <button type="button" onClick={() => setStep(2)} className="text-sm text-slate-600 hover:text-slate-900">← Back to mapping</button>
-              <button type="button" onClick={() => void createDataset()} className="bg-sky-700 hover:bg-sky-800 text-white rounded-lg px-4 py-2 text-sm font-medium">
+              <button type="button" onClick={() => setStep(2)} className="text-sm text-muted hover:text-body">← Back to mapping</button>
+              <button type="button" onClick={() => void createDataset()} className="bg-brand hover:bg-brand-hover text-white rounded-lg px-4 py-2 text-sm font-medium">
                 Apply approved cleansing & save dataset →
               </button>
             </div>
@@ -300,14 +300,14 @@ export function WorkspacePage() {
       {step === 4 && done && (
         <Card title="Dataset ready ✓">
           <p className="text-sm">Dataset #{done.id} created with {done.rowCount.toLocaleString()} rows. Overall quality score: <span className="font-semibold">{done.qualityScores.overall}</span>.</p>
-          <p className="text-sm text-slate-500 mt-1">It has been selected in the workspace header — the dashboard and all analysis modules now use it.</p>
+          <p className="text-sm text-muted mt-1">It has been selected in the workspace header — the dashboard and all analysis modules now use it.</p>
           <details className="mt-2 text-sm">
-            <summary className="cursor-pointer text-sky-700">Transformation log</summary>
-            <ul className="list-disc ms-5 text-slate-600 mt-1">
+            <summary className="cursor-pointer text-brand">Transformation log</summary>
+            <ul className="list-disc ms-5 text-muted mt-1">
               {done.cleansingLog.map((l) => <li key={l}>{l}</li>)}
             </ul>
           </details>
-          <button type="button" onClick={() => { setStep(1); setUpload(null); setValidation(null); setDone(null); }} className="mt-4 bg-slate-800 hover:bg-slate-900 text-white rounded-lg px-4 py-2 text-sm">
+          <button type="button" onClick={() => { setStep(1); setUpload(null); setValidation(null); setDone(null); }} className="mt-4 bg-[var(--kx-neutral-700)] hover:bg-[var(--kx-neutral-800)] text-white rounded-lg px-4 py-2 text-sm">
             Upload another file
           </button>
         </Card>

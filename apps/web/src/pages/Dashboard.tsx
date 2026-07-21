@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiGet } from '../lib/api';
 import { useWorkspaceIds } from '../components/Layout';
-import { Card, EmptyState, ErrorState, Kpi, Spinner, Badge } from '../components/ui';
+import { Card, EmptyState, ErrorState, Kpi, Spinner, Badge, PageHeader } from '../components/ui';
 import { Chart, SEQUENTIAL_BLUE } from '../components/Chart';
 
 interface DashboardData {
@@ -51,15 +51,13 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-baseline justify-between flex-wrap gap-2">
-        <h1 className="text-xl font-bold">Executive Dashboard</h1>
-        <p className="text-sm text-slate-500">
-          Dataset: {data.dataset.name} · Period {data.dataset.periodStart ?? 'n/a'} → {data.dataset.periodEnd ?? 'n/a'}
-        </p>
-      </div>
+      <PageHeader
+        title="Executive Dashboard"
+        description={<>Dataset: <span className="text-body font-medium">{data.dataset.name}</span> · Period {data.dataset.periodStart ?? 'n/a'} → {data.dataset.periodEnd ?? 'n/a'}</>}
+      />
 
       {data.notes.map((n) => (
-        <p key={n} className="text-sm bg-sky-50 border border-sky-200 text-sky-900 rounded-lg px-3 py-2">{n}</p>
+        <p key={n} className="text-sm bg-info-soft border border-info/30 text-body rounded-lg px-3 py-2">{n}</p>
       ))}
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
@@ -120,31 +118,31 @@ export function DashboardPage() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4">
-        <Card title="Top shortage risks" subtitle="Highest priority exceptions" actions={<Link className="text-sm text-sky-700" to="/inventory">Drill down →</Link>}>
+        <Card title="Top shortage risks" subtitle="Highest priority exceptions" actions={<Link className="text-sm text-brand" to="/inventory">Drill down →</Link>}>
           {data.topShortages.length === 0
             ? <EmptyState title="No shortage risks detected" />
             : (
-              <ul className="divide-y divide-slate-100 text-sm">
+              <ul className="divide-y divide-line text-sm">
                 {data.topShortages.map((s) => (
                   <li key={s.material + s.reason} className="py-2 flex items-start gap-2">
                     <Badge value={s.risk} />
                     <div>
-                      <Link to={`/materials?material=${encodeURIComponent(s.material)}`} className="font-medium text-sky-800">{s.material}</Link>
-                      <p className="text-slate-500">{s.reason}</p>
+                      <Link to={`/materials?material=${encodeURIComponent(s.material)}`} className="font-medium text-brand">{s.material}</Link>
+                      <p className="text-muted">{s.reason}</p>
                     </div>
                   </li>
                 ))}
               </ul>
             )}
         </Card>
-        <Card title="Top excess stock" subtitle="Working-capital reduction candidates" actions={<Link className="text-sm text-sky-700" to="/inventory">Drill down →</Link>}>
+        <Card title="Top excess stock" subtitle="Working-capital reduction candidates" actions={<Link className="text-sm text-brand" to="/inventory">Drill down →</Link>}>
           {data.topExcess.length === 0
             ? <EmptyState title="No excess computed" hint="Link a movements dataset to enable demand-based excess." />
             : (
-              <ul className="divide-y divide-slate-100 text-sm">
+              <ul className="divide-y divide-line text-sm">
                 {data.topExcess.map((e) => (
                   <li key={e.material} className="py-2 flex justify-between">
-                    <Link to={`/materials?material=${encodeURIComponent(e.material)}`} className="font-medium text-sky-800">{e.material}</Link>
+                    <Link to={`/materials?material=${encodeURIComponent(e.material)}`} className="font-medium text-brand">{e.material}</Link>
                     <span className="tabular-nums">{e.excessValue.toLocaleString()} value · {e.excessQty.toLocaleString()} qty</span>
                   </li>
                 ))}

@@ -79,7 +79,7 @@ export function AiCenterPage() {
         </p>
       )}
       {status?.configured && (
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-muted">
           Provider: {status.provider} · model {status.model}. Every answer is built from deterministic metrics of the
           selected datasets and passes governance checks (evidence, confidence, traceability) before display.
         </p>
@@ -88,21 +88,21 @@ export function AiCenterPage() {
       <Card title="Ask a question" subtitle="Answers use only the selected datasets in the header — figures are computed by the analytical engine, never by the AI">
         <div className="flex flex-wrap gap-2 mb-3">
           {SUGGESTIONS.map((s) => (
-            <button key={s} type="button" onClick={() => void ask(s)} className="text-xs bg-slate-100 hover:bg-slate-200 rounded-full px-3 py-1 text-slate-700">
+            <button key={s} type="button" onClick={() => void ask(s)} className="text-xs bg-sunken hover:bg-sunken rounded-full px-3 py-1 text-body">
               {s}
             </button>
           ))}
         </div>
         <div className="flex gap-2">
           <input
-            className="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm"
+            className="flex-1 border border-line-strong rounded-lg px-3 py-2 text-sm"
             placeholder="e.g. Why did inventory value increase this month?"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') void ask(question); }}
             aria-label="AI question"
           />
-          <button type="button" disabled={busy} onClick={() => void ask(question)} className="bg-sky-700 hover:bg-sky-800 disabled:opacity-60 text-white rounded-lg px-4 py-2 text-sm font-medium">
+          <button type="button" disabled={busy} onClick={() => void ask(question)} className="bg-brand hover:bg-brand-hover disabled:opacity-60 text-white rounded-lg px-4 py-2 text-sm font-medium">
             Ask
           </button>
         </div>
@@ -114,26 +114,26 @@ export function AiCenterPage() {
       <div className="space-y-3">
         {[...turns].reverse().map((turn, i) => (
           turn.role === 'user'
-            ? <p key={i} className="text-sm font-medium text-slate-700 bg-slate-200 rounded-lg px-3 py-2 inline-block">{turn.text}</p>
+            ? <p key={i} className="text-sm font-medium text-body bg-sunken rounded-lg px-3 py-2 inline-block">{turn.text}</p>
             : (
               <Card key={i} title="AI response" subtitle={turn.response ? `${turn.response.provider} · ${turn.response.model} · governance ${turn.response.governance.passed ? 'passed' : 'FAILED — insights withheld'}` : undefined}>
                 <p className="text-sm whitespace-pre-wrap">{turn.text}</p>
                 {turn.response && turn.response.insights.length > 0 && (
                   <div className="mt-3 space-y-3">
                     {turn.response.insights.map((ins, j) => (
-                      <div key={j} className="border border-slate-200 rounded-lg p-3 text-sm">
+                      <div key={j} className="border border-line rounded-lg p-3 text-sm">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-semibold">#{ins.priority}</span>
                           <Badge value={ins.riskLevel} />
                           <Badge value={ins.confidence === 'high' ? 'good' : ins.confidence === 'medium' ? 'medium' : 'low'} label={`confidence: ${ins.confidence}`} />
-                          <span className="text-slate-500 text-xs">{ins.suggestedOwner} · {ins.targetTimeframe}</span>
+                          <span className="text-muted text-xs">{ins.suggestedOwner} · {ins.targetTimeframe}</span>
                         </div>
                         <p className="mt-1 font-medium">{ins.finding}</p>
-                        <p className="text-slate-600"><span className="font-medium">Likely cause:</span> {ins.likelyCause}</p>
-                        <p className="text-slate-600"><span className="font-medium">Impact:</span> {ins.businessImpact}</p>
-                        <p className="text-slate-700 bg-sky-50 rounded px-2 py-1 mt-1"><span className="font-medium">Action:</span> {ins.recommendedAction}</p>
-                        <details className="mt-1 text-xs text-slate-500">
-                          <summary className="cursor-pointer text-sky-700">Evidence, assumptions & limitations</summary>
+                        <p className="text-muted"><span className="font-medium">Likely cause:</span> {ins.likelyCause}</p>
+                        <p className="text-muted"><span className="font-medium">Impact:</span> {ins.businessImpact}</p>
+                        <p className="text-body bg-info-soft rounded px-2 py-1 mt-1"><span className="font-medium">Action:</span> {ins.recommendedAction}</p>
+                        <details className="mt-1 text-xs text-muted">
+                          <summary className="cursor-pointer text-brand">Evidence, assumptions & limitations</summary>
                           <ul className="list-disc ms-4 mt-1">
                             {ins.evidence.map((e, k) => <li key={k}>{e.metric} = {String(e.value)} (source: {e.source})</li>)}
                             {ins.assumptions.map((a, k) => <li key={`a${k}`}>Assumption: {a}</li>)}
@@ -145,8 +145,8 @@ export function AiCenterPage() {
                   </div>
                 )}
                 {turn.response && (
-                  <details className="mt-2 text-xs text-slate-500">
-                    <summary className="cursor-pointer text-sky-700">Governance checks & evidence package</summary>
+                  <details className="mt-2 text-xs text-muted">
+                    <summary className="cursor-pointer text-brand">Governance checks & evidence package</summary>
                     <ul className="list-disc ms-4 mt-1">
                       {turn.response.governance.checks.map((c) => (
                         <li key={c.name}>{c.passed ? '✓' : '✗'} {c.name}{c.detail ? ` — ${c.detail}` : ''}</li>

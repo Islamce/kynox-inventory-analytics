@@ -24,7 +24,7 @@ export function InventoryPage() {
           <button
             key={t} type="button" role="tab" aria-selected={tab === t}
             onClick={() => setTab(t)}
-            className={`px-3 py-1.5 rounded-lg text-sm ${tab === t ? 'bg-sky-700 text-white' : 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-50'}`}
+            className={`px-3 py-1.5 rounded-lg text-sm ${tab === t ? 'bg-brand text-white' : 'bg-surface border border-line-strong text-body hover:bg-sunken'}`}
           >
             {t}
           </button>
@@ -67,8 +67,8 @@ function PositionTab({ stockId }: { stockId: number }) {
       <Card title="Stock status split" subtitle="Quantities by stock status across the dataset">
         <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-2 text-center text-sm">
           {Object.entries(data.totals).map(([k, v]) => (
-            <div key={k} className="bg-slate-50 rounded-lg p-3">
-              <p className="text-xs text-slate-500 capitalize">{k.replace(/([A-Z])/g, ' $1')}</p>
+            <div key={k} className="bg-sunken rounded-lg p-3">
+              <p className="text-xs text-muted capitalize">{k.replace(/([A-Z])/g, ' $1')}</p>
               <p className="font-bold tabular-nums">{v === null ? '—' : v.toLocaleString()}</p>
             </div>
           ))}
@@ -114,13 +114,13 @@ function AgingTab({ stockId }: { stockId: number }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-sm">
-        <label htmlFor="aging-basis" className="text-slate-500">Aging basis</label>
-        <select id="aging-basis" className="border border-slate-300 rounded-lg px-2 py-1 bg-white" value={basis} onChange={(e) => setBasis(e.target.value)}>
+        <label htmlFor="aging-basis" className="text-muted">Aging basis</label>
+        <select id="aging-basis" className="border border-line-strong rounded-lg px-2 py-1 bg-surface" value={basis} onChange={(e) => setBasis(e.target.value)}>
           <option value="last_movement">Last movement</option>
           <option value="last_receipt">Last receipt</option>
           <option value="last_issue">Last issue</option>
         </select>
-        {data && <span className="text-slate-400">as of {data.asOfDate}</span>}
+        {data && <span className="text-subtle">as of {data.asOfDate}</span>}
       </div>
       {loading && <Spinner />}
       {error && <ErrorState message={error} />}
@@ -137,7 +137,7 @@ function AgingTab({ stockId }: { stockId: number }) {
             <DataTable
               exportName="inventory-aging"
               columns={[
-                { key: 'material', label: 'Material', render: (r) => <Link className="text-sky-700" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
+                { key: 'material', label: 'Material', render: (r) => <Link className="text-brand" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
                 { key: 'ageDays', label: 'Age (days)', numeric: true, render: (r) => r.ageDays === null ? 'no date' : String(r.ageDays) },
                 { key: 'bucket', label: 'Bucket' },
                 { key: 'quantity', label: 'Quantity', numeric: true },
@@ -163,13 +163,13 @@ function CategoriesTab({ stockId, movementsId }: { stockId: number; movementsId:
   if (!data) return null;
   return (
     <div className="space-y-4">
-      {!movementsId && <p className="text-sm bg-sky-50 border border-sky-200 text-sky-900 rounded-lg px-3 py-2">No movements dataset linked — classification relies on last-issue dates in the stock report only.</p>}
+      {!movementsId && <p className="text-sm bg-info-soft border border-info/30 text-brand rounded-lg px-3 py-2">No movements dataset linked — classification relies on last-issue dates in the stock report only.</p>}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {Object.entries(data.summary).map(([k, v]) => (
           <Card key={k}>
-            <p className="text-xs text-slate-500 uppercase">{k.replace(/([A-Z])/g, ' $1')}</p>
-            <p className="text-xl font-bold">{v.count} <span className="text-sm font-normal text-slate-500">materials</span></p>
-            <p className="text-sm text-slate-600 tabular-nums">{v.value.toLocaleString()} value</p>
+            <p className="text-xs text-muted uppercase">{k.replace(/([A-Z])/g, ' $1')}</p>
+            <p className="text-xl font-bold">{v.count} <span className="text-sm font-normal text-muted">materials</span></p>
+            <p className="text-sm text-muted tabular-nums">{v.value.toLocaleString()} value</p>
           </Card>
         ))}
       </div>
@@ -180,7 +180,7 @@ function CategoriesTab({ stockId, movementsId }: { stockId: number; movementsId:
         <DataTable
           exportName="movement-categories"
           columns={[
-            { key: 'material', label: 'Material', render: (r) => <Link className="text-sky-700" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
+            { key: 'material', label: 'Material', render: (r) => <Link className="text-brand" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
             { key: 'category', label: 'Category', render: (r) => <Badge value={String(r.category) === 'non_moving' ? 'critical' : String(r.category) === 'slow_moving' ? 'medium' : 'good'} label={String(r.category)} /> },
             { key: 'annualizedTurnover', label: 'Turnover (ann.)', numeric: true, render: (r) => r.annualizedTurnover === null ? '—' : String(r.annualizedTurnover) },
             { key: 'stockQty', label: 'Stock qty', numeric: true },
@@ -203,14 +203,14 @@ function ExcessTab({ stockId, movementsId }: { stockId: number; movementsId: num
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-sm">
-        <label htmlFor="excess-method" className="text-slate-500">Method</label>
-        <select id="excess-method" className="border border-slate-300 rounded-lg px-2 py-1 bg-white" value={method} onChange={(e) => setMethod(e.target.value)}>
+        <label htmlFor="excess-method" className="text-muted">Method</label>
+        <select id="excess-method" className="border border-line-strong rounded-lg px-2 py-1 bg-surface" value={method} onChange={(e) => setMethod(e.target.value)}>
           <option value="above_coverage_target">Above coverage target</option>
           <option value="above_max_stock">Above maximum stock</option>
           <option value="above_safety_plus_leadtime">Above safety stock + lead-time demand</option>
           <option value="no_demand">Stock without demand</option>
         </select>
-        {data && <span className="text-slate-600 font-medium tabular-nums">Total excess value: {data.totalExcessValue.toLocaleString()}</span>}
+        {data && <span className="text-muted font-medium tabular-nums">Total excess value: {data.totalExcessValue.toLocaleString()}</span>}
       </div>
       {data?.note && <p className="text-sm bg-amber-50 border border-amber-200 text-amber-900 rounded-lg px-3 py-2">{data.note}</p>}
       {loading && <Spinner />}
@@ -223,7 +223,7 @@ function ExcessTab({ stockId, movementsId }: { stockId: number; movementsId: num
               <DataTable
                 exportName="excess-stock"
                 columns={[
-                  { key: 'material', label: 'Material', render: (r) => <Link className="text-sky-700" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
+                  { key: 'material', label: 'Material', render: (r) => <Link className="text-brand" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
                   { key: 'stockQty', label: 'Stock qty', numeric: true },
                   { key: 'referenceQty', label: 'Reference (limit)', numeric: true },
                   { key: 'excessQty', label: 'Excess qty', numeric: true },
@@ -262,7 +262,7 @@ function ShortageTab({ stockId, movementsId }: { stockId: number; movementsId: n
             <DataTable
               exportName="shortage-risks"
               columns={[
-                { key: 'material', label: 'Material', render: (r) => <Link className="text-sky-700" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
+                { key: 'material', label: 'Material', render: (r) => <Link className="text-brand" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
                 { key: 'risk', label: 'Risk', render: (r) => <Badge value={String(r.risk)} /> },
                 { key: 'stockQty', label: 'Stock qty', numeric: true },
                 { key: 'gapQty', label: 'Gap qty', numeric: true },
