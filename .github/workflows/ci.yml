@@ -198,10 +198,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DB_CLIENT: better-sqlite3
-      DB_FILE: ./database/ci-ui.sqlite
+      # Absolute path so migrate/seed (cwd apps/api via -w) and the server
+      # (cwd repo root via node app.js) resolve to the SAME SQLite file.
+      DB_FILE: ${{ github.workspace }}/database/ci-ui.sqlite
       JWT_SECRET: ci-ui-smoke-secret-at-least-32-characters-long
       ADMIN_EMAIL: admin@kynox.io
-      ADMIN_INITIAL_PASSWORD: CiSmokePass!234
+      ADMIN_INITIAL_PASSWORD: 'CiSmokePass!234'
       UPLOAD_DIR: ./uploads
       EXPORT_DIR: ./exports
       AI_PROVIDER: none
@@ -225,20 +227,22 @@ jobs:
         run: |
           npm run migrate
           npm run seed
-      - name: Start the app (node app.js) and wait for health
+      - name: Start the app (node app.js) and wait for readiness
         run: |
-          node app.js & echo $! > .app.pid
-          for i in $(seq 1 20); do
-            if curl -fsS http://127.0.0.1:4100/api/health >/dev/null 2>&1; then break; fi
+          node app.js > "$RUNNER_TEMP/app.log" 2>&1 & echo $! > .app.pid
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4100/api/readiness >/dev/null 2>&1; then break; fi
             sleep 2
           done
-          curl -fsS http://127.0.0.1:4100/api/health
+          # Readiness exercises the DB (the migrate/seed target), so a wrong
+          # DB path fails here instead of surfacing as a login failure later.
+          curl -fsS http://127.0.0.1:4100/api/readiness || { echo '--- app.log ---'; cat "$RUNNER_TEMP/app.log"; exit 1; }
       - name: Run Playwright smoke tests (desktop + mobile)
         working-directory: apps/web
         env:
           E2E_BASE_URL: http://localhost:4100
           E2E_ADMIN_EMAIL: admin@kynox.io
-          E2E_ADMIN_PASSWORD: CiSmokePass!234
+          E2E_ADMIN_PASSWORD: 'CiSmokePass!234'
         run: npm run test:e2e
       - name: Stop the app
         if: always()
