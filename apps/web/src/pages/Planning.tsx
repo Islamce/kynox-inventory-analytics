@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useWorkspaceIds } from '../components/Layout';
 import { useFetch } from './Inventory';
 import { Card, EmptyState, ErrorState, Spinner } from '../components/ui';
+import { IntelligenceHeader } from '../components/intelligence';
 import { Chart } from '../components/Chart';
 
 export function PlanningPage() {
@@ -39,7 +40,11 @@ export function PlanningPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">Planning & Forecasting</h1>
+      <IntelligenceHeader
+        eyebrow="Planning"
+        title="Planning & Forecasting"
+        description="Back-tests every applicable forecast method and recommends the best performer with full transparency — safety stock, reorder point and min/max, all requiring planner review."
+      />
       <div className="flex items-center gap-2">
         <input
           className="border border-line-strong rounded-lg px-3 py-1.5 text-sm bg-surface w-64"

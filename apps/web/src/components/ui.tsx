@@ -12,7 +12,7 @@ export function Card({ title, subtitle, children, actions, className }: {
   title?: string; subtitle?: string; children: ReactNode; actions?: ReactNode; className?: string;
 }) {
   return (
-    <section className={`bg-surface rounded-xl shadow-[var(--kx-shadow-sm)] border border-line p-4 ${className ?? ''}`}>
+    <section className={`bg-surface rounded-xl shadow-[var(--kx-shadow-sm)] border border-line p-4 min-w-0 ${className ?? ''}`}>
       {(title || actions) && (
         <div className="flex items-start justify-between gap-3 mb-3">
           <div>
@@ -210,7 +210,7 @@ export function DataTable<T extends Record<string, unknown>>({ columns, rows, pa
   };
 
   return (
-    <div>
+    <div className="min-w-0">
       <div className="flex items-center justify-between gap-2 mb-2.5">
         {searchable && (
           <div className="relative w-64 max-w-full">
@@ -231,7 +231,7 @@ export function DataTable<T extends Record<string, unknown>>({ columns, rows, pa
           )}
         </div>
       </div>
-      <div className="overflow-auto max-h-[32rem] border border-line rounded-xl">
+      <div className="overflow-auto max-h-[32rem] border border-line rounded-xl" tabIndex={0} role="region" aria-label={`${exportName ?? 'Data'} table`}>
         <table className="data-table w-full text-sm">
           <thead>
             <tr className="bg-sunken text-muted">

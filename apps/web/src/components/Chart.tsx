@@ -73,7 +73,7 @@ function themeAxes(base: echarts.EChartsCoreOption, opt: echarts.EChartsCoreOpti
   return merged as echarts.EChartsCoreOption;
 }
 
-export function Chart({ option, height = 300 }: { option: echarts.EChartsCoreOption; height?: number }) {
+export function Chart({ option, height = 300, label = 'Data visualisation' }: { option: echarts.EChartsCoreOption; height?: number; label?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
   const [themeTick, setThemeTick] = useState(0);
@@ -105,5 +105,5 @@ export function Chart({ option, height = 300 }: { option: echarts.EChartsCoreOpt
     chartRef.current?.setOption(themeAxes(chromeBase(), option), true);
   }, [option, themeTick]);
 
-  return <div ref={ref} style={{ height }} role="img" />;
+  return <div ref={ref} style={{ height }} role="img" aria-label={label} />;
 }

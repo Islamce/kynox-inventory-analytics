@@ -32,7 +32,7 @@ export function AbcXyzPage() {
             <XyzSection movementsId={ws.movementsDatasetId} />
             <MatrixSection stockId={ws.stockDatasetId} movementsId={ws.movementsDatasetId} />
           </>
-        : <p className="text-sm bg-info-soft border border-info/30 text-brand rounded-lg px-3 py-2">Link a movements dataset to enable XYZ classification and the ABC–XYZ matrix.</p>}
+        : <p className="text-sm bg-info-soft border border-info/30 text-link rounded-lg px-3 py-2">Link a movements dataset to enable XYZ classification and the ABC–XYZ matrix.</p>}
     </div>
   );
 }
@@ -90,7 +90,7 @@ function AbcSection({ stockId, metric, movementsId }: { stockId: number; metric:
         <DataTable
           exportName="abc-classification"
           columns={[
-            { key: 'material', label: 'Material', render: (r) => <Link className="text-brand" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
+            { key: 'material', label: 'Material', render: (r) => <Link className="text-link" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
             { key: 'abcClass', label: 'Class', render: (r) => <Badge value={String(r.abcClass)} /> },
             { key: 'metricValue', label: 'Metric value', numeric: true },
             { key: 'cumulativePct', label: 'Cumulative %', numeric: true },
@@ -114,7 +114,7 @@ function XyzSection({ movementsId }: { movementsId: number }) {
       <DataTable
         exportName="xyz-classification"
         columns={[
-          { key: 'material', label: 'Material', render: (r) => <Link className="text-brand" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
+          { key: 'material', label: 'Material', render: (r) => <Link className="text-link" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
           { key: 'xyzClass', label: 'Class', render: (r) => <Badge value={String(r.xyzClass)} /> },
           { key: 'cov', label: 'CoV', numeric: true, render: (r) => r.cov === null ? 'undefined' : String(r.cov) },
           { key: 'zeroPeriodShare', label: 'Zero periods', numeric: true, render: (r) => `${Math.round(Number(r.zeroPeriodShare) * 100)}%` },
@@ -146,12 +146,16 @@ function MatrixSection({ stockId, movementsId }: { stockId: number; movementsId:
             ...(['X', 'Y', 'Z'] as const).map((x) => {
               const cell = cellFor(`${a}${x}`);
               const intensity = cell ? cell.materialCount / maxCount : 0;
-              const shade = SEQUENTIAL_BLUE[Math.min(SEQUENTIAL_BLUE.length - 1, Math.floor(intensity * (SEQUENTIAL_BLUE.length - 1)))];
+              const shadeIdx = Math.min(SEQUENTIAL_BLUE.length - 1, Math.floor(intensity * (SEQUENTIAL_BLUE.length - 1)));
+              const shade = SEQUENTIAL_BLUE[shadeIdx];
+              const filled = !!cell && cell.materialCount > 0;
+              // Text colour keyed to the actual fill so contrast stays AA:
+              // white only on the darker blues (index >= 4), dark ink otherwise.
               return (
                 <div
                   key={`${a}${x}`}
                   className="rounded-lg p-3 text-center border border-line"
-                  style={{ backgroundColor: cell && cell.materialCount > 0 ? shade : '#f8fafc', color: intensity > 0.5 ? '#fff' : '#0b0b0b' }}
+                  style={{ backgroundColor: filled ? shade : '#f8fafc', color: filled && shadeIdx >= 4 ? '#fff' : '#0b1220' }}
                   title={cell ? `${cell.segment}: ${cell.materialCount} materials, stock value ${cell.stockValue.toLocaleString()}\n${cell.recommendedPolicy}` : undefined}
                 >
                   <p className="font-bold">{a}{x}</p>
@@ -163,7 +167,7 @@ function MatrixSection({ stockId, movementsId }: { stockId: number; movementsId:
         ))}
       </div>
       <details className="mt-3 text-sm">
-        <summary className="cursor-pointer text-brand">Recommended policies per segment</summary>
+        <summary className="cursor-pointer text-link">Recommended policies per segment</summary>
         <ul className="mt-2 space-y-1">
           {data.cells.map((c) => (
             <li key={c.segment}><span className="font-semibold">{c.segment}</span> ({c.materialCount}): <span className="text-muted">{c.recommendedPolicy}</span></li>

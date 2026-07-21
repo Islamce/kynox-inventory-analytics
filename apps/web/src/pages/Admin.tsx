@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { apiGet, apiSend, getUser } from '../lib/api';
 import { Card, DataTable, ErrorState, Spinner } from '../components/ui';
+import { IntelligenceHeader } from '../components/intelligence';
 
 interface User { id: number; email: string; name: string; role: string; active: number | boolean; created_at: string }
 
@@ -15,7 +16,11 @@ export function AdminPage() {
   const canManageUsers = me?.role === 'system_admin';
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">Administration</h1>
+      <IntelligenceHeader
+        eyebrow="Governance"
+        title="Administration"
+        description="Users, roles and platform configuration. Changes are least-privilege and recorded in the audit trail."
+      />
       {canManageUsers ? <UsersSection /> : <p className="text-sm text-muted">User management requires the System Administrator role.</p>}
       <ConfigSection readOnly={me?.role !== 'system_admin'} />
     </div>

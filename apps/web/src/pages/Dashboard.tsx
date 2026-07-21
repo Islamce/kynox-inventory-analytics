@@ -118,7 +118,7 @@ export function DashboardPage() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4">
-        <Card title="Top shortage risks" subtitle="Highest priority exceptions" actions={<Link className="text-sm text-brand" to="/inventory">Drill down →</Link>}>
+        <Card title="Top shortage risks" subtitle="Highest priority exceptions" actions={<Link className="text-sm text-link" to="/inventory">Drill down →</Link>}>
           {data.topShortages.length === 0
             ? <EmptyState title="No shortage risks detected" />
             : (
@@ -127,7 +127,7 @@ export function DashboardPage() {
                   <li key={s.material + s.reason} className="py-2 flex items-start gap-2">
                     <Badge value={s.risk} />
                     <div>
-                      <Link to={`/materials?material=${encodeURIComponent(s.material)}`} className="font-medium text-brand">{s.material}</Link>
+                      <Link to={`/materials?material=${encodeURIComponent(s.material)}`} className="font-medium text-link">{s.material}</Link>
                       <p className="text-muted">{s.reason}</p>
                     </div>
                   </li>
@@ -135,14 +135,14 @@ export function DashboardPage() {
               </ul>
             )}
         </Card>
-        <Card title="Top excess stock" subtitle="Working-capital reduction candidates" actions={<Link className="text-sm text-brand" to="/inventory">Drill down →</Link>}>
+        <Card title="Top excess stock" subtitle="Working-capital reduction candidates" actions={<Link className="text-sm text-link" to="/inventory">Drill down →</Link>}>
           {data.topExcess.length === 0
             ? <EmptyState title="No excess computed" hint="Link a movements dataset to enable demand-based excess." />
             : (
               <ul className="divide-y divide-line text-sm">
                 {data.topExcess.map((e) => (
                   <li key={e.material} className="py-2 flex justify-between">
-                    <Link to={`/materials?material=${encodeURIComponent(e.material)}`} className="font-medium text-brand">{e.material}</Link>
+                    <Link to={`/materials?material=${encodeURIComponent(e.material)}`} className="font-medium text-link">{e.material}</Link>
                     <span className="tabular-nums">{e.excessValue.toLocaleString()} value · {e.excessQty.toLocaleString()} qty</span>
                   </li>
                 ))}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { apiGet } from '../lib/api';
 import { Card, DataTable, ErrorState, Spinner } from '../components/ui';
+import { IntelligenceHeader } from '../components/intelligence';
 
 interface AuditEntry {
   id: number; action: string; entity_type: string | null; entity_id: string | null;
@@ -32,7 +33,11 @@ export function AuditPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">Audit & Governance</h1>
+      <IntelligenceHeader
+        eyebrow="Governance"
+        title="Audit & Governance"
+        description="Append-only record of every critical action — uploads, dataset creation, cleansing approvals, exports and configuration. Secrets are never logged."
+      />
       <div className="flex items-center gap-2 text-sm">
         <label htmlFor="audit-action" className="text-muted">Action filter</label>
         <select id="audit-action" className="border border-line-strong rounded-lg px-2 py-1 bg-surface" value={action} onChange={(e) => { setAction(e.target.value); setPage(1); }}>

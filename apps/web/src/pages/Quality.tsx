@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { apiGet } from '../lib/api';
 import { Badge, Card, EmptyState, ErrorState, Spinner } from '../components/ui';
+import { IntelligenceHeader } from '../components/intelligence';
 
 interface DatasetRow {
   id: number; name: string; version: number; kind: string;
@@ -49,17 +50,21 @@ export function QualityPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-xl font-bold">Data Quality Center</h1>
-        <select
-          className="border border-line-strong rounded-lg px-3 py-1.5 text-sm bg-surface"
-          value={selected ?? ''}
-          onChange={(e) => setSelected(Number(e.target.value))}
-          aria-label="Select dataset"
-        >
-          {datasets.map((d) => <option key={d.id} value={d.id}>{d.name} v{d.version} ({d.kind})</option>)}
-        </select>
-      </div>
+      <IntelligenceHeader
+        eyebrow="Data quality"
+        title="Data Quality Center"
+        description="Per-dimension quality of a dataset, the findings that remain after approved cleansing, and the exact transformation log — fully transparent."
+        actions={
+          <select
+            className="border border-line-strong rounded-lg px-3 py-1.5 text-sm bg-surface text-body"
+            value={selected ?? ''}
+            onChange={(e) => setSelected(Number(e.target.value))}
+            aria-label="Select dataset"
+          >
+            {datasets.map((d) => <option key={d.id} value={d.id}>{d.name} v{d.version} ({d.kind})</option>)}
+          </select>
+        }
+      />
 
       {detail && (
         <>
@@ -70,7 +75,7 @@ export function QualityPage() {
                   {Object.entries(detail.qualityScores).map(([k, v]) => (
                     <div key={k} className="bg-sunken rounded-lg p-3">
                       <p className="text-xs text-muted capitalize">{k}</p>
-                      <p className={`text-lg font-bold ${v >= 90 ? 'text-emerald-700' : v >= 70 ? 'text-amber-600' : 'text-red-600'}`}>{v}</p>
+                      <p className={`text-lg font-bold ${v >= 90 ? 'text-success' : v >= 70 ? 'text-warning' : 'text-danger'}`}>{v}</p>
                     </div>
                   ))}
                 </div>
@@ -95,7 +100,7 @@ export function QualityPage() {
                       <p className="text-muted"><span className="font-medium">Recommended correction:</span> {issue.recommendation}</p>
                       {issue.samples.length > 0 && (
                         <details className="mt-1">
-                          <summary className="cursor-pointer text-brand">Affected locations (sample)</summary>
+                          <summary className="cursor-pointer text-link">Affected locations (sample)</summary>
                           <ul className="text-xs text-muted mt-1 ms-4 list-disc">
                             {issue.samples.slice(0, 10).map((s, i) => (
                               <li key={i}>Row {s.row >= 0 ? s.row + 2 : '—'}, column "{s.column}": {String(s.value ?? '(empty)')}</li>

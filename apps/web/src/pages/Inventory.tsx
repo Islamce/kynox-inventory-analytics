@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { apiGet } from '../lib/api';
 import { useWorkspaceIds } from '../components/Layout';
 import { Badge, Card, DataTable, EmptyState, ErrorState, Spinner } from '../components/ui';
+import { IntelligenceHeader } from '../components/intelligence';
 import { Chart } from '../components/Chart';
 
 const TABS = ['Position', 'Aging', 'Movement categories', 'Excess', 'Shortage'] as const;
@@ -18,7 +19,11 @@ export function InventoryPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">Inventory Intelligence</h1>
+      <IntelligenceHeader
+        eyebrow="Inventory"
+        title="Inventory Intelligence"
+        description="Stock position, aging, movement categories, excess and shortage — every figure traces back to the selected datasets."
+      />
       <div className="flex gap-1 flex-wrap" role="tablist">
         {TABS.map((t) => (
           <button
@@ -137,7 +142,7 @@ function AgingTab({ stockId }: { stockId: number }) {
             <DataTable
               exportName="inventory-aging"
               columns={[
-                { key: 'material', label: 'Material', render: (r) => <Link className="text-brand" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
+                { key: 'material', label: 'Material', render: (r) => <Link className="text-link" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
                 { key: 'ageDays', label: 'Age (days)', numeric: true, render: (r) => r.ageDays === null ? 'no date' : String(r.ageDays) },
                 { key: 'bucket', label: 'Bucket' },
                 { key: 'quantity', label: 'Quantity', numeric: true },
@@ -163,7 +168,7 @@ function CategoriesTab({ stockId, movementsId }: { stockId: number; movementsId:
   if (!data) return null;
   return (
     <div className="space-y-4">
-      {!movementsId && <p className="text-sm bg-info-soft border border-info/30 text-brand rounded-lg px-3 py-2">No movements dataset linked — classification relies on last-issue dates in the stock report only.</p>}
+      {!movementsId && <p className="text-sm bg-info-soft border border-info/30 text-link rounded-lg px-3 py-2">No movements dataset linked — classification relies on last-issue dates in the stock report only.</p>}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {Object.entries(data.summary).map(([k, v]) => (
           <Card key={k}>
@@ -180,7 +185,7 @@ function CategoriesTab({ stockId, movementsId }: { stockId: number; movementsId:
         <DataTable
           exportName="movement-categories"
           columns={[
-            { key: 'material', label: 'Material', render: (r) => <Link className="text-brand" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
+            { key: 'material', label: 'Material', render: (r) => <Link className="text-link" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
             { key: 'category', label: 'Category', render: (r) => <Badge value={String(r.category) === 'non_moving' ? 'critical' : String(r.category) === 'slow_moving' ? 'medium' : 'good'} label={String(r.category)} /> },
             { key: 'annualizedTurnover', label: 'Turnover (ann.)', numeric: true, render: (r) => r.annualizedTurnover === null ? '—' : String(r.annualizedTurnover) },
             { key: 'stockQty', label: 'Stock qty', numeric: true },
@@ -223,7 +228,7 @@ function ExcessTab({ stockId, movementsId }: { stockId: number; movementsId: num
               <DataTable
                 exportName="excess-stock"
                 columns={[
-                  { key: 'material', label: 'Material', render: (r) => <Link className="text-brand" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
+                  { key: 'material', label: 'Material', render: (r) => <Link className="text-link" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
                   { key: 'stockQty', label: 'Stock qty', numeric: true },
                   { key: 'referenceQty', label: 'Reference (limit)', numeric: true },
                   { key: 'excessQty', label: 'Excess qty', numeric: true },
@@ -262,7 +267,7 @@ function ShortageTab({ stockId, movementsId }: { stockId: number; movementsId: n
             <DataTable
               exportName="shortage-risks"
               columns={[
-                { key: 'material', label: 'Material', render: (r) => <Link className="text-brand" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
+                { key: 'material', label: 'Material', render: (r) => <Link className="text-link" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
                 { key: 'risk', label: 'Risk', render: (r) => <Badge value={String(r.risk)} /> },
                 { key: 'stockQty', label: 'Stock qty', numeric: true },
                 { key: 'gapQty', label: 'Gap qty', numeric: true },

@@ -21,8 +21,8 @@
   --kx-overlay:       rgba(11, 17, 27, 0.45);
 
   --kx-body:          var(--kx-neutral-900);
-  --kx-muted:         var(--kx-neutral-500);
-  --kx-subtle:        var(--kx-neutral-400);
+  --kx-muted:         var(--kx-neutral-600);   /* WCAG-AA on light surfaces */
+  --kx-subtle:        var(--kx-neutral-550);   /* AA on white + sunken */
   --kx-on-brand:      var(--kx-neutral-0);
 
   --kx-line:          var(--kx-neutral-200);
@@ -32,12 +32,13 @@
   --kx-brand-hover:   var(--kx-brand-700);
   --kx-brand-soft:    var(--kx-brand-50);
   --kx-brand-soft-fg: var(--kx-brand-700);
+  --kx-link:          var(--kx-brand-700);   /* AA text link on light surfaces */
 
   --kx-ring:          var(--kx-brand-500);
 
-  --kx-success:       var(--kx-success-600);
+  --kx-success:       #0b7536;   /* AA as text on success-soft */
   --kx-success-soft:  var(--kx-success-50);
-  --kx-warning:       var(--kx-warning-600);
+  --kx-warning:       #8a5a08;   /* AA as text on warning-soft */
   --kx-warning-soft:  var(--kx-warning-50);
   --kx-danger:        var(--kx-danger-600);
   --kx-danger-soft:   var(--kx-danger-50);
@@ -70,8 +71,8 @@
   --kx-overlay:       rgba(0, 0, 0, 0.6);
 
   --kx-body:          var(--kx-neutral-50);
-  --kx-muted:         var(--kx-neutral-400);
-  --kx-subtle:        var(--kx-neutral-500);
+  --kx-muted:         var(--kx-neutral-300);   /* WCAG-AA on dark surfaces */
+  --kx-subtle:        var(--kx-neutral-400);
   --kx-on-brand:      var(--kx-neutral-0);
 
   --kx-line:          rgba(255, 255, 255, 0.09);
@@ -80,7 +81,8 @@
   --kx-brand:         var(--kx-brand-500);
   --kx-brand-hover:   var(--kx-brand-400);
   --kx-brand-soft:    rgba(56, 107, 239, 0.16);
-  --kx-brand-soft-fg: var(--kx-brand-300);
+  --kx-brand-soft-fg: var(--kx-brand-200);
+  --kx-link:          var(--kx-brand-300);   /* AA text link on dark surfaces */
 
   --kx-ring:          var(--kx-brand-400);
 
@@ -119,8 +121,8 @@
     --kx-overlay:     rgba(0, 0, 0, 0.6);
 
     --kx-body:        var(--kx-neutral-50);
-    --kx-muted:       var(--kx-neutral-400);
-    --kx-subtle:      var(--kx-neutral-500);
+    --kx-muted:       var(--kx-neutral-300);
+    --kx-subtle:      var(--kx-neutral-400);
 
     --kx-line:        rgba(255, 255, 255, 0.09);
     --kx-line-strong: rgba(255, 255, 255, 0.16);
@@ -128,7 +130,8 @@
     --kx-brand:       var(--kx-brand-500);
     --kx-brand-hover: var(--kx-brand-400);
     --kx-brand-soft:  rgba(56, 107, 239, 0.16);
-    --kx-brand-soft-fg: var(--kx-brand-300);
+    --kx-brand-soft-fg: var(--kx-brand-200);
+    --kx-link:        var(--kx-brand-300);
     --kx-ring:        var(--kx-brand-400);
 
     --kx-success:     #34c17a;
@@ -170,6 +173,7 @@
   --color-brand-hover: var(--kx-brand-hover);
   --color-brand-soft:  var(--kx-brand-soft);
   --color-brand-soft-fg: var(--kx-brand-soft-fg);
+  --color-link:        var(--kx-link);
 
   --color-success:      var(--kx-success);
   --color-success-soft: var(--kx-success-soft);

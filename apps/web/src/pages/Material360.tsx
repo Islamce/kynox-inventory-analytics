@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useWorkspaceIds } from '../components/Layout';
 import { useFetch } from './Inventory';
 import { Badge, Card, EmptyState, ErrorState, Spinner } from '../components/ui';
+import { IntelligenceHeader } from '../components/intelligence';
 import { Chart } from '../components/Chart';
 
 interface Material360 {
@@ -49,7 +50,11 @@ export function Material360Page() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">Material 360°</h1>
+      <IntelligenceHeader
+        eyebrow="Material dossier"
+        title="Material 360°"
+        description="A single premium profile per material — identity, stock, value, ABC–XYZ, consumption and movement history, and planning recommendations requiring review."
+      />
       <div className="flex items-center gap-2">
         <input
           className="border border-line-strong rounded-lg px-3 py-1.5 text-sm bg-surface w-64"
@@ -85,8 +90,8 @@ export function Material360Page() {
             </div>
             {data.xyz && <p className="text-xs text-muted mt-2">XYZ reasoning: {data.xyz.reason}</p>}
             {data.movementCategory && <p className="text-xs text-muted">Movement category: {data.movementCategory.reason}</p>}
-            {data.shortage && <p className="text-xs text-red-600">Shortage: {data.shortage.reason}</p>}
-            {data.availableAnalyses.note && <p className="text-xs text-amber-700 mt-2">{data.availableAnalyses.note}</p>}
+            {data.shortage && <p className="text-xs text-danger">Shortage: {data.shortage.reason}</p>}
+            {data.availableAnalyses.note && <p className="text-xs text-warning mt-2">{data.availableAnalyses.note}</p>}
           </Card>
 
           {data.consumption && (
@@ -121,7 +126,7 @@ export function Material360Page() {
                 ],
               }} />
               <details className="text-sm mt-2">
-                <summary className="cursor-pointer text-brand">Method comparison (holdout back-test)</summary>
+                <summary className="cursor-pointer text-link">Method comparison (holdout back-test)</summary>
                 <table className="mt-2 text-sm w-full max-w-md">
                   <thead><tr className="text-left text-muted"><th>Method</th><th className="text-right">WAPE %</th><th className="text-right">MAE</th></tr></thead>
                   <tbody>

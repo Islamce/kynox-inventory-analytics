@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useWorkspaceIds } from '../components/Layout';
 import { useFetch } from './Inventory';
 import { Badge, Card, DataTable, EmptyState, ErrorState, Spinner } from '../components/ui';
+import { IntelligenceHeader } from '../components/intelligence';
 import { Chart } from '../components/Chart';
 
 export function ConsumptionPage() {
@@ -27,7 +28,11 @@ export function ConsumptionPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">Consumption Analytics</h1>
+      <IntelligenceHeader
+        eyebrow="Demand"
+        title="Consumption Analytics"
+        description="Issue-based demand over time — trend, variability and intermittency, with SAP issue-reversal semantics already applied."
+      />
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <label htmlFor="cons-gran" className="text-muted">Granularity</label>
         <select id="cons-gran" className="border border-line-strong rounded-lg px-2 py-1 bg-surface" value={granularity} onChange={(e) => setGranularity(e.target.value)}>
@@ -43,7 +48,7 @@ export function ConsumptionPage() {
           onKeyDown={(e) => { if (e.key === 'Enter') setApplied(material.trim()); }}
         />
         <button type="button" className="px-3 py-1 rounded-lg border border-line-strong hover:bg-sunken" onClick={() => setApplied(material.trim())}>Apply</button>
-        {applied && <button type="button" className="text-brand" onClick={() => { setMaterial(''); setApplied(''); }}>Clear</button>}
+        {applied && <button type="button" className="text-link" onClick={() => { setMaterial(''); setApplied(''); }}>Clear</button>}
       </div>
       {loading && <Spinner />}
       {error && <ErrorState message={error} />}
@@ -93,7 +98,7 @@ export function ConsumptionPage() {
               <DataTable
                 exportName="top-consumers"
                 columns={[
-                  { key: 'material', label: 'Material', render: (r) => <Link className="text-brand" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
+                  { key: 'material', label: 'Material', render: (r) => <Link className="text-link" to={`/materials?material=${encodeURIComponent(String(r.material))}`}>{String(r.material)}</Link> },
                   { key: 'issuedQty', label: 'Issued qty', numeric: true },
                   { key: 'issuedValue', label: 'Issued value', numeric: true },
                 ]}

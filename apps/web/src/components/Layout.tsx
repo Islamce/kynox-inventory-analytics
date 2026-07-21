@@ -177,7 +177,7 @@ export function Layout() {
           <DatasetSelect id="ws-mov-m" label="Movements" icon="consumption" value={ws.movementsDatasetId} options={movementOptions} onChange={(v) => update({ movementsDatasetId: v })} />
         </div>
 
-        <main className="flex-1 p-4 lg:p-6 max-w-[110rem] w-full mx-auto">
+        <main className="flex-1 p-4 lg:p-6 max-w-[110rem] w-full mx-auto min-w-0 overflow-x-hidden">
           <div className="kx-animate-fade">
             <Outlet context={{ ws }} />
           </div>
@@ -292,7 +292,7 @@ function UserMenu({
                 type="button"
                 onClick={() => onMode(m)}
                 className={`flex flex-col items-center gap-1 py-1.5 rounded-md text-[11px] capitalize border ${
-                  mode === m ? 'border-brand text-brand bg-brand-soft' : 'border-line text-muted hover:bg-sunken'
+                  mode === m ? 'border-brand text-link bg-brand-soft' : 'border-line text-muted hover:bg-sunken'
                 }`}
               >
                 <Icon name={m === 'light' ? 'sun' : m === 'dark' ? 'moon' : 'system'} size={16} />

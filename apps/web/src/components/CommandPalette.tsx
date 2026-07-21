@@ -142,7 +142,7 @@ export function CommandPalette({
                         isActive ? 'bg-brand-soft text-brand-soft-fg' : 'text-body'
                       }`}
                     >
-                      {c.icon && <Icon name={c.icon} className={isActive ? 'text-brand' : 'text-muted'} />}
+                      {c.icon && <Icon name={c.icon} className={isActive ? 'text-link' : 'text-muted'} />}
                       <span className="flex-1">{c.label}</span>
                       {c.hint && <span className="text-xs text-subtle">{c.hint}</span>}
                     </button>
