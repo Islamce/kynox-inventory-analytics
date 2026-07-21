@@ -51,9 +51,10 @@ mode. Charts observe `data-theme` and re-theme their chrome.
 | Brand | `bg-brand` / `text-brand` / `text-on-brand` | primary actions, links |
 | Status | `text-success` / `-warning` / `-danger` / `-info` (+ `bg-*-soft`) | semantics |
 
-Radii: `rounded-sm|md|lg|xl`. Shadows: `shadow-[var(--kx-shadow-sm|md|lg)]`.
-Fonts: `font-sans` (UI), `font-mono` (codes). Numeric cells use
-`tabular-nums`.
+Radii: `rounded-sm` / `rounded-md` / `rounded-lg` / `rounded-xl`. Shadows: the
+`--kx-shadow-sm` / `--kx-shadow-md` / `--kx-shadow-lg` tokens (applied via an
+arbitrary shadow utility). Fonts: `font-sans` (UI), `font-mono` (codes).
+Numeric cells use `tabular-nums`.
 
 ## Motion
 
