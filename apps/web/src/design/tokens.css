@@ -1,0 +1,111 @@
+/* ===========================================================================
+   Kynox design tokens — RAW PRIMITIVES
+   ---------------------------------------------------------------------------
+   The single source of truth for the platform's palette, type scale, radii,
+   shadows, spacing rhythm, elevation, motion and z-index. These are
+   *primitive* values only — never consumed directly by components. Semantic
+   tokens in `themes.css` map these into role-based variables (surface, body,
+   brand, …) that flip between light and dark. Change a brand hue here and it
+   propagates everywhere; components never hardcode a hex value again.
+   =========================================================================== */
+
+:root {
+  /* --- Brand: "Kynox azure" ------------------------------------------------ */
+  --kx-brand-50:  #eef4ff;
+  --kx-brand-100: #dbe6fe;
+  --kx-brand-200: #bcd3fd;
+  --kx-brand-300: #90b6fb;
+  --kx-brand-400: #5f90f6;
+  --kx-brand-500: #386bef;   /* primary interactive */
+  --kx-brand-600: #234fe0;   /* default brand */
+  --kx-brand-700: #1c3fc4;   /* hover / pressed */
+  --kx-brand-800: #1d379e;
+  --kx-brand-900: #1d347d;
+  --kx-brand-950: #16214d;
+
+  /* --- Accent: signal cyan (intelligence highlights) ---------------------- */
+  --kx-accent-300: #7de3f0;
+  --kx-accent-400: #38cadf;
+  --kx-accent-500: #12aac2;
+  --kx-accent-600: #0d879c;
+
+  /* --- Neutrals: cool slate ---------------------------------------------- */
+  --kx-neutral-0:   #ffffff;
+  --kx-neutral-25:  #fafbfd;
+  --kx-neutral-50:  #f4f6fa;
+  --kx-neutral-100: #eaeef4;
+  --kx-neutral-200: #dce3ec;
+  --kx-neutral-300: #c3cdda;
+  --kx-neutral-400: #97a4b6;
+  --kx-neutral-500: #6b7a8f;
+  --kx-neutral-600: #4d5c72;
+  --kx-neutral-700: #374355;
+  --kx-neutral-800: #232e3f;
+  --kx-neutral-850: #1a2331;
+  --kx-neutral-900: #131b27;
+  --kx-neutral-950: #0b111b;
+
+  /* --- Status: aligned with the validated ECharts STATUS_COLORS ----------- */
+  --kx-success-50:  #e7f7ee;
+  --kx-success-500: #12a150;
+  --kx-success-600: #0e8542;
+  --kx-warning-50:  #fdf4e3;
+  --kx-warning-500: #e0930d;
+  --kx-warning-600: #b9760a;
+  --kx-danger-50:   #fdecec;
+  --kx-danger-500:  #d83a3a;
+  --kx-danger-600:  #b62b2b;
+  --kx-info-50:     #e9f1fe;
+  --kx-info-500:    var(--kx-brand-500);
+
+  /* --- Typography --------------------------------------------------------- */
+  --kx-font-sans: "Inter var", "Inter", system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, "Noto Sans", "Noto Sans Arabic", sans-serif;
+  --kx-font-mono: "JetBrains Mono", "SFMono-Regular", "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+
+  --kx-text-xs:   0.75rem;   /* 12 */
+  --kx-text-sm:   0.8125rem; /* 13 */
+  --kx-text-base: 0.875rem;  /* 14 — app baseline (dense) */
+  --kx-text-md:   1rem;      /* 16 */
+  --kx-text-lg:   1.125rem;  /* 18 */
+  --kx-text-xl:   1.375rem;  /* 22 */
+  --kx-text-2xl:  1.75rem;   /* 28 */
+  --kx-text-3xl:  2.25rem;   /* 36 */
+
+  --kx-leading-tight: 1.2;
+  --kx-leading-normal: 1.5;
+
+  /* --- Radii -------------------------------------------------------------- */
+  --kx-radius-xs: 4px;
+  --kx-radius-sm: 6px;
+  --kx-radius-md: 10px;
+  --kx-radius-lg: 14px;
+  --kx-radius-xl: 20px;
+  --kx-radius-pill: 999px;
+
+  /* --- Spacing rhythm (4px base) ----------------------------------------- */
+  --kx-space-1: 0.25rem;
+  --kx-space-2: 0.5rem;
+  --kx-space-3: 0.75rem;
+  --kx-space-4: 1rem;
+  --kx-space-5: 1.25rem;
+  --kx-space-6: 1.5rem;
+  --kx-space-8: 2rem;
+
+  /* --- Motion ------------------------------------------------------------- */
+  --kx-duration-fast: 120ms;
+  --kx-duration-base: 200ms;
+  --kx-duration-slow: 320ms;
+  --kx-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --kx-ease-emphasized: cubic-bezier(0.3, 0, 0, 1);
+  --kx-ease-out: cubic-bezier(0, 0, 0.2, 1);
+
+  /* --- Z-index scale ------------------------------------------------------ */
+  --kx-z-base: 0;
+  --kx-z-sticky: 20;
+  --kx-z-drawer: 30;
+  --kx-z-overlay: 40;
+  --kx-z-modal: 50;
+  --kx-z-toast: 60;
+}

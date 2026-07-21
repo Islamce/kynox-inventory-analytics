@@ -3,7 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b111b" />
     <title>Kynox Supply Chain Intelligence</title>
+    <script>
+      // No-flash theme bootstrap: apply the stored choice before first paint.
+      (function () {
+        try {
+          var m = localStorage.getItem('kynox.theme');
+          if (m === 'light' || m === 'dark') {
+            document.documentElement.setAttribute('data-theme', m);
+          }
+          // "system" (or unset) leaves data-theme off so the CSS media query decides.
+        } catch (e) { /* storage blocked — fall back to system preference */ }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
