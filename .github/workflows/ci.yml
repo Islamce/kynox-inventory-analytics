@@ -192,3 +192,54 @@ jobs:
           echo; echo "SPA root:";  curl -fsS http://127.0.0.1:4200/ | grep -q 'id="root"' && echo "SPA served"
           echo "unauth 401:"; test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:4200/api/datasets)" = "401" && echo "ok"
           kill $APP_PID 2>/dev/null || true
+
+  ui-smoke:
+    name: UI smoke (Playwright)
+    runs-on: ubuntu-latest
+    env:
+      DB_CLIENT: better-sqlite3
+      DB_FILE: ./database/ci-ui.sqlite
+      JWT_SECRET: ci-ui-smoke-secret-at-least-32-characters-long
+      ADMIN_EMAIL: admin@kynox.io
+      ADMIN_INITIAL_PASSWORD: CiSmokePass!234
+      UPLOAD_DIR: ./uploads
+      EXPORT_DIR: ./exports
+      AI_PROVIDER: none
+      NODE_ENV: development
+      PORT: '4100'
+      CORS_ORIGIN: http://localhost:4100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Clean dependency installation
+        run: npm ci
+      - name: Install Playwright browser (chromium only)
+        working-directory: apps/web
+        run: npx --yes playwright install --with-deps chromium
+      - name: Build all workspaces
+        run: npm run build
+      - name: Migrate and seed a local SQLite database
+        run: |
+          npm run migrate
+          npm run seed
+      - name: Start the app (node app.js) and wait for health
+        run: |
+          node app.js & echo $! > .app.pid
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:4100/api/health >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:4100/api/health
+      - name: Run Playwright smoke tests (desktop + mobile)
+        working-directory: apps/web
+        env:
+          E2E_BASE_URL: http://localhost:4100
+          E2E_ADMIN_EMAIL: admin@kynox.io
+          E2E_ADMIN_PASSWORD: CiSmokePass!234
+        run: npm run test:e2e
+      - name: Stop the app
+        if: always()
+        run: kill "$(cat .app.pid)" 2>/dev/null || true

@@ -13,3 +13,7 @@ exports/*
 *.log
 coverage/
 .DS_Store
+
+# Playwright
+apps/web/playwright-report/
+apps/web/test-results/
