@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "build": "npm run build:packages && npm run build:api && npm run build:web",
+    "postinstall": "npm run build",
     "build:packages": "npm run build -w @kynox/shared-types -w @kynox/analytics-engine -w @kynox/data-quality -w @kynox/ai-engine",
     "build:api": "npm run build -w @kynox/api",
     "build:web": "npm run build -w @kynox/web",
