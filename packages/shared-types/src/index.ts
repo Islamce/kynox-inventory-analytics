@@ -3,6 +3,10 @@
  * Kynox Supply Chain & Materials Intelligence Platform.
  */
 
+// Source-independent canonical model (transactions, material master, date
+// normalization, mapping confidence, normalization issue codes).
+export * from './canonical';
+
 // ---------------------------------------------------------------------------
 // Canonical field identifiers
 // ---------------------------------------------------------------------------
@@ -60,7 +64,26 @@ export type CanonicalField =
   | 'count_difference'
   | 'last_receipt_date'
   | 'last_issue_date'
-  | 'last_movement_date';
+  | 'last_movement_date'
+  // --- Generic / source-independent fields (added for non-SAP sources) ---
+  | 'transaction_date'
+  | 'transaction_direction'
+  | 'debit_credit_indicator'
+  | 'receipt_qty'
+  | 'issue_qty'
+  | 'location'
+  | 'site'
+  | 'business_unit'
+  | 'opening_qty'
+  | 'closing_qty'
+  | 'unit_cost'
+  | 'transaction_value'
+  | 'stock_status'
+  | 'sku'
+  | 'part_number'
+  | 'item_code'
+  | 'transaction_id'
+  | 'reference_document';
 
 /** Known SAP / ERP report types the detector recognises. */
 export type ReportType =
