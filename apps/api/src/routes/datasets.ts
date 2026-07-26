@@ -9,6 +9,7 @@ import { audit } from '../services/audit';
 import { parseWorkbook } from '../services/files';
 import { applyMapping } from '../services/mapping';
 import { kindForReportType } from '../services/detection';
+import { buildNormalization, classifySource, NORMALIZATION_VERSION } from '../services/normalization';
 import {
   runQualityRules, computeQualityScores, proposeCleansing, applyCleansing,
   parseNumber, parseDate, normalizeText,
@@ -138,6 +139,10 @@ const createSchema = z.object({
   periodEnd: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   company: z.string().max(120).optional(),
   plantTag: z.string().max(120).optional(),
+  // Phase 2: user-confirmed day/month order, resolving genuinely ambiguous
+  // date columns so the import can proceed. Omitted for unambiguous files
+  // (e.g. SAP ISO dates), which never require confirmation.
+  dateOrder: z.enum(['DMY', 'MDY']).optional(),
 });
 
 datasetsRouter.post('/', requirePermission('approve_cleansing'), asyncHandler(async (req, res) => {
@@ -174,6 +179,33 @@ datasetsRouter.post('/', requirePermission('approve_cleansing'), asyncHandler(as
   }
   const scores = computeQualityScores(kind, cleaned, postIssues);
 
+  // Phase 2: source-independent canonical normalization. Additive — it produces
+  // canonical_transactions rows + dataset-level metadata for movements datasets
+  // without altering the existing per-kind persistence below. Pure/in-memory so
+  // it can be persisted inside the dataset-creation transaction for atomicity.
+  const { sourceSystem, sourceReportType } = classifySource(uploadRow.detected_type, uploadRow.source_system);
+  const normalization = buildNormalization({
+    kind,
+    rows: cleaned,
+    sourceSystem,
+    sourceReportType,
+    sourceFileName: uploadRow.original_name,
+    sheetName: sheet.name ?? null,
+    dateOrder: body.dateOrder,
+    dateOrderUserConfirmed: !!body.dateOrder,
+    // Raw (pre-cleansing) dates so ambiguity is judged before the "normalize
+    // dates" cleansing action rewrites the values to ISO.
+    rawDateValues: mapped.map((r) => r.posting_date ?? r.document_date ?? null),
+  });
+
+  // Ambiguous date columns block activation until the user confirms the order.
+  // Unambiguous files (e.g. SAP ISO dates) never trigger this.
+  if (normalization.ambiguousDatesNeedConfirmation) {
+    throw new HttpError(422,
+      'The transaction date column is ambiguous: both DD/MM/YYYY and MM/DD/YYYY are possible. '
+      + 'Re-submit with "dateOrder" set to "DMY" or "MDY" to confirm the intended date format.');
+  }
+
   // Versioning: next version for datasets with the same name.
   const prev = await db('datasets').where({ name: body.name }).orderBy('version', 'desc').first();
   const version = prev ? prev.version + 1 : 1;
@@ -196,6 +228,22 @@ datasetsRouter.post('/', requirePermission('approve_cleansing'), asyncHandler(as
       company: body.company ?? null,
       plant_tag: body.plantTag ?? null,
       created_by: req.user!.id,
+      // Phase 2: dataset-level normalization metadata (additive nullable cols).
+      source_system: sourceSystem,
+      source_report_type: sourceReportType,
+      normalization_status: kind === 'movements' ? 'normalized' : 'not_applicable',
+      normalization_version: NORMALIZATION_VERSION,
+      detected_date_format: normalization.summary.dateFormat,
+      selected_date_format: body.dateOrder ?? null,
+      date_format_confidence: normalization.summary.dateFormatConfidence,
+      date_format_user_confirmed: !!body.dateOrder,
+      total_source_rows: normalization.summary.totalSourceRows,
+      normalized_rows: normalization.summary.normalizedRows,
+      rejected_rows: normalization.summary.rejectedRows,
+      warning_rows: normalization.summary.warningRows,
+      unknown_transaction_rows: normalization.summary.unknownTransactionRows,
+      normalization_summary: JSON.stringify(normalization.summary),
+      normalization_findings: JSON.stringify(normalization.findings),
     });
 
     const table = TABLE_FOR_KIND[kind];
@@ -206,6 +254,18 @@ datasetsRouter.post('/', requirePermission('approve_cleansing'), asyncHandler(as
     const chunkSize = 200;
     for (let i = 0; i < tableRows.length; i += chunkSize) {
       await trx(table).insert(tableRows.slice(i, i + chunkSize));
+    }
+
+    // Phase 2: persist canonical transactions in the SAME transaction. If this
+    // fails the dataset and its per-kind rows roll back together — no partially
+    // active dataset. Chunked to stay within driver parameter limits.
+    if (normalization.canonicalRows.length > 0) {
+      const canonicalRows = normalization.canonicalRows.map((cr) => ({
+        ...cr, dataset_id: id, organization_id: body.company ?? null,
+      }));
+      for (let i = 0; i < canonicalRows.length; i += chunkSize) {
+        await trx('canonical_transactions').insert(canonicalRows.slice(i, i + chunkSize));
+      }
     }
     return id;
   });
@@ -228,6 +288,13 @@ datasetsRouter.post('/', requirePermission('approve_cleansing'), asyncHandler(as
     excludedRows: excludedRows.length,
     cleansingLog: log,
     qualityScores: scores,
+    sourceSystem,
+    sourceReportType,
+    normalization: {
+      summary: normalization.summary,
+      canonicalRowCount: normalization.canonicalRows.length,
+      findingCount: normalization.findings.length,
+    },
   });
 }));
 
@@ -290,6 +357,65 @@ datasetsRouter.get('/:id/rows', requirePermission('view_dataset'), asyncHandler(
   let query = db(table).where({ dataset_id: r.id });
   if (material) query = query.where('material', 'like', `%${material}%`);
   const rows = await query.clone().orderBy('id').limit(pageSize).offset((page - 1) * pageSize);
+  const [{ count }] = await query.clone().count({ count: '*' });
+  res.json({ rows, page, pageSize, total: Number(count) });
+}));
+
+// ---- Phase 2: canonical normalization read APIs (for a future import UI) ----
+
+/** Dataset-level normalization metadata, summary and findings. */
+datasetsRouter.get('/:id/normalization', requirePermission('view_dataset'), asyncHandler(async (req, res) => {
+  const r = await db('datasets').where({ id: Number(req.params.id) }).first();
+  if (!r) throw new HttpError(404, 'Dataset not found');
+  res.json({
+    datasetId: r.id,
+    kind: r.kind,
+    sourceSystem: r.source_system ?? null,
+    sourceReportType: r.source_report_type ?? null,
+    normalizationStatus: r.normalization_status ?? null,
+    normalizationVersion: r.normalization_version ?? null,
+    dateFormat: {
+      detected: r.detected_date_format ?? null,
+      selected: r.selected_date_format ?? null,
+      confidence: r.date_format_confidence ?? null,
+      userConfirmed: !!r.date_format_user_confirmed,
+    },
+    counts: {
+      totalSourceRows: r.total_source_rows ?? null,
+      normalizedRows: r.normalized_rows ?? null,
+      rejectedRows: r.rejected_rows ?? null,
+      warningRows: r.warning_rows ?? null,
+      unknownTransactionRows: r.unknown_transaction_rows ?? null,
+    },
+    summary: r.normalization_summary ? JSON.parse(r.normalization_summary) : null,
+    findings: r.normalization_findings ? JSON.parse(r.normalization_findings) : [],
+  });
+}));
+
+/** Paginated canonical transactions with optional material/category/direction filters. */
+datasetsRouter.get('/:id/canonical', requirePermission('view_dataset'), asyncHandler(async (req, res) => {
+  const r = await db('datasets').where({ id: Number(req.params.id) }).first();
+  if (!r) throw new HttpError(404, 'Dataset not found');
+  const page = Math.max(1, Number(req.query.page) || 1);
+  const pageSize = Math.min(500, Math.max(1, Number(req.query.pageSize) || 100));
+  const material = typeof req.query.material === 'string' ? req.query.material : undefined;
+  const category = typeof req.query.category === 'string' ? req.query.category : undefined;
+  const direction = typeof req.query.direction === 'string' ? req.query.direction : undefined;
+
+  let query = db('canonical_transactions').where({ dataset_id: r.id });
+  if (material) query = query.where('material_id', 'like', `%${material}%`);
+  if (category) query = query.where('transaction_category', category);
+  if (direction) query = query.where('transaction_direction', direction);
+
+  const rows = await query.clone()
+    .select(
+      'id', 'source_row_number', 'material_id', 'material_description', 'transaction_date',
+      'raw_quantity', 'signed_quantity', 'absolute_quantity', 'receipt_quantity', 'consumption_quantity',
+      'unit_of_measure', 'transaction_direction', 'transaction_category', 'transaction_type_code',
+      'classification_source', 'classification_confidence', 'sign_conflict', 'direction_conflict',
+      'warehouse_name', 'location_name', 'plant_id', 'currency', 'transaction_value',
+    )
+    .orderBy('source_row_number').limit(pageSize).offset((page - 1) * pageSize);
   const [{ count }] = await query.clone().count({ count: '*' });
   res.json({ rows, page, pageSize, total: Number(count) });
 }));
