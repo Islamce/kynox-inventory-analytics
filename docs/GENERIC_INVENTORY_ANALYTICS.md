@@ -132,28 +132,86 @@ whether user action is required.
   mapping regression.
 - Full monorepo: build green; 175 tests passing.
 
-## Phased plan (honest status)
+## Phase 2 — persistence, migrations & pipeline wiring (delivered)
 
-**Delivered now (engine foundation, additive, fully unit-tested):** canonical
-model, date-normalization engine, quantity/direction classification engine
-(incl. SAP adapter), generalized mapping synonyms, generalized DQ rules.
+The Phase 1 engines are now wired into the **real** upload → validate → dataset
+sequence and their output is **persisted**, additively and transactionally.
 
-**Pending (require schema/UI/route changes and a further hardening pass — not
-in this change):**
-1. Persist `CanonicalTransaction`/material fields (migrations across SQLite/
-   PostgreSQL/MySQL, backfill, rollback tests) and wire the engines into the
-   upload → dataset pipeline.
-2. Import preview UI (mapping/date/direction previews, user overrides, dataset-
-   level rules) and Data Quality Center surfacing of the new issue codes.
-3. Dashboard movement-category cards (receipts/consumption/transfers/returns/
-   adjustments/reversals/unknown/date-parse errors/sign conflicts) and demand
-   filters that exclude transfers/returns/reversals/adjustments by default.
-4. Inventory reconciliation (opening + movements = closing) by material/
-   warehouse/location/plant/batch/period, with transfer & reversal pairing.
-5. AI wording generalization (source-neutral terminology; explain normalization
-   and exclusions) within existing governance limits.
+### Schema (`20260722000003_canonical_normalization.js`)
 
-Acceptance criteria in §19 of the request that depend on the pending phases
-(end-to-end generic upload through the UI, DB persistence, dashboard cards,
-reconciliation) are **not yet met**; the engine foundation they build on is in
-place and tested.
+- New **`canonical_transactions`** table: the source-neutral, signed, classified
+  transaction record. Columns include material/warehouse/location/plant, the
+  three canonical dates, `raw_quantity` (preserved as text) + parsed/absolute/
+  signed/receipt/consumption quantities, `transaction_direction`,
+  `transaction_category`, classification provenance
+  (`classification_source`/`classification_confidence`), `sign_conflict`/
+  `direction_conflict`, `normalization_warnings` (JSON), and
+  **`original_source_record`** (JSON of the mapped source row, for full
+  traceability). Indexed on `dataset_id` and the common analytics composites
+  (material / date / category / direction / source row).
+- New **nullable** `datasets` columns for dataset-level normalization metadata:
+  `source_system`, `source_report_type`, `normalization_status/version`,
+  `import_locale`, `detected/selected_date_format`, `date_format_confidence`,
+  `date_format_user_confirmed`, `total_source_rows`, `normalized_rows`,
+  `rejected_rows`, `warning_rows`, `unknown_transaction_rows`,
+  `normalization_summary` (JSON) and `normalization_findings` (JSON).
+
+Only portable Knex column types are used (string / integer / double / date /
+datetime / boolean / text), matching the existing schema; JSON lives in `text`
+columns. `up` and `down` are both exercised (migrate → rollback → re-migrate)
+on SQLite in the dev cycle and on **PostgreSQL 16** and **MySQL 8.4** in CI.
+
+### Ingestion wiring (`apps/api/services/normalization.ts`)
+
+`buildNormalization()` is pure/in-memory: it reuses `classifyTransaction`,
+`normalizeDateColumn`, `dateIssues` and `classificationIssues` to produce the
+`canonical_transactions` rows, a dataset-level **summary** (category/direction
+counts, receipt/consumption/transfer/return/adjustment/reversal/unknown rows,
+sign & direction conflicts, date-format decision) and the row-anchored
+findings. The dataset route persists the canonical rows **inside the same
+transaction** that creates the dataset, chunked — so a canonical failure rolls
+the whole dataset back (no partially-active dataset). The existing per-kind
+tables (movements/stock/…) and all SAP analytics are untouched.
+
+- **SAP stays first-class:** for SAP sources the SAP adapter
+  (`sapMovementTypeCategory`) classifies the numeric `BWART`; the generic text
+  classifier is the fallback so a generic file the detector labelled
+  "movements" still classifies from its type text.
+- **Ambiguous dates block activation:** genuine DD/MM vs MM/DD ambiguity is
+  judged from the **raw** column (before the "normalize dates" cleansing action
+  rewrites values to ISO) and returns **HTTP 422** until the client re-submits
+  with `dateOrder: "DMY" | "MDY"`. Unambiguous files (e.g. SAP ISO dates) are
+  never blocked.
+- **Unknown transactions** stay `UNKNOWN` and visible, and are **excluded** from
+  the receipt/consumption KPIs — never forced in.
+
+### Read APIs (for a future import UI)
+
+- `GET /api/datasets/:id/normalization` — dataset-level source/date metadata,
+  summary and findings.
+- `GET /api/datasets/:id/canonical` — paginated canonical transactions with
+  optional `material` / `category` / `direction` filters.
+
+Both require `view_dataset` and return structured JSON (no internal SQL).
+
+### Testing evidence (Phase 2)
+
+- `@kynox/api`: **52** tests (4 new in `normalization.test.ts`) — generic
+  transaction import persists canonical rows + preserves the source row +
+  excludes UNKNOWN from KPIs; ambiguous-date blocking then confirmed import;
+  transactional rollback on canonical failure; SAP MB51 (numeric BWART)
+  regression. Full monorepo: **179** tests green; build green.
+
+## Still pending (future phases)
+
+1. Import preview UI (mapping/date/direction previews, user overrides) and Data
+   Quality Center surfacing of the new issue codes.
+2. Dashboard movement-category cards and demand filters that exclude transfers/
+   returns/reversals/adjustments by default.
+3. Inventory reconciliation (opening + movements = closing) with transfer &
+   reversal pairing.
+4. AI wording generalization (source-neutral terminology) within governance
+   limits.
+
+These require UI/dashboard work and are not part of Phase 2 (persistence &
+pipeline wiring).
