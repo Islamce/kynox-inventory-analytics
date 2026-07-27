@@ -1,0 +1,26 @@
+@import "tailwindcss";
+@import "./design/tokens.css";
+@import "./design/themes.css";
+
+html, body, #root {
+  height: 100%;
+}
+
+/* Sticky table headers used by the shared DataTable component. */
+.data-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* Subtle entrance used by cards, panels and overlays (motion-safe). */
+@keyframes kx-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes kx-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.kx-animate-rise { animation: kx-rise var(--kx-duration-base) var(--kx-ease-out) both; }
+.kx-animate-fade { animation: kx-fade var(--kx-duration-base) var(--kx-ease-standard) both; }

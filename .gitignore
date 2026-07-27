@@ -1,0 +1,19 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.env
+.env.local
+.env.production
+uploads/*
+!uploads/.gitkeep
+exports/*
+!exports/.gitkeep
+*.sqlite
+*.sqlite-journal
+*.log
+coverage/
+.DS_Store
+
+# Playwright
+apps/web/playwright-report/
+apps/web/test-results/

@@ -1,0 +1,249 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build, type-check and test (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify no secrets or runtime artefacts are committed
+        run: |
+          set -e
+          violations=""
+          # .env files (committed *.example templates are allowed)
+          if git ls-files | grep -E '(^|/)\.env(\..+)?$' | grep -v '\.example$'; then
+            violations="$violations env-files"
+          fi
+          # SQLite databases, uploaded files, generated exports
+          if git ls-files | grep -E '\.(sqlite|sqlite3|db)$'; then
+            violations="$violations database-files"
+          fi
+          if git ls-files 'uploads/*' | grep -v '^uploads/\.gitkeep$'; then
+            violations="$violations uploads"
+          fi
+          if git ls-files 'exports/*' | grep -v '^exports/\.gitkeep$'; then
+            violations="$violations exports"
+          fi
+          # Obvious secret patterns in tracked files
+          if git grep -nE '(sk-ant-api|sk-proj-|AKIA[0-9A-Z]{16}|-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----)' -- ':!*.yml' ; then
+            violations="$violations secret-patterns"
+          fi
+          if [ -n "$violations" ]; then
+            echo "::error::Forbidden files or secrets committed:$violations"
+            exit 1
+          fi
+          echo "No forbidden files or secret patterns found."
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Clean dependency installation
+        run: npm ci
+
+      - name: Build shared packages (their .d.ts files are needed by dependent type-checks)
+        run: npm run build:packages
+
+      - name: Type-check all workspaces
+        run: npm run typecheck
+
+      - name: Build all workspaces
+        run: npm run build
+
+      - name: Unit tests (analytics-engine, data-quality, ai-engine)
+        run: |
+          npm test -w @kynox/analytics-engine
+          npm test -w @kynox/data-quality
+          npm test -w @kynox/ai-engine
+
+      - name: API integration tests (includes frontend-serving smoke via SPA route tests)
+        run: npm test -w @kynox/api
+
+      - name: Migration rollback verification (SQLite)
+        run: |
+          export JWT_SECRET=ci-migration-secret
+          npm run migrate -w @kynox/api
+          npm run migrate:rollback -w @kynox/api
+          npm run migrate -w @kynox/api
+
+      - name: Dependency security audit
+        run: npm audit --audit-level=high
+
+  postgres-integration:
+    name: API integration tests on PostgreSQL
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: kynox
+          POSTGRES_PASSWORD: kynox-ci-password
+          POSTGRES_DB: kynox_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U kynox"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build:packages
+      - name: Run API tests against PostgreSQL
+        env:
+          DB_CLIENT: pg
+          DB_HOST: localhost
+          DB_PORT: '5432'
+          DB_NAME: kynox_test
+          DB_USER: kynox
+          DB_PASSWORD: kynox-ci-password
+        run: npm test -w @kynox/api
+
+  hostinger-build-simulation:
+    name: Hostinger managed-hosting build + start (MySQL)
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root-ci-password
+          MYSQL_DATABASE: kynox_analytics
+          MYSQL_USER: kynox_app
+          MYSQL_PASSWORD: app-ci-password
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd "mysqladmin ping -h localhost -proot-ci-password"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # Reproduce the managed-host flow: clean install from the committed
+      # lockfile, full monorepo build, controlled migrate, then start the ROOT
+      # entry (node app.js) exactly as Hostinger will, and probe the endpoints.
+      - name: Clean install (as managed host)
+        run: |
+          rm -rf node_modules
+          npm ci
+      - name: Full production build
+        run: npm run build
+      - name: Grant app user (CI MySQL)
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -uroot -proot-ci-password \
+            -e "GRANT ALL ON kynox_analytics.* TO 'kynox_app'@'%'; FLUSH PRIVILEGES;"
+      - name: Controlled migration (separate command, not on startup)
+        env:
+          DB_CLIENT: mysql2
+          DB_HOST: 127.0.0.1
+          DB_PORT: '3306'
+          DB_NAME: kynox_analytics
+          DB_USER: kynox_app
+          DB_PASSWORD: app-ci-password
+        run: npm run migrate
+      - name: Start root entry (node app.js) and probe health/readiness/version
+        env:
+          NODE_ENV: production
+          APP_ENV: production
+          PORT: '4200'
+          APP_URL: https://analytics.kynox.io
+          CORS_ORIGIN: https://analytics.kynox.io
+          DB_CLIENT: mysql2
+          DB_HOST: 127.0.0.1
+          DB_PORT: '3306'
+          DB_NAME: kynox_analytics
+          DB_USER: kynox_app
+          DB_PASSWORD: app-ci-password
+          DB_SSL: 'false'
+          JWT_SECRET: ci-hostinger-simulation-secret-at-least-32-chars
+          UPLOAD_DIR: ./uploads
+          EXPORT_DIR: ./exports
+          AI_PROVIDER: none
+          RELEASE_SHA: ${{ github.sha }}
+        run: |
+          npm start &
+          APP_PID=$!
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:4200/api/health >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          set -e
+          echo "health:";    curl -fsS http://127.0.0.1:4200/api/health
+          echo; echo "readiness:"; curl -fsS http://127.0.0.1:4200/api/readiness
+          echo; echo "version:";   curl -fsS http://127.0.0.1:4200/api/version
+          echo; echo "SPA root:";  curl -fsS http://127.0.0.1:4200/ | grep -q 'id="root"' && echo "SPA served"
+          echo "unauth 401:"; test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:4200/api/datasets)" = "401" && echo "ok"
+          kill $APP_PID 2>/dev/null || true
+
+  ui-smoke:
+    name: UI smoke (Playwright)
+    runs-on: ubuntu-latest
+    env:
+      DB_CLIENT: better-sqlite3
+      # Absolute path so migrate/seed (cwd apps/api via -w) and the server
+      # (cwd repo root via node app.js) resolve to the SAME SQLite file.
+      DB_FILE: ${{ github.workspace }}/database/ci-ui.sqlite
+      JWT_SECRET: ci-ui-smoke-secret-at-least-32-characters-long
+      ADMIN_EMAIL: admin@kynox.io
+      ADMIN_INITIAL_PASSWORD: 'CiSmokePass!234'
+      UPLOAD_DIR: ./uploads
+      EXPORT_DIR: ./exports
+      AI_PROVIDER: none
+      NODE_ENV: development
+      PORT: '4100'
+      CORS_ORIGIN: http://localhost:4100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Clean dependency installation
+        run: npm ci
+      - name: Install Playwright browser (chromium only)
+        working-directory: apps/web
+        run: npx --yes playwright install --with-deps chromium
+      - name: Build all workspaces
+        run: npm run build
+      - name: Migrate and seed a local SQLite database
+        run: |
+          npm run migrate
+          npm run seed
+      - name: Start the app (node app.js) and wait for readiness
+        run: |
+          node app.js > "$RUNNER_TEMP/app.log" 2>&1 & echo $! > .app.pid
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4100/api/readiness >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          # Readiness exercises the DB (the migrate/seed target), so a wrong
+          # DB path fails here instead of surfacing as a login failure later.
+          curl -fsS http://127.0.0.1:4100/api/readiness || { echo '--- app.log ---'; cat "$RUNNER_TEMP/app.log"; exit 1; }
+      - name: Run Playwright smoke tests (desktop + mobile)
+        working-directory: apps/web
+        env:
+          E2E_BASE_URL: http://localhost:4100
+          E2E_ADMIN_EMAIL: admin@kynox.io
+          E2E_ADMIN_PASSWORD: 'CiSmokePass!234'
+        run: npm run test:e2e
+      - name: Stop the app
+        if: always()
+        run: kill "$(cat .app.pid)" 2>/dev/null || true

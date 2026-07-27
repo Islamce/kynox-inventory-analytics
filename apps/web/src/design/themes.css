@@ -1,0 +1,254 @@
+/* ===========================================================================
+   Kynox design tokens — SEMANTIC ROLES + THEMES
+   ---------------------------------------------------------------------------
+   Role-based tokens consumed by components (surface, body, muted, brand, …).
+   Light is the default; dark activates via `:root[data-theme="dark"]` (set by
+   the theme engine before first paint) OR the OS preference when the user has
+   made no explicit choice. Every semantic token is registered into Tailwind's
+   theme with `@theme inline` so utilities such as `bg-surface`, `text-muted`,
+   `border-line` and `bg-brand` resolve to the live CSS variable and therefore
+   re-theme instantly, with no per-class dark: variants.
+   =========================================================================== */
+
+/* --- Light (default) ----------------------------------------------------- */
+:root {
+  color-scheme: light;
+
+  --kx-bg:            var(--kx-neutral-50);
+  --kx-surface:       var(--kx-neutral-0);
+  --kx-elevated:      var(--kx-neutral-0);
+  --kx-sunken:        var(--kx-neutral-100);
+  --kx-overlay:       rgba(11, 17, 27, 0.45);
+
+  --kx-body:          var(--kx-neutral-900);
+  --kx-muted:         var(--kx-neutral-600);   /* WCAG-AA on light surfaces */
+  --kx-subtle:        var(--kx-neutral-550);   /* AA on white + sunken */
+  --kx-on-brand:      var(--kx-neutral-0);
+
+  --kx-line:          var(--kx-neutral-200);
+  --kx-line-strong:   var(--kx-neutral-300);
+
+  --kx-brand:         var(--kx-brand-600);
+  --kx-brand-hover:   var(--kx-brand-700);
+  --kx-brand-soft:    var(--kx-brand-50);
+  --kx-brand-soft-fg: var(--kx-brand-700);
+  --kx-link:          var(--kx-brand-700);   /* AA text link on light surfaces */
+
+  --kx-ring:          var(--kx-brand-500);
+
+  --kx-success:       #0b7536;   /* AA as text on success-soft */
+  --kx-success-soft:  var(--kx-success-50);
+  --kx-warning:       #8a5a08;   /* AA as text on warning-soft */
+  --kx-warning-soft:  var(--kx-warning-50);
+  --kx-danger:        var(--kx-danger-600);
+  --kx-danger-soft:   var(--kx-danger-50);
+  --kx-info:          var(--kx-info-500);
+  --kx-info-soft:     var(--kx-info-50);
+
+  --kx-shadow-sm: 0 1px 2px rgba(19, 27, 39, 0.06), 0 1px 3px rgba(19, 27, 39, 0.05);
+  --kx-shadow-md: 0 2px 6px rgba(19, 27, 39, 0.07), 0 6px 16px rgba(19, 27, 39, 0.08);
+  --kx-shadow-lg: 0 8px 30px rgba(19, 27, 39, 0.14);
+
+  /* Signature sidebar — deep brand-tinted, identical intent in both themes. */
+  --kx-sidebar-bg:      var(--kx-neutral-950);
+  --kx-sidebar-grad:    radial-gradient(120% 60% at 0% 0%, #16214d 0%, transparent 60%);
+  --kx-sidebar-fg:      var(--kx-neutral-300);
+  --kx-sidebar-fg-dim:  var(--kx-neutral-500);
+  --kx-sidebar-active:  rgba(56, 107, 239, 0.16);
+  --kx-sidebar-hover:   rgba(255, 255, 255, 0.05);
+  --kx-sidebar-line:    rgba(255, 255, 255, 0.08);
+  --kx-sidebar-accent:  var(--kx-brand-400);
+}
+
+/* --- Dark: explicit opt-in ----------------------------------------------- */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --kx-bg:            var(--kx-neutral-950);
+  --kx-surface:       var(--kx-neutral-900);
+  --kx-elevated:      var(--kx-neutral-850);
+  --kx-sunken:        var(--kx-neutral-850);
+  --kx-overlay:       rgba(0, 0, 0, 0.6);
+
+  --kx-body:          var(--kx-neutral-50);
+  --kx-muted:         var(--kx-neutral-300);   /* WCAG-AA on dark surfaces */
+  --kx-subtle:        var(--kx-neutral-400);
+  --kx-on-brand:      var(--kx-neutral-0);
+
+  --kx-line:          rgba(255, 255, 255, 0.09);
+  --kx-line-strong:   rgba(255, 255, 255, 0.16);
+
+  --kx-brand:         var(--kx-brand-500);
+  --kx-brand-hover:   var(--kx-brand-400);
+  --kx-brand-soft:    rgba(56, 107, 239, 0.16);
+  --kx-brand-soft-fg: var(--kx-brand-200);
+  --kx-link:          var(--kx-brand-300);   /* AA text link on dark surfaces */
+
+  --kx-ring:          var(--kx-brand-400);
+
+  --kx-success:       #34c17a;
+  --kx-success-soft:  rgba(18, 161, 80, 0.16);
+  --kx-warning:       #f0ad2e;
+  --kx-warning-soft:  rgba(224, 147, 13, 0.16);
+  --kx-danger:        #f16b6b;
+  --kx-danger-soft:   rgba(216, 58, 58, 0.18);
+  --kx-info:          var(--kx-brand-400);
+  --kx-info-soft:     rgba(56, 107, 239, 0.16);
+
+  --kx-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --kx-shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45);
+  --kx-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.55);
+
+  --kx-sidebar-bg:      var(--kx-neutral-950);
+  --kx-sidebar-grad:    radial-gradient(120% 60% at 0% 0%, #1b2a5c 0%, transparent 60%);
+  --kx-sidebar-fg:      var(--kx-neutral-300);
+  --kx-sidebar-fg-dim:  var(--kx-neutral-500);
+  --kx-sidebar-active:  rgba(56, 107, 239, 0.22);
+  --kx-sidebar-hover:   rgba(255, 255, 255, 0.06);
+  --kx-sidebar-line:    rgba(255, 255, 255, 0.08);
+  --kx-sidebar-accent:  var(--kx-brand-400);
+}
+
+/* --- Follow the OS when the user has expressed no explicit choice --------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    color-scheme: dark;
+
+    --kx-bg:          var(--kx-neutral-950);
+    --kx-surface:     var(--kx-neutral-900);
+    --kx-elevated:    var(--kx-neutral-850);
+    --kx-sunken:      var(--kx-neutral-850);
+    --kx-overlay:     rgba(0, 0, 0, 0.6);
+
+    --kx-body:        var(--kx-neutral-50);
+    --kx-muted:       var(--kx-neutral-300);
+    --kx-subtle:      var(--kx-neutral-400);
+
+    --kx-line:        rgba(255, 255, 255, 0.09);
+    --kx-line-strong: rgba(255, 255, 255, 0.16);
+
+    --kx-brand:       var(--kx-brand-500);
+    --kx-brand-hover: var(--kx-brand-400);
+    --kx-brand-soft:  rgba(56, 107, 239, 0.16);
+    --kx-brand-soft-fg: var(--kx-brand-200);
+    --kx-link:        var(--kx-brand-300);
+    --kx-ring:        var(--kx-brand-400);
+
+    --kx-success:     #34c17a;
+    --kx-success-soft: rgba(18, 161, 80, 0.16);
+    --kx-warning:     #f0ad2e;
+    --kx-warning-soft: rgba(224, 147, 13, 0.16);
+    --kx-danger:      #f16b6b;
+    --kx-danger-soft: rgba(216, 58, 58, 0.18);
+    --kx-info:        var(--kx-brand-400);
+    --kx-info-soft:   rgba(56, 107, 239, 0.16);
+
+    --kx-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --kx-shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45);
+    --kx-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.55);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Register semantic roles as Tailwind theme values. `inline` keeps the
+   var() reference in the generated utilities so they react to theme flips.
+   Utilities produced: bg-/text-/border-{brand,surface,elevated,sunken,body,
+   muted,subtle,line,line-strong,success,warning,danger,info,on-brand,...}.
+   --------------------------------------------------------------------------- */
+@theme inline {
+  --color-bg:          var(--kx-bg);
+  --color-surface:     var(--kx-surface);
+  --color-elevated:    var(--kx-elevated);
+  --color-sunken:      var(--kx-sunken);
+
+  --color-body:        var(--kx-body);
+  --color-muted:       var(--kx-muted);
+  --color-subtle:      var(--kx-subtle);
+  --color-on-brand:    var(--kx-on-brand);
+
+  --color-line:        var(--kx-line);
+  --color-line-strong: var(--kx-line-strong);
+
+  --color-brand:       var(--kx-brand);
+  --color-brand-hover: var(--kx-brand-hover);
+  --color-brand-soft:  var(--kx-brand-soft);
+  --color-brand-soft-fg: var(--kx-brand-soft-fg);
+  --color-link:        var(--kx-link);
+
+  --color-success:      var(--kx-success);
+  --color-success-soft: var(--kx-success-soft);
+  --color-warning:      var(--kx-warning);
+  --color-warning-soft: var(--kx-warning-soft);
+  --color-danger:       var(--kx-danger);
+  --color-danger-soft:  var(--kx-danger-soft);
+  --color-info:         var(--kx-info);
+  --color-info-soft:    var(--kx-info-soft);
+
+  --radius-xs: var(--kx-radius-xs);
+  --radius-sm: var(--kx-radius-sm);
+  --radius-md: var(--kx-radius-md);
+  --radius-lg: var(--kx-radius-lg);
+  --radius-xl: var(--kx-radius-xl);
+
+  --font-sans: var(--kx-font-sans);
+  --font-mono: var(--kx-font-mono);
+
+  --shadow-kx-sm: var(--kx-shadow-sm);
+  --shadow-kx-md: var(--kx-shadow-md);
+  --shadow-kx-lg: var(--kx-shadow-lg);
+}
+
+/* --- Base element styling ------------------------------------------------- */
+body {
+  background-color: var(--kx-bg);
+  color: var(--kx-body);
+  font-family: var(--kx-font-sans);
+  font-size: var(--kx-text-base);
+  line-height: var(--kx-leading-normal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color var(--kx-duration-base) var(--kx-ease-standard),
+              color var(--kx-duration-base) var(--kx-ease-standard);
+}
+
+/* Tabular figures everywhere numbers are compared. */
+.tabular-nums,
+th, td {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Accessible, visible focus — brand ring, never removed. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--kx-ring);
+  outline-offset: 2px;
+  border-radius: var(--kx-radius-sm);
+}
+
+::selection {
+  background: var(--kx-brand-soft);
+  color: var(--kx-brand-soft-fg);
+}
+
+/* Themed, unobtrusive scrollbars. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--kx-line-strong) transparent;
+}
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb {
+  background: var(--kx-line-strong);
+  border-radius: var(--kx-radius-pill);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--kx-muted); }
+
+/* Respect reduced-motion at the platform level. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
