@@ -41,6 +41,9 @@ async function uploadCsv(csv: string, filename: string) {
     .attach('file', Buffer.from(csv), { filename, contentType: 'text/csv' });
 }
 
+// Postgres returns date columns as Date objects; SQLite/MySQL as ISO strings.
+const iso = (v: unknown) => (v instanceof Date ? v.toISOString().slice(0, 10) : String(v).slice(0, 10));
+
 async function safeIdsFor(uploadId: number): Promise<string[]> {
   const validation = await request(app).post(`/api/uploads/${uploadId}/validate`)
     .set('Authorization', `Bearer ${token}`);
@@ -145,7 +148,7 @@ describe('ambiguous date column blocks activation until confirmed', () => {
     const canonical = await db('canonical_transactions').where({ dataset_id: confirmed.body.id }).orderBy('source_row_number');
     expect(canonical).toHaveLength(3);
     // 03/04/2026 under DMY = 3 April 2026.
-    expect(String(canonical[0].transaction_date).slice(0, 10)).toBe('2026-04-03');
+    expect(iso(canonical[0].transaction_date)).toBe('2026-04-03');
     expect(confirmed.body.normalization.summary.dateFormatUserConfirmed).toBe(true);
   });
 });
