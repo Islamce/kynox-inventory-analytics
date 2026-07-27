@@ -9,13 +9,14 @@ import { audit } from '../services/audit';
 import { parseWorkbook } from '../services/files';
 import { applyMapping } from '../services/mapping';
 import { kindForReportType } from '../services/detection';
-import { buildNormalization, classifySource, NORMALIZATION_VERSION } from '../services/normalization';
+import { buildNormalization, classifySource, recomputeCategorySummary, NORMALIZATION_VERSION } from '../services/normalization';
 import {
   runQualityRules, computeQualityScores, proposeCleansing, applyCleansing,
   parseNumber, parseDate, normalizeText,
 } from '@kynox/data-quality';
 import type { MappedRow } from '@kynox/data-quality';
-import type { ColumnMapping } from '@kynox/shared-types';
+import type { ColumnMapping, TransactionCategory } from '@kynox/shared-types';
+import { CATEGORY_DIRECTION } from '@kynox/shared-types';
 
 export const datasetsRouter = Router();
 datasetsRouter.use(requireAuth);
@@ -419,6 +420,95 @@ datasetsRouter.get('/:id/canonical', requirePermission('view_dataset'), asyncHan
     .orderBy('source_row_number').limit(pageSize).offset((page - 1) * pageSize);
   const [{ count }] = await query.clone().count({ count: '*' });
   res.json({ rows, page, pageSize, total: Number(count) });
+}));
+
+const CANONICAL_CATEGORIES = [
+  'RECEIPT', 'CONSUMPTION', 'TRANSFER_IN', 'TRANSFER_OUT', 'RETURN_IN', 'RETURN_OUT',
+  'ADJUSTMENT_IN', 'ADJUSTMENT_OUT', 'OPENING_BALANCE', 'CLOSING_BALANCE', 'STOCK_COUNT',
+  'RESERVATION', 'BLOCKED_STOCK', 'QUALITY_INSPECTION', 'REVERSAL_IN', 'REVERSAL_OUT',
+  'NEUTRAL', 'UNKNOWN',
+] as const;
+const overrideSchema = z.object({ category: z.enum(CANONICAL_CATEGORIES) });
+
+/** Row-level findings that a manual reclassification directly resolves. */
+const STALE_ON_OVERRIDE = new Set([
+  'UNKNOWN_TRANSACTION_TYPE', 'SIGN_CONFLICT', 'DIRECTION_CONFLICT', 'LOW_CONFIDENCE_DIRECTION_CLASSIFICATION',
+]);
+
+/**
+ * Manual per-row classification override — the pipeline's automatic
+ * category/direction decision is not always right (an unrecognised
+ * transaction type, an ambiguous keyword match); this lets a user correct one
+ * canonical_transactions row, recomputes its signed/receipt/consumption
+ * quantities from the corrected direction, and keeps the dataset-level
+ * normalization summary and findings consistent with the override.
+ */
+datasetsRouter.patch('/:id/canonical/:canonicalId', requirePermission('edit_mapping'), asyncHandler(async (req, res) => {
+  const datasetId = Number(req.params.id);
+  const canonicalId = Number(req.params.canonicalId);
+  const { category } = overrideSchema.parse(req.body);
+
+  const ds = await db('datasets').where({ id: datasetId }).first();
+  if (!ds) throw new HttpError(404, 'Dataset not found');
+  if (ds.kind !== 'movements') throw new HttpError(400, 'Classification override only applies to movements datasets');
+
+  // Scoped by dataset_id — a canonical row id belonging to a different
+  // dataset must 404 here, never update (no IDOR across datasets).
+  const row = await db('canonical_transactions').where({ id: canonicalId, dataset_id: datasetId }).first();
+  if (!row) throw new HttpError(404, 'Canonical transaction not found in this dataset');
+
+  const direction = CATEGORY_DIRECTION[category];
+  const abs: number | null = row.absolute_quantity;
+  const signedQuantity = abs === null ? null
+    : direction === 'IN' ? abs
+    : direction === 'OUT' ? -abs
+    : direction === 'NEUTRAL' ? 0
+    : row.original_sign != null ? row.original_sign * abs : row.signed_quantity; // UNKNOWN: preserve original sign
+
+  const patch = {
+    transaction_category: category,
+    transaction_direction: direction,
+    signed_quantity: signedQuantity,
+    receipt_quantity: category === 'RECEIPT' ? abs : null,
+    consumption_quantity: category === 'CONSUMPTION' ? abs : null,
+    classification_source: 'user_rule',
+    classification_confidence: 1,
+    sign_conflict: false,
+    direction_conflict: false,
+  };
+
+  await db.transaction(async (trx) => {
+    await trx('canonical_transactions').where({ id: canonicalId, dataset_id: datasetId }).update(patch);
+
+    // Keep the dataset-level summary and findings consistent with the override
+    // rather than letting them silently go stale.
+    const allRows = await trx('canonical_transactions').where({ dataset_id: datasetId })
+      .select('transaction_category', 'transaction_direction', 'receipt_quantity', 'consumption_quantity', 'sign_conflict', 'direction_conflict');
+    const existingSummary = ds.normalization_summary ? JSON.parse(ds.normalization_summary) : null;
+    const existingFindings: { rowNumber: number | null; code: string }[] =
+      ds.normalization_findings ? JSON.parse(ds.normalization_findings) : [];
+    const newFindings = existingFindings.filter(
+      (f) => !(f.rowNumber === row.source_row_number && STALE_ON_OVERRIDE.has(f.code)),
+    );
+
+    const datasetPatch: Record<string, unknown> = { normalization_findings: JSON.stringify(newFindings) };
+    if (existingSummary) {
+      const newSummary = recomputeCategorySummary(existingSummary, allRows);
+      datasetPatch.normalization_summary = JSON.stringify(newSummary);
+      datasetPatch.unknown_transaction_rows = newSummary.unknownTransactionRows;
+    }
+    await trx('datasets').where({ id: datasetId }).update(datasetPatch);
+  });
+
+  await audit({
+    action: 'canonical_reclassified', userId: req.user!.id, entityType: 'canonical_transaction', entityId: canonicalId,
+    prevValue: { category: row.transaction_category, direction: row.transaction_direction },
+    newValue: { category, direction },
+    sourceIp: req.ip,
+  });
+
+  const refreshed = await db('canonical_transactions').where({ id: canonicalId }).first();
+  res.json({ row: refreshed });
 }));
 
 datasetsRouter.delete('/:id', requirePermission('delete_dataset'), asyncHandler(async (req, res) => {

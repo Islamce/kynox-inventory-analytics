@@ -321,3 +321,78 @@ describe('document-level transfer/reversal pairing', () => {
     expect(unpaired[0].rowNumber).toBe(unmatchedReversal.source_row_number);
   });
 });
+
+describe('manual per-row classification override', () => {
+  it('corrects an UNKNOWN row, recomputes derived fields, and keeps the dataset summary consistent', async () => {
+    const csv = [
+      'Item Code,Transaction Date,Quantity,Transaction Type,Warehouse',
+      'U-1,2026-01-05,25,Sparkle Operation,WH1',   // unrecognised type -> UNKNOWN
+    ].join('\n');
+    const up = await uploadCsv(csv, 'override-unknown.csv');
+    const ds = await request(app).post('/api/datasets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: up.body.id, name: 'Override Unknown', approvedActionIds: await safeIdsFor(up.body.id) });
+    expect(ds.status).toBe(201);
+
+    const before = await db('canonical_transactions').where({ dataset_id: ds.body.id }).first();
+    expect(before.transaction_category).toBe('UNKNOWN');
+
+    const beforeMeta = await request(app).get(`/api/datasets/${ds.body.id}/normalization`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(beforeMeta.body.summary.unknownTransactionRows).toBe(1);
+    expect(beforeMeta.body.findings.some((f: { code: string }) => f.code === 'UNKNOWN_TRANSACTION_TYPE')).toBe(true);
+
+    const patch = await request(app).patch(`/api/datasets/${ds.body.id}/canonical/${before.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ category: 'RECEIPT' });
+    expect(patch.status).toBe(200);
+    expect(patch.body.row.transaction_category).toBe('RECEIPT');
+    expect(patch.body.row.transaction_direction).toBe('IN');
+    expect(patch.body.row.signed_quantity).toBe(25);
+    expect(patch.body.row.receipt_quantity).toBe(25);
+    expect(patch.body.row.classification_source).toBe('user_rule');
+
+    const afterMeta = await request(app).get(`/api/datasets/${ds.body.id}/normalization`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(afterMeta.body.summary.unknownTransactionRows).toBe(0);
+    expect(afterMeta.body.summary.receiptRows).toBe(1);
+    expect(afterMeta.body.counts.unknownTransactionRows).toBe(0);
+    // The finding this override directly resolves is dropped, not left stale.
+    expect(afterMeta.body.findings.some((f: { code: string }) => f.code === 'UNKNOWN_TRANSACTION_TYPE')).toBe(false);
+  });
+
+  it('rejects an invalid category and 404s on a canonical row from a different dataset (no IDOR)', async () => {
+    const csvA = 'Item Code,Transaction Date,Quantity,Transaction Type,Warehouse\nA-1,2026-01-05,10,Goods Receipt,WH1\n';
+    const upA = await uploadCsv(csvA, 'override-a.csv');
+    const dsA = await request(app).post('/api/datasets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: upA.body.id, name: 'Override A', approvedActionIds: await safeIdsFor(upA.body.id) });
+
+    const csvB = 'Item Code,Transaction Date,Quantity,Transaction Type,Warehouse\nB-1,2026-01-06,10,Goods Receipt,WH1\n';
+    const upB = await uploadCsv(csvB, 'override-b.csv');
+    const dsB = await request(app).post('/api/datasets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: upB.body.id, name: 'Override B', approvedActionIds: await safeIdsFor(upB.body.id) });
+
+    const rowInA = await db('canonical_transactions').where({ dataset_id: dsA.body.id }).first();
+
+    const badCategory = await request(app).patch(`/api/datasets/${dsA.body.id}/canonical/${rowInA.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ category: 'NOT_A_REAL_CATEGORY' });
+    expect(badCategory.status).toBe(400);
+
+    // rowInA belongs to dataset A; addressing it through dataset B's URL must 404, not update it.
+    const idor = await request(app).patch(`/api/datasets/${dsB.body.id}/canonical/${rowInA.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ category: 'CONSUMPTION' });
+    expect(idor.status).toBe(404);
+
+    const stillA = await db('canonical_transactions').where({ id: rowInA.id }).first();
+    expect(stillA.transaction_category).toBe('RECEIPT'); // unchanged
+  });
+
+  it('requires authentication', async () => {
+    const res = await request(app).patch('/api/datasets/1/canonical/1').send({ category: 'RECEIPT' });
+    expect(res.status).toBe(401);
+  });
+});

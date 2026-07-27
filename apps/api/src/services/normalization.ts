@@ -445,4 +445,43 @@ export function buildNormalization(opts: NormalizeOptions): NormalizationResult 
   return { canonicalRows, summary, findings, analysis, ambiguousDatesNeedConfirmation };
 }
 
+/**
+ * Recomputes the category/direction-derived fields of a stored
+ * NormalizationSummary from the CURRENT canonical_transactions rows of a
+ * dataset — used after a manual per-row classification override, since the
+ * summary persisted at import time would otherwise go stale. Date-format and
+ * row-count fields (rejectedRows, dateFormat, …) are untouched: they describe
+ * the import itself, not the current classification state.
+ */
+export function recomputeCategorySummary(
+  existing: NormalizationSummary,
+  rows: { transaction_category: string; transaction_direction: string; receipt_quantity: number | null; consumption_quantity: number | null; sign_conflict: boolean | number; direction_conflict: boolean | number }[],
+): NormalizationSummary {
+  const summary: NormalizationSummary = {
+    ...existing,
+    receiptRows: 0, consumptionRows: 0, transferRows: 0, returnRows: 0,
+    adjustmentRows: 0, reversalRows: 0, neutralRows: 0, unknownTransactionRows: 0,
+    signConflicts: 0, directionConflicts: 0,
+    totalReceiptQuantity: 0, totalConsumptionQuantity: 0,
+    categoryCounts: {}, directionCounts: {},
+  };
+  for (const r of rows) {
+    const cat = r.transaction_category;
+    const dir = r.transaction_direction;
+    summary.categoryCounts[cat] = (summary.categoryCounts[cat] ?? 0) + 1;
+    summary.directionCounts[dir] = (summary.directionCounts[dir] ?? 0) + 1;
+    if (cat === 'UNKNOWN') summary.unknownTransactionRows += 1;
+    if (cat === 'RECEIPT') { summary.receiptRows += 1; summary.totalReceiptQuantity += r.receipt_quantity ?? 0; }
+    if (cat === 'CONSUMPTION') { summary.consumptionRows += 1; summary.totalConsumptionQuantity += r.consumption_quantity ?? 0; }
+    if (TRANSFER_CATS.includes(cat as TransactionCategory)) summary.transferRows += 1;
+    if (RETURN_CATS.includes(cat as TransactionCategory)) summary.returnRows += 1;
+    if (ADJUST_CATS.includes(cat as TransactionCategory)) summary.adjustmentRows += 1;
+    if (REVERSAL_CATS.includes(cat as TransactionCategory)) summary.reversalRows += 1;
+    if (cat === 'NEUTRAL') summary.neutralRows += 1;
+    if (r.sign_conflict) summary.signConflicts += 1;
+    if (r.direction_conflict) summary.directionConflicts += 1;
+  }
+  return summary;
+}
+
 export { NORMALIZATION_VERSION };
