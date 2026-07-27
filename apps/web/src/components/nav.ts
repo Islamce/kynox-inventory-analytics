@@ -13,6 +13,7 @@ export const NAV: NavItem[] = [
   { to: '/workspace', label: 'Data Workspace', icon: 'workspace', section: 'Overview' },
   { to: '/quality', label: 'Data Quality Center', icon: 'quality', section: 'Overview' },
   { to: '/inventory', label: 'Inventory Intelligence', icon: 'inventory', section: 'Analysis' },
+  { to: '/reconciliation', label: 'Inventory Reconciliation', icon: 'database', section: 'Analysis' },
   { to: '/abc-xyz', label: 'ABC–XYZ Analysis', icon: 'abcxyz', section: 'Analysis' },
   { to: '/consumption', label: 'Consumption Analytics', icon: 'consumption', section: 'Analysis' },
   { to: '/materials', label: 'Material 360', icon: 'materials', section: 'Analysis' },

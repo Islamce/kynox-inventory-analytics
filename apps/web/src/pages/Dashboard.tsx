@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiGet } from '../lib/api';
 import { useWorkspaceIds } from '../components/Layout';
-import { Card, EmptyState, ErrorState, Kpi, Spinner, Badge, PageHeader } from '../components/ui';
+import { Card, DataTable, EmptyState, ErrorState, Kpi, Spinner, Badge, PageHeader } from '../components/ui';
+import { StatTile } from '../components/intelligence';
 import { Chart, SEQUENTIAL_BLUE } from '../components/Chart';
 
 interface DashboardData {
@@ -33,6 +34,10 @@ export function DashboardPage() {
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load dashboard'))
       .finally(() => setLoading(false));
   }, [ws.stockDatasetId, ws.movementsDatasetId]);
+
+  // Phase 2: source-independent transaction categories for the linked
+  // movements dataset — receipts/consumption/transfers/returns/adjustments/
+  // reversals/unknown, backed by the canonical_transactions engine.
 
   if (!ws.stockDatasetId) {
     return (
@@ -150,6 +155,118 @@ export function DashboardPage() {
             )}
         </Card>
       </div>
+
+      {ws.movementsDatasetId && <MovementCategoriesCard movementsDatasetId={ws.movementsDatasetId} />}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Phase 2: movement-category cards + a demand-filtered canonical transaction
+// browser for the linked movements dataset. Source-independent — driven by
+// canonical_transactions, not SAP movement types.
+// ---------------------------------------------------------------------------
+
+interface NormalizationSummary {
+  receiptRows: number; consumptionRows: number; transferRows: number; returnRows: number;
+  adjustmentRows: number; reversalRows: number; neutralRows: number; unknownTransactionRows: number;
+  totalReceiptQuantity: number; totalConsumptionQuantity: number;
+}
+interface NormalizationDetail {
+  sourceSystem: string | null;
+  summary: NormalizationSummary | null;
+}
+interface CanonicalRow extends Record<string, unknown> {
+  id: number; source_row_number: number; material_id: string; transaction_date: string | null;
+  signed_quantity: number | null; transaction_direction: string; transaction_category: string;
+  warehouse_name: string | null; currency: string | null; transaction_value: number | null;
+}
+
+/** Categories excluded from the default "demand" view — internal movement, not external demand/supply. */
+const NON_DEMAND_CATEGORIES = new Set([
+  'TRANSFER_IN', 'TRANSFER_OUT', 'RETURN_IN', 'RETURN_OUT',
+  'ADJUSTMENT_IN', 'ADJUSTMENT_OUT', 'REVERSAL_IN', 'REVERSAL_OUT',
+]);
+
+function MovementCategoriesCard({ movementsDatasetId }: { movementsDatasetId: number }) {
+  const [norm, setNorm] = useState<NormalizationDetail | null>(null);
+  const [rows, setRows] = useState<CanonicalRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [demandOnly, setDemandOnly] = useState(true);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      apiGet<NormalizationDetail>(`/api/datasets/${movementsDatasetId}/normalization`),
+      apiGet<{ rows: CanonicalRow[]; total: number }>(`/api/datasets/${movementsDatasetId}/canonical?pageSize=500`),
+    ])
+      .then(([n, c]) => { setNorm(n); setRows(c.rows); setTotal(c.total); })
+      .catch(() => { setNorm(null); setRows([]); setTotal(0); })
+      .finally(() => setLoading(false));
+  }, [movementsDatasetId]);
+
+  if (loading) return <Card title="Transaction categories"><Spinner label="Loading transaction categories…" /></Card>;
+  if (!norm?.summary) return null; // pre-Phase-2 dataset: no canonical data to show
+
+  const s = norm.summary;
+  const visibleRows = demandOnly ? rows.filter((r) => !NON_DEMAND_CATEGORIES.has(r.transaction_category)) : rows;
+
+  return (
+    <Card
+      title="Transaction categories"
+      subtitle="Source-independent classification of every transaction in the linked movements dataset — never SAP-specific movement codes"
+      actions={norm.sourceSystem && <Badge value="info" label={norm.sourceSystem} />}
+    >
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+        <StatTile label="Receipt" value={s.receiptRows} tone="positive" hint={s.totalReceiptQuantity.toLocaleString()} />
+        <StatTile label="Consumption" value={s.consumptionRows} tone="warning" hint={s.totalConsumptionQuantity.toLocaleString()} />
+        <StatTile label="Transfers" value={s.transferRows} tone="info" />
+        <StatTile label="Returns" value={s.returnRows} tone="info" />
+        <StatTile label="Adjustments" value={s.adjustmentRows} tone="warning" />
+        <StatTile label="Reversals" value={s.reversalRows} tone="warning" />
+        <StatTile label="Unknown" value={s.unknownTransactionRows} tone={s.unknownTransactionRows > 0 ? 'risk' : 'positive'}
+          hint="excluded from receipt/consumption KPIs" />
+      </div>
+
+      <div className="mt-4 flex items-center justify-between flex-wrap gap-2">
+        <div className="inline-flex rounded-lg border border-line-strong overflow-hidden text-sm">
+          <button type="button"
+            className={`px-3 py-1.5 ${demandOnly ? 'bg-brand text-on-brand' : 'bg-surface text-body hover:bg-sunken'}`}
+            onClick={() => setDemandOnly(true)}
+          >
+            Demand view (default)
+          </button>
+          <button type="button"
+            className={`px-3 py-1.5 border-s border-line-strong ${!demandOnly ? 'bg-brand text-on-brand' : 'bg-surface text-body hover:bg-sunken'}`}
+            onClick={() => setDemandOnly(false)}
+          >
+            All transactions
+          </button>
+        </div>
+        <span className="text-xs text-subtle">
+          {demandOnly
+            ? 'Transfers, returns, adjustments and reversals are hidden by default — they are internal movement, not external demand or supply.'
+            : `Showing every transaction category (${total.toLocaleString()} total in the dataset).`}
+        </span>
+      </div>
+
+      <div className="mt-2">
+        <DataTable<CanonicalRow>
+          columns={[
+            { key: 'source_row_number', label: 'Row', numeric: true, render: (r) => r.source_row_number + 2 },
+            { key: 'material_id', label: 'Material' },
+            { key: 'transaction_date', label: 'Date' },
+            { key: 'signed_quantity', label: 'Signed qty', numeric: true },
+            { key: 'transaction_direction', label: 'Direction' },
+            { key: 'transaction_category', label: 'Category' },
+            { key: 'warehouse_name', label: 'Warehouse' },
+            { key: 'transaction_value', label: 'Value', numeric: true },
+          ]}
+          rows={visibleRows}
+          exportName={`dataset-${movementsDatasetId}-transactions-${demandOnly ? 'demand' : 'all'}`}
+        />
+      </div>
+    </Card>
   );
 }

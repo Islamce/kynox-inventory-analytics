@@ -6,6 +6,7 @@ import { DashboardPage } from './pages/Dashboard';
 import { WorkspacePage } from './pages/Workspace';
 import { QualityPage } from './pages/Quality';
 import { InventoryPage } from './pages/Inventory';
+import { ReconciliationPage } from './pages/Reconciliation';
 import { AbcXyzPage } from './pages/AbcXyz';
 import { ConsumptionPage } from './pages/Consumption';
 import { Material360Page } from './pages/Material360';
@@ -29,6 +30,7 @@ export function App() {
           <Route path="/workspace" element={<WorkspacePage />} />
           <Route path="/quality" element={<QualityPage />} />
           <Route path="/inventory" element={<InventoryPage />} />
+          <Route path="/reconciliation" element={<ReconciliationPage />} />
           <Route path="/abc-xyz" element={<AbcXyzPage />} />
           <Route path="/consumption" element={<ConsumptionPage />} />
           <Route path="/materials" element={<Material360Page />} />

@@ -3,6 +3,7 @@ import { requireAuth, requirePermission } from '../middleware/auth';
 import { asyncHandler, HttpError } from '../middleware/errors';
 import { audit } from '../services/audit';
 import * as svc from '../services/analytics';
+import { reconciliationAnalysis } from '../services/reconciliation';
 import type { ExcessMethod, Granularity, AgingDateBasis } from '@kynox/analytics-engine';
 
 export const analyticsRouter = Router();
@@ -106,6 +107,12 @@ analyticsRouter.get('/planning/:stockDatasetId/:movementsDatasetId', asyncHandle
     intParam(req.params.movementsDatasetId, 'movements dataset id'),
     material,
   ));
+}));
+
+// Phase 2: opening + movements = closing reconciliation, from canonical_transactions.
+analyticsRouter.get('/reconciliation/:movementsDatasetId', asyncHandler(async (req, res) => {
+  const id = intParam(req.params.movementsDatasetId, 'movements dataset id');
+  res.json(await reconciliationAnalysis(id, optInt(req.query.stockDatasetId)));
 }));
 
 analyticsRouter.get('/physical/:datasetId', asyncHandler(async (req, res) => {

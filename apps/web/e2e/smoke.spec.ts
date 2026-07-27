@@ -12,7 +12,7 @@ const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL || 'admin@kynox.io';
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD || 'QaLocalPass!234';
 
 const ROUTES = [
-  '/', '/workspace', '/quality', '/inventory', '/abc-xyz', '/consumption',
+  '/', '/workspace', '/quality', '/inventory', '/reconciliation', '/abc-xyz', '/consumption',
   '/materials', '/planning', '/ai', '/reports', '/admin', '/audit',
 ];
 
