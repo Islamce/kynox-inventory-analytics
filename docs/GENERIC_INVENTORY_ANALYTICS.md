@@ -241,21 +241,104 @@ data-correctness one — but it would have made every SAP import through the
 real UI look non-SAP for source-classification purposes. Regression tests
 added for both.
 
-**Not yet done:** Data Quality Center surfacing of the new normalization issue
-codes (the findings currently only appear inline in the Workspace step), a
-richer date/direction preview *before* dataset creation (currently the preview
-appears after creation, since blocking/preview both run through the same
-`POST /api/datasets` call), and full user override of individual row
-classifications.
+**Not yet done from this increment:** a richer date/direction preview *before*
+dataset creation (currently the preview appears after creation, since
+blocking/preview both run through the same `POST /api/datasets` call), and
+full user override of individual row classifications.
 
-## Still pending (future phases)
+## Data Quality Center surfacing (delivered)
 
-1. Data Quality Center surfacing of the new normalization issue codes.
-2. Dashboard movement-category cards and demand filters that exclude transfers/
-   returns/reversals/adjustments by default.
-3. Inventory reconciliation (opening + movements = closing) with transfer &
-   reversal pairing.
-4. AI wording generalization (source-neutral terminology) within governance
-   limits.
+`apps/web/src/pages/Quality.tsx` fetches `GET /api/datasets/:id/normalization`
+for movements datasets and renders a "Transaction normalization findings"
+card alongside the existing row-quality findings: source system, normalized/
+rejected/warning/unknown row counts, and the full row-anchored findings list
+(date, sign, direction and classification issues) — separate from, and
+additive to, the pre-existing quality-rule findings.
 
-These require further UI/dashboard work and are not part of this increment.
+## Dashboard movement-category cards + demand filters (delivered)
+
+`apps/web/src/pages/Dashboard.tsx` adds a "Transaction categories" section
+(shown when a movements dataset with canonical data is linked): a
+receipt/consumption/transfer/return/adjustment/reversal/unknown breakdown
+sourced from `GET /api/datasets/:id/normalization`, and a filterable,
+exportable transaction browser sourced from `GET /api/datasets/:id/canonical`
+with a **"Demand view" default** that hides transfers, returns, adjustments
+and reversals (they are internal movement, not external demand or supply) —
+an "All transactions" toggle shows everything. This is purely additive
+read-only display; no existing KPI calculation (position, aging, ABC/XYZ,
+shortage, excess, consumption, health) was touched.
+
+**Honest scope note:** the *existing* consumption/ABC/XYZ/shortage/excess/
+health analytics still compute demand from the legacy `movements` table via
+SAP-specific movement-type heuristics (`loadMovementsByMaterial` in
+`services/analytics.ts`), not from `canonical_transactions`. Rewiring those to
+the canonical, source-neutral model is architecturally the right long-term
+direction (the platform's own stated goal), but doing so changes the actual
+computed numbers for every movements dataset — in particular, the legacy path
+explicitly *subtracts* issue reversals from consumption, while the canonical
+model's `REVERSAL_IN`/`REVERSAL_OUT` categories are separate from
+`CONSUMPTION` by design. Reconciling that semantic difference is a real
+analytical decision, not a display change, and was deliberately left out of
+this increment rather than silently altering already-reconciled UAT numbers.
+
+## Inventory reconciliation (delivered, v1 scope)
+
+New `apps/api/src/services/reconciliation.ts` + `GET
+/api/analytics/reconciliation/:movementsDatasetId?stockDatasetId=` + a new
+**Inventory Reconciliation** page (`apps/web/src/pages/Reconciliation.tsx`),
+computed entirely from `canonical_transactions` (never SAP movement types):
+opening (from `OPENING_BALANCE` rows, else 0) + receipts + consumption +
+transfer/return/adjustment/reversal/unknown net = computed closing quantity,
+per material, optionally compared against a linked stock dataset's current
+quantity to surface a variance.
+
+**Honest scope limits, stated in the UI itself:**
+- Transfer/reversal "pairing" is **net per material**, not document-level.
+  `canonical_transactions` reserves `transfer_id` / `paired_transaction_id` /
+  `reversal_of_transaction_id` columns for exact pairing, but the ingestion
+  pipeline does not populate them yet — that is a real, larger follow-up (it
+  needs a matching algorithm, not just a query).
+- Variance against a linked stock dataset is only meaningful when the
+  movements dataset's period covers the material's full history since stock
+  was last a known value (an explicit opening balance, or genuinely zero);
+  otherwise it is informational, not a defect report.
+- A dataset created before this normalization engine existed has no canonical
+  rows; the endpoint honestly reports `available: false` rather than
+  fabricating a reconciliation.
+
+## AI wording generalization + normalization evidence (delivered)
+
+The AI agent system prompts (`packages/ai-engine/src/agents.ts`) were already
+fully source-neutral — no SAP-specific terminology was found on review. The
+concrete gap was that the AI's evidence package never included any Phase 2
+normalization data, so it could not explain *why* a transaction was excluded
+or "unknown" even though the underlying data existed. `apps/api/src/routes/ai.ts`
+now adds `unknown_transaction_rows` / `sign_conflicts` / `direction_conflicts`
+metrics and a `transactionNormalization` finding (source system, category
+breakdown, an explicit exclusion note, and top severity findings) to the
+evidence package whenever a movements dataset with canonical data is linked.
+The Data Quality Agent's intents and system prompt were extended to route and
+answer these questions from real evidence — the AI still never computes a
+number itself; it only interprets deterministically-computed evidence, per
+existing governance.
+
+## Testing evidence (this increment)
+
+`@kynox/api` **58** tests (+5: 1 AI-evidence regression in
+`normalization.test.ts`, 4 in the new `reconciliation.test.ts` covering
+no-canonical-data / basic reconciliation / variance-against-linked-stock /
+auth). Full monorepo: **185** tests green; typecheck, build and
+`npm audit --audit-level=high` all clean. All four features verified in a
+real browser (Playwright/Chromium): light, dark and a 390px mobile viewport,
+no horizontal overflow.
+
+## Still pending (future work, honestly scoped)
+
+1. A richer import-time date/direction preview *before* dataset creation.
+2. Full user override of individual canonical row classifications.
+3. Document-level transfer/reversal pairing (the schema is ready; the matching
+   algorithm is not built).
+4. Reconciling the legacy SAP-heuristic demand calculation
+   (`loadMovementsByMaterial`) with the canonical `TransactionCategory` model
+   for consumption/ABC/XYZ/shortage/excess/health — requires an explicit
+   decision on reversal semantics before it can be done safely.
