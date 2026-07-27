@@ -100,6 +100,9 @@ describe('reconciliation with canonical data, no stock link', () => {
     expect(row.computedClosingQty).toBe(row.receiptQty + row.consumptionQty + row.transferNet);
     expect(row.reportedStockQty).toBeNull();
     expect(row.variance).toBeNull();
+    // Single transfer leg with no matching counterpart in this dataset -> unpaired.
+    expect(row.unpairedTransferRows).toBe(1);
+    expect(res.body.summary.materialsWithUnpairedTransfers).toBeGreaterThanOrEqual(1);
   });
 });
 

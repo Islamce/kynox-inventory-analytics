@@ -20,6 +20,8 @@ interface ReconciliationRow extends Record<string, unknown> {
   variance: number | null;
   variancePct: number | null;
   hasTransferImbalance: boolean;
+  unpairedTransferRows: number;
+  unpairedReversalRows: number;
   rowCount: number;
   unknownRowCount: number;
 }
@@ -33,6 +35,8 @@ interface ReconciliationData {
     materialsWithReportedClosing: number;
     materialsWithVariance: number;
     materialsWithTransferImbalance: number;
+    materialsWithUnpairedTransfers: number;
+    materialsWithUnpairedReversals: number;
     materialsWithUnknownTransactions: number;
     totalUnknownRows: number;
   } | null;
@@ -94,7 +98,7 @@ export function ReconciliationPage() {
 
       {data.available && data.summary && (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
             <StatTile label="Materials" value={data.summary.totalMaterials} tone="neutral" />
             <StatTile label="With reported closing" value={data.summary.materialsWithReportedClosing} tone="neutral"
               hint="from CLOSING_BALANCE rows in this dataset" />
@@ -104,17 +108,21 @@ export function ReconciliationPage() {
             <StatTile label="Transfer imbalance" value={data.summary.materialsWithTransferImbalance}
               tone={data.summary.materialsWithTransferImbalance > 0 ? 'warning' : 'positive'}
               hint="net transfer in/out ≠ 0 within this dataset" />
+            <StatTile label="Unpaired transfers" value={data.summary.materialsWithUnpairedTransfers}
+              tone={data.summary.materialsWithUnpairedTransfers > 0 ? 'warning' : 'positive'}
+              hint="no matching leg found in this dataset" />
             <StatTile label="Unknown transactions" value={data.summary.totalUnknownRows}
               tone={data.summary.totalUnknownRows > 0 ? 'warning' : 'positive'}
               hint={`${data.summary.materialsWithUnknownTransactions} material(s) affected`} />
           </div>
 
           <InsightCallout tone="neutral" title="Scope of this reconciliation">
-            Transfer and reversal figures are NET per material (should be ~0 if both legs of a transfer fall inside this
-            dataset) — the underlying schema reserves columns for exact document-level pairing, but that matching is not
-            yet implemented. Variance against a linked stock dataset is only meaningful when this movements dataset's
-            period covers the material&apos;s full history since stock was last a known value (an explicit opening
-            balance, or genuinely zero).
+            Transfers and reversals are paired document-to-document within this dataset (matched by material, quantity
+            and closest date) when both legs are present — "Unpaired transfers"/"reversal net" below count rows where no
+            match was found here, which is expected (not necessarily wrong) when the other leg is in a different file or
+            outside this dataset&apos;s period. Variance against a linked stock dataset is only meaningful when this
+            movements dataset&apos;s period covers the material&apos;s full history since stock was last a known value
+            (an explicit opening balance, or genuinely zero).
           </InsightCallout>
 
           <Card title="Reconciliation by material" subtitle={`${data.results.length.toLocaleString()} material(s)`}>
@@ -130,8 +138,16 @@ export function ReconciliationPage() {
                     { key: 'transferNet', label: 'Transfer net', numeric: true, render: (r) => (
                       <span className={r.hasTransferImbalance ? 'text-warning font-medium' : undefined}>{r.transferNet.toLocaleString()}</span>
                     ) },
+                    {
+                      key: 'unpairedTransferRows', label: 'Unpaired transfers', numeric: true,
+                      render: (r) => r.unpairedTransferRows > 0 ? <Badge value="medium" label={String(r.unpairedTransferRows)} /> : '—',
+                    },
                     { key: 'adjustmentNet', label: 'Adjustments', numeric: true },
                     { key: 'reversalNet', label: 'Reversals', numeric: true },
+                    {
+                      key: 'unpairedReversalRows', label: 'Unpaired reversals', numeric: true,
+                      render: (r) => r.unpairedReversalRows > 0 ? <Badge value="medium" label={String(r.unpairedReversalRows)} /> : '—',
+                    },
                     { key: 'unknownNet', label: 'Unknown', numeric: true },
                     { key: 'computedClosingQty', label: 'Computed closing', numeric: true },
                     { key: 'reportedStockQty', label: 'Reported stock', numeric: true, render: (r) => r.reportedStockQty ?? '—' },

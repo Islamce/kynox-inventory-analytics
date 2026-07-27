@@ -257,3 +257,67 @@ describe('AI evidence includes transaction normalization findings', () => {
     expect(chat.body.error).toContain('not configured');
   });
 });
+
+describe('document-level transfer/reversal pairing', () => {
+  it('pairs a transfer-out to its matching transfer-in and flags an unmatched transfer', async () => {
+    const csv = [
+      'MATNR,BWART,BUDAT,ERFMG,DMBTR,MBLNR',
+      'T-1,311,2026-01-10,50,500,DOC1',   // TRANSFER_OUT — matches T-1/312 below
+      'T-1,312,2026-01-10,50,500,DOC2',   // TRANSFER_IN
+      'T-2,311,2026-01-11,30,300,DOC3',   // TRANSFER_OUT with no matching TRANSFER_IN in this dataset
+    ].join('\n');
+    const up = await uploadCsv(csv, 'transfer-pairing.csv');
+    const ds = await request(app).post('/api/datasets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: up.body.id, name: 'Transfer Pairing', approvedActionIds: await safeIdsFor(up.body.id) });
+    expect(ds.status).toBe(201);
+
+    const rows = await db('canonical_transactions').where({ dataset_id: ds.body.id }).orderBy('source_row_number');
+    const t1Out = rows.find((r) => r.reference_document === 'DOC1');
+    const t1In = rows.find((r) => r.reference_document === 'DOC2');
+    const t2Out = rows.find((r) => r.reference_document === 'DOC3');
+
+    expect(t1Out.transfer_id).not.toBeNull();
+    expect(t1Out.transfer_id).toBe(t1In.transfer_id);
+    expect(t1Out.paired_transaction_id).toBe('DOC2');
+    expect(t1In.paired_transaction_id).toBe('DOC1');
+
+    // Unmatched transfer stays unpaired and is flagged, not silently dropped.
+    expect(t2Out.transfer_id).toBeNull();
+    const meta = await request(app).get(`/api/datasets/${ds.body.id}/normalization`)
+      .set('Authorization', `Bearer ${token}`);
+    const unpaired = meta.body.findings.filter((f: { code: string }) => f.code === 'TRANSFER_PAIR_NOT_FOUND');
+    expect(unpaired).toHaveLength(1);
+    expect(unpaired[0].rowNumber).toBe(t2Out.source_row_number);
+  });
+
+  it('pairs a reversal to the original transaction it reverses and flags an unmatched reversal', async () => {
+    const csv = [
+      'MATNR,BWART,BUDAT,ERFMG,DMBTR,MBLNR',
+      'R-1,101,2026-01-05,100,1000,DOC1',  // RECEIPT
+      'R-1,102,2026-01-07,100,1000,DOC2',  // REVERSAL_OUT — reverses DOC1
+      'R-2,262,2026-01-09,20,200,DOC3',    // REVERSAL_IN with no matching consumption in this dataset
+    ].join('\n');
+    const up = await uploadCsv(csv, 'reversal-pairing.csv');
+    const ds = await request(app).post('/api/datasets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: up.body.id, name: 'Reversal Pairing', approvedActionIds: await safeIdsFor(up.body.id) });
+    expect(ds.status).toBe(201);
+
+    const rows = await db('canonical_transactions').where({ dataset_id: ds.body.id }).orderBy('source_row_number');
+    const receipt = rows.find((r) => r.reference_document === 'DOC1');
+    const reversal = rows.find((r) => r.reference_document === 'DOC2');
+    const unmatchedReversal = rows.find((r) => r.reference_document === 'DOC3');
+
+    expect(receipt.transaction_category).toBe('RECEIPT');
+    expect(reversal.transaction_category).toBe('REVERSAL_OUT');
+    expect(reversal.reversal_of_transaction_id).toBe('DOC1');
+
+    expect(unmatchedReversal.reversal_of_transaction_id).toBeNull();
+    const meta = await request(app).get(`/api/datasets/${ds.body.id}/normalization`)
+      .set('Authorization', `Bearer ${token}`);
+    const unpaired = meta.body.findings.filter((f: { code: string }) => f.code === 'REVERSAL_ORIGINAL_NOT_FOUND');
+    expect(unpaired).toHaveLength(1);
+    expect(unpaired[0].rowNumber).toBe(unmatchedReversal.source_row_number);
+  });
+});
