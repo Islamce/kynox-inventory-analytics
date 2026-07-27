@@ -196,16 +196,61 @@ Both require `view_dataset` and return structured JSON (no internal SQL).
 
 ### Testing evidence (Phase 2)
 
-- `@kynox/api`: **52** tests (4 new in `normalization.test.ts`) — generic
+- `@kynox/api`: **53** tests (5 in `normalization.test.ts`) — generic
   transaction import persists canonical rows + preserves the source row +
   excludes UNKNOWN from KPIs; ambiguous-date blocking then confirmed import;
   transactional rollback on canonical failure; SAP MB51 (numeric BWART)
-  regression. Full monorepo: **179** tests green; build green.
+  regression through the real PUT-mapping step; a generic file that collides
+  with an SAP report-type shape stays correctly labeled non-SAP. Full
+  monorepo: **180** tests green; build green.
+
+## Import preview UI (started)
+
+`apps/web/src/pages/Workspace.tsx` now surfaces the canonical normalization
+result inline in the existing Upload → Detect → Map → Validate → Cleanse →
+Approve → Analyze pipeline, using `GET /api/datasets/:id/normalization` and
+`GET /api/datasets/:id/canonical`:
+
+- **Ambiguous-date confirmation.** A genuinely ambiguous transaction-date
+  column no longer surfaces as a raw 422 error — the Cleansing step shows a
+  "Confirm the transaction date format" card (DD/MM/YYYY vs MM/DD/YYYY) that
+  resubmits with the chosen `dateOrder`. Unambiguous files (SAP ISO dates,
+  etc.) never see this step.
+- **Transaction normalization preview**, shown once a movements dataset is
+  created: source system / report type / date-format chips, a receipt /
+  consumption / transfer / return / adjustment / reversal / unknown
+  breakdown (unknown explicitly labeled as excluded from receipt/consumption
+  KPIs), a sign/direction-conflict callout, the row-anchored normalization
+  findings, and a filterable, exportable preview of the persisted
+  `canonical_transactions` rows.
+
+**A real correctness bug was found and fixed while manually testing this in a
+browser** (not caught by the Phase 2 automated suite, which bypassed the real
+pipeline): `classifySource()` treated report-type *shape* (material +
+posting_date + quantity) as SAP evidence, so a purely generic file could be
+mislabeled `Source: SAP`. Separately, `PUT /uploads/:id/mapping` — called by
+the UI every time the user confirms mapping, even for untouched columns — was
+unconditionally stamping every column `method: 'user'`, which erased the
+`sap_technical` provenance real SAP imports rely on before dataset creation
+ever ran. Both are fixed: SAP is now only inferred from an explicit hint or an
+actual `sap_technical`-mapped column, and the mapping PUT only re-stamps
+columns the user actually changed. Per-row transaction classification itself
+was correct in both directions throughout (the generic keyword classifier was
+always the fallback), so this was a labeling/traceability bug, not a
+data-correctness one — but it would have made every SAP import through the
+real UI look non-SAP for source-classification purposes. Regression tests
+added for both.
+
+**Not yet done:** Data Quality Center surfacing of the new normalization issue
+codes (the findings currently only appear inline in the Workspace step), a
+richer date/direction preview *before* dataset creation (currently the preview
+appears after creation, since blocking/preview both run through the same
+`POST /api/datasets` call), and full user override of individual row
+classifications.
 
 ## Still pending (future phases)
 
-1. Import preview UI (mapping/date/direction previews, user overrides) and Data
-   Quality Center surfacing of the new issue codes.
+1. Data Quality Center surfacing of the new normalization issue codes.
 2. Dashboard movement-category cards and demand filters that exclude transfers/
    returns/reversals/adjustments by default.
 3. Inventory reconciliation (opening + movements = closing) with transfer &
@@ -213,5 +258,4 @@ Both require `view_dataset` and return structured JSON (no internal SQL).
 4. AI wording generalization (source-neutral terminology) within governance
    limits.
 
-These require UI/dashboard work and are not part of Phase 2 (persistence &
-pipeline wiring).
+These require further UI/dashboard work and are not part of this increment.

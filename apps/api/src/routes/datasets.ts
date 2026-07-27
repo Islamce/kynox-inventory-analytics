@@ -183,7 +183,8 @@ datasetsRouter.post('/', requirePermission('approve_cleansing'), asyncHandler(as
   // canonical_transactions rows + dataset-level metadata for movements datasets
   // without altering the existing per-kind persistence below. Pure/in-memory so
   // it can be persisted inside the dataset-creation transaction for atomicity.
-  const { sourceSystem, sourceReportType } = classifySource(uploadRow.detected_type, uploadRow.source_system);
+  const hasSapTechnicalColumn = mapping.some((m) => m.method === 'sap_technical');
+  const { sourceSystem, sourceReportType } = classifySource(uploadRow.detected_type, uploadRow.source_system, hasSapTechnicalColumn);
   const normalization = buildNormalization({
     kind,
     rows: cleaned,

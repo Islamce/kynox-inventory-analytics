@@ -153,13 +153,19 @@ const mappingSchema = z.object({
 uploadsRouter.put('/:id/mapping', requirePermission('edit_mapping'), asyncHandler(async (req, res) => {
   const row = await getUpload(Number(req.params.id), req.user!);
   const body = mappingSchema.parse(req.body);
-  const prev = JSON.parse(row.mapping ?? '[]');
-  const mapping: ColumnMapping[] = body.mapping.map((m) => ({
-    sourceColumn: m.sourceColumn,
-    canonicalField: (m.canonicalField as ColumnMapping['canonicalField']) ?? null,
-    confidence: m.canonicalField ? 1 : 0,
-    method: 'user',
-  }));
+  const prev: ColumnMapping[] = JSON.parse(row.mapping ?? '[]');
+  const prevByColumn = new Map(prev.map((m) => [m.sourceColumn, m]));
+  // The client always resubmits the full mapping when confirming (even columns
+  // it never touched). Only columns whose canonical field actually changed are
+  // "user" mappings — everything else keeps its original detection provenance
+  // (sap_technical/exact/synonym/fuzzy), which downstream logic (e.g. source
+  // system classification) relies on.
+  const mapping: ColumnMapping[] = body.mapping.map((m) => {
+    const before = prevByColumn.get(m.sourceColumn);
+    const field = (m.canonicalField as ColumnMapping['canonicalField']) ?? null;
+    if (before && before.canonicalField === field) return before;
+    return { sourceColumn: m.sourceColumn, canonicalField: field, confidence: field ? 1 : 0, method: 'user' };
+  });
   const detection = body.reportType
     ? { ...JSON.parse(row.detection ?? '{}'), reportType: body.reportType, confidence: 1, reasons: ['Manually selected by user'] }
     : detectReportType(mapping, row.sheet ?? '', row.original_name);
