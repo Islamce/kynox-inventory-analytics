@@ -37,6 +37,7 @@ const SUGGESTIONS = [
   { q: 'Summarize inventory performance for senior management.', icon: 'dashboard' as const },
   { q: 'Which materials have abnormal consumption?', icon: 'consumption' as const },
   { q: 'Create an action plan for the top inventory risks.', icon: 'planning' as const },
+  { q: 'Why are some transactions excluded from consumption, and what does "unknown" mean?', icon: 'quality' as const },
 ];
 
 export function AiCenterPage() {

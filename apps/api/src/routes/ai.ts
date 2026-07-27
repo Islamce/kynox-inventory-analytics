@@ -126,6 +126,38 @@ aiRouter.post('/chat', asyncHandler(async (req, res) => {
       anomalies: consumption.anomalies,
       topConsumers: consumption.topConsumers?.slice(0, 10),
     };
+
+    // Phase 2: canonical normalization evidence — lets the AI explain *why* a
+    // transaction was excluded from demand/receipt figures (unknown type,
+    // transfer, reversal, …) or flag sign/direction conflicts, instead of
+    // only ever seeing the already-aggregated consumption numbers above.
+    // Only present for datasets created after the normalization engine was
+    // wired in; older datasets simply have no normalization row to read.
+    const normRow = await db('datasets').where({ id: body.movementsDatasetId }).first();
+    if (normRow?.normalization_summary) {
+      const normSummary = JSON.parse(normRow.normalization_summary);
+      metrics.push(
+        { metric: 'unknown_transaction_rows', value: normSummary.unknownTransactionRows ?? 0, source: 'transaction-normalization' },
+        { metric: 'sign_conflicts', value: normSummary.signConflicts ?? 0, source: 'transaction-normalization' },
+        { metric: 'direction_conflicts', value: normSummary.directionConflicts ?? 0, source: 'transaction-normalization' },
+      );
+      findings.transactionNormalization = {
+        sourceSystem: normRow.source_system ?? 'unknown',
+        sourceReportType: normRow.source_report_type ?? 'unknown',
+        // Category counts explain exclusions: transfers/returns/adjustments/
+        // reversals/unknown are never part of receipt or consumption totals.
+        categoryBreakdown: {
+          receipt: normSummary.receiptRows, consumption: normSummary.consumptionRows,
+          transfers: normSummary.transferRows, returns: normSummary.returnRows,
+          adjustments: normSummary.adjustmentRows, reversals: normSummary.reversalRows,
+          neutral: normSummary.neutralRows, unknown: normSummary.unknownTransactionRows,
+        },
+        exclusionNote: 'Transfers, returns, adjustments, reversals, neutral and unknown-type transactions are never counted as receipts or consumption; they are tracked separately.',
+        topFindings: (JSON.parse(normRow.normalization_findings ?? '[]') as { severity: string }[])
+          .filter((f) => f.severity === 'critical' || f.severity === 'high')
+          .slice(0, 10),
+      };
+    }
   }
 
   const pkg: EvidencePackage = {

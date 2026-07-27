@@ -232,3 +232,28 @@ describe('generic files are not mislabeled SAP by report-type shape alone', () =
     expect(meta.body.sourceSystem).not.toBe('SAP');
   });
 });
+
+describe('AI evidence includes transaction normalization findings', () => {
+  it('collects normalization evidence for a movements dataset without erroring (still 503 with no provider configured)', async () => {
+    const csv = [
+      'Item Code,Item Description,Transaction Date,Quantity,Transaction Type,Warehouse',
+      'G-1,Widget,2026-01-05,100,Goods Receipt,WH1',
+      'G-2,Gadget,2026-01-06,7,Sparkle Operation,WH2',
+    ].join('\n');
+    const up = await uploadCsv(csv, 'ai-evidence.csv');
+    const ds = await request(app).post('/api/datasets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: up.body.id, name: 'AI Evidence Dataset', approvedActionIds: await safeIdsFor(up.body.id) });
+    expect(ds.status).toBe(201);
+
+    // AI_PROVIDER=none in this test suite, so the request still cleanly 503s —
+    // the point of this test is that collecting the new transactionNormalization
+    // evidence (reading datasets.normalization_summary/findings) for a linked
+    // movements dataset does not throw and corrupt that clean-503 contract.
+    const chat = await request(app).post('/api/ai/chat')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ question: 'Why are some transactions excluded from consumption?', movementsDatasetId: ds.body.id });
+    expect(chat.status).toBe(503);
+    expect(chat.body.error).toContain('not configured');
+  });
+});
