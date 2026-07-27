@@ -171,14 +171,26 @@ describe('canonical persistence is transactional', () => {
 
 describe('SAP MB51 regression — numeric BWART via the SAP adapter', () => {
   it('classifies SAP movement types canonically while the existing pipeline is unchanged', async () => {
+    // Raw SAP technical field codes (not display labels) — the only reliable
+    // signal that this is genuinely SAP data, per classifySource().
     const csv = [
-      'Material,Movement Type,Posting Date,Qty in unit of entry,Amount in Local Currency,Material Document',
+      'MATNR,BWART,BUDAT,ERFMG,DMBTR,MBLNR',
       'S-1,101,2026-01-10,100,1000,DOC1',      // receipt
       'S-1,261,2026-01-12,-40,-400,DOC2',      // consumption
       'S-1,311,2026-01-15,-20,-200,DOC3',      // transfer (excluded from demand)
     ].join('\n');
     const up = await uploadCsv(csv, 'sap-mb51.csv');
     expect(up.body.detection.reportType).toBe('MB51');
+
+    // The real Workspace UI always resubmits the full mapping via PUT when the
+    // user clicks "Confirm mapping & validate", even for columns they never
+    // touched. That resubmission must not erase the sap_technical provenance
+    // the detector already established (regression: it previously did, which
+    // silently made every SAP import via the real pipeline look non-SAP).
+    const remapped = await request(app).put(`/api/uploads/${up.body.id}/mapping`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ mapping: up.body.mapping.map((m: { sourceColumn: string; canonicalField: string | null }) => ({ sourceColumn: m.sourceColumn, canonicalField: m.canonicalField })) });
+    expect(remapped.body.mapping.every((m: { method: string }) => m.method === 'sap_technical')).toBe(true);
 
     const ds = await request(app).post('/api/datasets')
       .set('Authorization', `Bearer ${token}`)
@@ -194,5 +206,29 @@ describe('SAP MB51 regression — numeric BWART via the SAP adapter', () => {
     // Existing movements table still populated (backward compatible).
     const movements = await db('movements').where({ dataset_id: ds.body.id });
     expect(movements).toHaveLength(3);
+  });
+});
+
+describe('generic files are not mislabeled SAP by report-type shape alone', () => {
+  it('a generic file matching an SAP report signature (material + date + quantity) stays non-SAP without technical columns', async () => {
+    // No SAP terminology anywhere — but material/date/quantity is exactly the
+    // shape MB5B's detection signature requires. Report-type shape must not be
+    // treated as SAP evidence on its own (regression for a mislabeling found
+    // via manual browser testing of the import preview UI).
+    const csv = [
+      'Item Code,Item Description,Transaction Date,Quantity,Transaction Type,Warehouse',
+      'G-1,Widget,2026-01-05,100,Goods Receipt,WH1',
+    ].join('\n');
+    const up = await uploadCsv(csv, 'generic-shape-collision.csv');
+    const safeIds = await safeIdsFor(up.body.id);
+    const ds = await request(app).post('/api/datasets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: up.body.id, name: 'Generic Shape Collision', approvedActionIds: safeIds });
+    expect(ds.status).toBe(201);
+    expect(ds.body.sourceSystem).not.toBe('SAP');
+
+    const meta = await request(app).get(`/api/datasets/${ds.body.id}/normalization`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(meta.body.sourceSystem).not.toBe('SAP');
   });
 });

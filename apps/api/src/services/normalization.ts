@@ -45,13 +45,21 @@ const SAP_REPORT_TYPES: Partial<Record<ReportType, SourceReportType>> = {
 
 /**
  * Resolves the canonical source system + report type from the stored upload
- * `source_system` hint and the detected report type. SAP stays first-class; any
- * other/unknown source falls back to generic classifications so the import is
- * never rejected merely for not matching an SAP template.
+ * `source_system` hint, whether the column mapping matched real SAP technical
+ * field codes (MATNR/BWART/BUDAT/…), and the detected report type.
+ *
+ * Report-type *shape* alone (e.g. "has material + posting_date + quantity")
+ * is NOT sufficient evidence of SAP: Phase 1 deliberately unified SAP business
+ * labels and fully generic synonyms into the same canonical-field vocabulary,
+ * so a purely generic file can legitimately match an SAP report signature.
+ * Only an explicit hint or an actual `sap_technical`-mapped column counts as
+ * real SAP evidence — otherwise the source stays generic/unknown rather than
+ * guessing, consistent with the rest of the normalization engine.
  */
 export function classifySource(
   detectedType: string | null | undefined,
   sourceSystemHint: string | null | undefined,
+  hasSapTechnicalColumn = false,
 ): { sourceSystem: SourceSystem; sourceReportType: SourceReportType } {
   const dt = (detectedType ?? 'UNKNOWN') as ReportType;
   const hint = (sourceSystemHint ?? '').trim().toUpperCase();
@@ -63,9 +71,7 @@ export function classifySource(
   };
 
   const sapReport = SAP_REPORT_TYPES[dt];
-  // Any recognised SAP report type (or an explicit SAP hint) means SAP.
-  const isSap = hint === 'SAP' || sapReport != null
-    || ['MB51', 'MB52', 'MB5B', 'MMBE', 'CONSUMPTION', 'RESERVATIONS', 'PURCHASE_ORDERS', 'MD04'].includes(dt);
+  const isSap = hint === 'SAP' || hasSapTechnicalColumn;
 
   if (isSap) {
     return { sourceSystem: 'SAP', sourceReportType: sapReport ?? 'SAP_MB51' };
