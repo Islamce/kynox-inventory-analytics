@@ -20,10 +20,26 @@ interface DatasetDetail {
   };
 }
 
+// ---- Phase 2: canonical normalization findings for movements datasets -----
+interface NormalizationFinding {
+  code: string; severity: string; rowNumber: number | null; columnName: string | null;
+  explanation: string; recommendedCorrection: string; confidenceScore: number;
+  blocksImport: boolean; userActionRequired: boolean;
+}
+interface NormalizationDetail {
+  sourceSystem: string | null; sourceReportType: string | null;
+  counts: {
+    totalSourceRows: number | null; normalizedRows: number | null; rejectedRows: number | null;
+    warningRows: number | null; unknownTransactionRows: number | null;
+  };
+  findings: NormalizationFinding[];
+}
+
 export function QualityPage() {
   const [datasets, setDatasets] = useState<DatasetRow[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [detail, setDetail] = useState<DatasetDetail['dataset'] | null>(null);
+  const [normalization, setNormalization] = useState<NormalizationDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -39,8 +55,19 @@ export function QualityPage() {
 
   useEffect(() => {
     if (selected === null) return;
+    setNormalization(null);
     apiGet<DatasetDetail>(`/api/datasets/${selected}`)
-      .then((r) => setDetail(r.dataset))
+      .then((r) => {
+        setDetail(r.dataset);
+        // Phase 2: canonical normalization findings only exist for movements
+        // datasets created after the normalization engine was wired in; an
+        // older dataset (or a non-movements one) simply has none to show.
+        if (r.dataset.kind === 'movements') {
+          apiGet<NormalizationDetail>(`/api/datasets/${selected}/normalization`)
+            .then(setNormalization)
+            .catch(() => setNormalization(null));
+        }
+      })
       .catch((e) => setError(e instanceof Error ? e.message : 'Failed to load dataset'));
   }, [selected]);
 
@@ -119,6 +146,59 @@ export function QualityPage() {
               ? <EmptyState title="No cleansing was applied" />
               : <ul className="list-disc ms-5 text-sm text-muted">{detail.cleansingLog.map((l) => <li key={l}>{l}</li>)}</ul>}
           </Card>
+
+          {detail.kind === 'movements' && normalization && (
+            <Card
+              title={`Transaction normalization findings (${normalization.findings.length})`}
+              subtitle="Date, sign and classification issues from the canonical normalization engine — separate from the row-level quality checks above"
+            >
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-sm mb-3">
+                <div className="bg-sunken rounded-lg p-2.5">
+                  <p className="text-xs text-muted">Source</p>
+                  <p className="font-semibold text-body">{normalization.sourceSystem ?? 'Unknown'}</p>
+                </div>
+                <div className="bg-sunken rounded-lg p-2.5">
+                  <p className="text-xs text-muted">Normalized rows</p>
+                  <p className="font-semibold text-body">{normalization.counts.normalizedRows ?? '—'}</p>
+                </div>
+                <div className="bg-sunken rounded-lg p-2.5">
+                  <p className="text-xs text-muted">Rejected rows</p>
+                  <p className="font-semibold text-body">{normalization.counts.rejectedRows ?? '—'}</p>
+                </div>
+                <div className="bg-sunken rounded-lg p-2.5">
+                  <p className="text-xs text-muted">Warning rows</p>
+                  <p className="font-semibold text-body">{normalization.counts.warningRows ?? '—'}</p>
+                </div>
+                <div className="bg-sunken rounded-lg p-2.5">
+                  <p className="text-xs text-muted">Unknown type</p>
+                  <p className={`font-semibold ${(normalization.counts.unknownTransactionRows ?? 0) > 0 ? 'text-warning' : 'text-body'}`}>
+                    {normalization.counts.unknownTransactionRows ?? '—'}
+                  </p>
+                </div>
+              </div>
+              {normalization.findings.length === 0
+                ? <EmptyState title="No normalization findings" hint="Dates, signs and transaction types were classified without issue." />
+                : (
+                  <ul className="space-y-3">
+                    {normalization.findings.map((f, i) => (
+                      <li key={i} className="border border-line rounded-lg p-3 text-sm">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge value={f.severity} />
+                          <span className="font-medium">{f.code}</span>
+                          {f.rowNumber !== null && <span className="text-subtle">· row {f.rowNumber + 2}</span>}
+                          {f.columnName && <span className="text-subtle">· column "{f.columnName}"</span>}
+                          {f.blocksImport && <Badge value="high" label="blocked import" />}
+                        </div>
+                        <p className="text-muted mt-1">{f.explanation}</p>
+                        {f.recommendedCorrection && (
+                          <p className="text-muted"><span className="font-medium">Recommended correction:</span> {f.recommendedCorrection}</p>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+            </Card>
+          )}
         </>
       )}
     </div>
