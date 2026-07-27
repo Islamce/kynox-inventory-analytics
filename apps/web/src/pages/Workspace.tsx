@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiGet, apiSend, apiUpload, getWorkspace, setWorkspace } from '../lib/api';
+import { ApiError, apiGet, apiSend, apiUpload, getWorkspace, setWorkspace } from '../lib/api';
 import { Badge, Button, Card, DataTable, EmptyState, ErrorState, Spinner } from '../components/ui';
 import { IntelligenceHeader, ContextChip, InsightCallout, Stepper, Meter, StatTile, Drawer, type Step } from '../components/intelligence';
 import { Icon } from '../design/icons';
@@ -24,6 +24,49 @@ interface Proposal { id: string; description: string; affectedRows: number; safe
 interface Validation {
   kind: string; rowCount: number; issues: Issue[]; proposals: Proposal[];
   scores: Record<string, number>; blocking: string | null;
+}
+
+// ---- Phase 2: canonical normalization preview -----------------------------
+interface NormalizationSummary {
+  totalSourceRows: number; normalizedRows: number; rejectedRows: number; warningRows: number;
+  unknownTransactionRows: number; receiptRows: number; consumptionRows: number; transferRows: number;
+  returnRows: number; adjustmentRows: number; reversalRows: number; neutralRows: number;
+  signConflicts: number; directionConflicts: number;
+  totalReceiptQuantity: number; totalConsumptionQuantity: number;
+  dateFormat: string | null; dateFormatConfidence: number; dateFormatUserConfirmed: boolean;
+  ambiguousDateRows: number; invalidDateRows: number;
+}
+interface NormalizationFinding {
+  code: string; severity: string; rowNumber: number | null; columnName: string | null;
+  explanation: string; recommendedCorrection: string; confidenceScore: number;
+  blocksImport: boolean; userActionRequired: boolean;
+}
+interface NormalizationDetail {
+  sourceSystem: string | null; sourceReportType: string | null;
+  dateFormat: { detected: string | null; selected: string | null; confidence: number | null; userConfirmed: boolean };
+  summary: NormalizationSummary | null;
+  findings: NormalizationFinding[];
+}
+interface CanonicalRow extends Record<string, unknown> {
+  id: number; source_row_number: number; material_id: string; material_description: string | null;
+  transaction_date: string | null; raw_quantity: string | null; signed_quantity: number | null;
+  receipt_quantity: number | null; consumption_quantity: number | null; unit_of_measure: string | null;
+  transaction_direction: string; transaction_category: string; transaction_type_code: string | null;
+  classification_confidence: number; sign_conflict: boolean | number; direction_conflict: boolean | number;
+  warehouse_name: string | null; plant_id: string | null; currency: string | null; transaction_value: number | null;
+}
+
+const CATEGORY_TONE: Record<string, string> = {
+  RECEIPT: 'good', CONSUMPTION: 'medium', TRANSFER_IN: 'info', TRANSFER_OUT: 'info',
+  RETURN_IN: 'info', RETURN_OUT: 'info', ADJUSTMENT_IN: 'medium', ADJUSTMENT_OUT: 'medium',
+  REVERSAL_IN: 'medium', REVERSAL_OUT: 'medium', UNKNOWN: 'high',
+};
+const DIRECTION_TONE: Record<string, string> = { IN: 'good', OUT: 'medium', NEUTRAL: 'info', UNKNOWN: 'high' };
+
+interface DoneResult {
+  id: number; rowCount: number; cleansingLog: string[]; qualityScores: { overall: number }; kind: string;
+  sourceSystem?: string; sourceReportType?: string;
+  normalization?: { summary: NormalizationSummary; canonicalRowCount: number; findingCount: number };
 }
 
 const CANONICAL_FIELDS = [
@@ -67,8 +110,20 @@ export function WorkspacePage() {
   const [datasetName, setDatasetName] = useState('');
   const [periodStart, setPeriodStart] = useState('');
   const [periodEnd, setPeriodEnd] = useState('');
-  const [done, setDone] = useState<{ id: number; rowCount: number; cleansingLog: string[]; qualityScores: { overall: number } } | null>(null);
+  const [done, setDone] = useState<DoneResult | null>(null);
   const [detailIssue, setDetailIssue] = useState<Issue | null>(null);
+
+  // Phase 2: ambiguous transaction-date columns block dataset creation (422)
+  // until the user confirms day/month order.
+  const [dateOrderRequired, setDateOrderRequired] = useState(false);
+
+  // Phase 2: canonical transaction normalization preview (movements datasets).
+  const [normDetail, setNormDetail] = useState<NormalizationDetail | null>(null);
+  const [canonicalRows, setCanonicalRows] = useState<CanonicalRow[]>([]);
+  const [canonicalTotal, setCanonicalTotal] = useState(0);
+  const [canonicalLoading, setCanonicalLoading] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [directionFilter, setDirectionFilter] = useState('');
 
   const fail = (e: unknown) => setError(e instanceof Error ? e.message : String(e));
 
@@ -101,11 +156,11 @@ export function WorkspacePage() {
     } catch (e) { fail(e); } finally { setBusy(false); }
   };
 
-  const createDataset = async () => {
+  const createDataset = async (dateOrder?: 'DMY' | 'MDY') => {
     if (!upload) return;
     setBusy(true); setError(null);
     try {
-      const res = await apiSend<{ id: number; rowCount: number; cleansingLog: string[]; qualityScores: { overall: number }; kind: string }>(
+      const res = await apiSend<DoneResult>(
         'POST', '/api/datasets',
         {
           uploadId: upload.id,
@@ -113,17 +168,57 @@ export function WorkspacePage() {
           approvedActionIds: [...approved],
           periodStart: periodStart || undefined,
           periodEnd: periodEnd || undefined,
+          dateOrder,
         },
       );
       setDone(res);
+      setDateOrderRequired(false);
       const ws = getWorkspace();
       if (res.kind === 'stock') setWorkspace({ ...ws, stockDatasetId: res.id });
       if (res.kind === 'movements') setWorkspace({ ...ws, movementsDatasetId: res.id });
       setStep(4);
-    } catch (e) { fail(e); } finally { setBusy(false); }
+    } catch (e) {
+      // Phase 2: the API blocks activation on a genuinely ambiguous transaction
+      // date column (never guesses) — offer the day/month choice inline instead
+      // of surfacing a raw error.
+      if (e instanceof ApiError && e.status === 422 && /dateOrder/i.test(e.message)) {
+        setDateOrderRequired(true);
+      } else {
+        fail(e);
+      }
+    } finally { setBusy(false); }
   };
 
-  const restart = () => { setStep(1); setUpload(null); setValidation(null); setDone(null); setApproved(new Set()); };
+  const loadCanonical = async (datasetId: number) => {
+    setCanonicalLoading(true);
+    try {
+      const qs = new URLSearchParams({ pageSize: '200' });
+      if (categoryFilter) qs.set('category', categoryFilter);
+      if (directionFilter) qs.set('direction', directionFilter);
+      const res = await apiGet<{ rows: CanonicalRow[]; total: number }>(`/api/datasets/${datasetId}/canonical?${qs}`);
+      setCanonicalRows(res.rows);
+      setCanonicalTotal(res.total);
+    } catch (e) { fail(e); } finally { setCanonicalLoading(false); }
+  };
+
+  useEffect(() => {
+    if (step !== 4 || !done || done.kind !== 'movements') return;
+    apiGet<NormalizationDetail>(`/api/datasets/${done.id}/normalization`).then(setNormDetail).catch(() => setNormDetail(null));
+    void loadCanonical(done.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, done]);
+
+  useEffect(() => {
+    if (step !== 4 || !done || done.kind !== 'movements') return;
+    void loadCanonical(done.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryFilter, directionFilter]);
+
+  const restart = () => {
+    setStep(1); setUpload(null); setValidation(null); setDone(null); setApproved(new Set());
+    setDateOrderRequired(false); setNormDetail(null); setCanonicalRows([]); setCanonicalTotal(0);
+    setCategoryFilter(''); setDirectionFilter('');
+  };
 
   const mapped = mapping.filter((m) => m.canonicalField).length;
   const critical = validation?.issues.filter((i) => i.severity === 'critical').length ?? 0;
@@ -323,10 +418,24 @@ export function WorkspacePage() {
                 <input id="ds-end" type="date" className="w-full border border-line-strong rounded-lg px-3 py-1.5 text-sm bg-surface text-body" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
               </div>
             </div>
-            <div className="mt-3 flex justify-between items-center">
-              <button type="button" onClick={() => setStep(2)} className="text-sm text-muted hover:text-body">← Back to mapping</button>
-              <Button variant="primary" icon="arrow-right" onClick={() => void createDataset()}>Apply approved cleansing &amp; save dataset</Button>
-            </div>
+            {dateOrderRequired ? (
+              <div className="mt-4 rounded-lg border border-warning/30 bg-warning-soft p-3.5">
+                <p className="font-medium text-body text-sm">Confirm the transaction date format</p>
+                <p className="text-sm text-muted mt-1">
+                  The transaction date column is ambiguous — both DD/MM/YYYY and MM/DD/YYYY are possible for the values in
+                  this file, so it was not guessed. Select the format actually used in the source file to continue.
+                </p>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <Button variant="primary" onClick={() => void createDataset('DMY')}>Day first — DD/MM/YYYY</Button>
+                  <Button variant="primary" onClick={() => void createDataset('MDY')}>Month first — MM/DD/YYYY</Button>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-3 flex justify-between items-center">
+                <button type="button" onClick={() => setStep(2)} className="text-sm text-muted hover:text-body">← Back to mapping</button>
+                <Button variant="primary" icon="arrow-right" onClick={() => void createDataset()}>Apply approved cleansing &amp; save dataset</Button>
+              </div>
+            )}
           </Card>
         </div>
       )}
@@ -355,6 +464,11 @@ export function WorkspacePage() {
               <Button variant="ghost" icon="quality" onClick={() => navigate('/quality')}>Open Data Quality Center</Button>
             </div>
           </Card>
+
+          {done.kind === 'movements' && <NormalizationPreview done={done} normDetail={normDetail}
+            canonicalRows={canonicalRows} canonicalTotal={canonicalTotal} canonicalLoading={canonicalLoading}
+            categoryFilter={categoryFilter} setCategoryFilter={setCategoryFilter}
+            directionFilter={directionFilter} setDirectionFilter={setDirectionFilter} />}
         </div>
       )}
 
@@ -379,6 +493,145 @@ export function WorkspacePage() {
         )}
       </Drawer>
     </div>
+  );
+}
+
+/**
+ * Phase 2 — transaction normalization preview. Shows how the source-neutral
+ * engines actually classified this import: source system, date-format
+ * decision, category/direction breakdown, findings, and a filterable preview
+ * of the persisted canonical_transactions rows.
+ */
+function NormalizationPreview({
+  done, normDetail, canonicalRows, canonicalTotal, canonicalLoading,
+  categoryFilter, setCategoryFilter, directionFilter, setDirectionFilter,
+}: {
+  done: DoneResult;
+  normDetail: NormalizationDetail | null;
+  canonicalRows: CanonicalRow[];
+  canonicalTotal: number;
+  canonicalLoading: boolean;
+  categoryFilter: string;
+  setCategoryFilter: (v: string) => void;
+  directionFilter: string;
+  setDirectionFilter: (v: string) => void;
+}) {
+  const summary = normDetail?.summary ?? done.normalization?.summary ?? null;
+  const canonicalRowCount = done.normalization?.canonicalRowCount ?? canonicalTotal;
+
+  return (
+    <Card
+      title="Transaction normalization preview"
+      subtitle="How the source-independent engines classified this import — canonical_transactions is the system of record for analytics"
+      actions={<div className="flex flex-wrap gap-1.5">
+        {normDetail?.sourceSystem && <ContextChip icon="database" label="Source" value={normDetail.sourceSystem} />}
+        {normDetail?.sourceReportType && <ContextChip label="Report" value={normDetail.sourceReportType} />}
+        {normDetail?.dateFormat.detected && (
+          <ContextChip icon="quality" label="Date format"
+            value={`${normDetail.dateFormat.detected}${normDetail.dateFormat.userConfirmed ? ' (confirmed)' : ''}`} />
+        )}
+      </div>}
+    >
+      {!summary
+        ? <Spinner label="Loading normalization summary…" />
+        : (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
+              <StatTile label="Canonical rows" value={canonicalRowCount} tone="neutral" />
+              <StatTile label="Receipt" value={summary.receiptRows} tone="positive" hint={summary.totalReceiptQuantity.toLocaleString()} />
+              <StatTile label="Consumption" value={summary.consumptionRows} tone="warning" hint={summary.totalConsumptionQuantity.toLocaleString()} />
+              <StatTile label="Transfers" value={summary.transferRows} tone="info" />
+              <StatTile label="Returns" value={summary.returnRows} tone="info" />
+              <StatTile label="Adjustments" value={summary.adjustmentRows} tone="warning" />
+              <StatTile label="Reversals" value={summary.reversalRows} tone="warning" />
+              <StatTile label="Unknown" value={summary.unknownTransactionRows} tone={summary.unknownTransactionRows > 0 ? 'risk' : 'positive'}
+                hint="excluded from receipt/consumption KPIs" />
+            </div>
+
+            {(summary.signConflicts > 0 || summary.directionConflicts > 0) && (
+              <div className="mt-3">
+                <InsightCallout tone="warning" title="Classification conflicts found">
+                  {summary.signConflicts > 0 && <>Sign conflicts on {summary.signConflicts} row(s) (imported sign disagreed with the classified direction — normalized to the classification). </>}
+                  {summary.directionConflicts > 0 && <>Direction conflicts on {summary.directionConflicts} row(s) (explicit direction contradicted the quantity sign). </>}
+                  Review the Data Quality Center for row-level detail.
+                </InsightCallout>
+              </div>
+            )}
+
+            {done.normalization && done.normalization.findingCount > 0 && (
+              <div className="mt-3">
+                <p className="text-sm font-medium text-body mb-1.5">
+                  Normalization findings ({done.normalization.findingCount})
+                </p>
+                <ul className="space-y-2">
+                  {normDetail?.findings.slice(0, 8).map((f, i) => (
+                    <li key={i} className="border border-line rounded-lg p-2.5 text-sm bg-bg">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge value={f.severity} />
+                        <span className="font-medium text-body">{f.code}</span>
+                        {f.rowNumber !== null && <span className="text-subtle">· row {f.rowNumber + 2}</span>}
+                        {f.blocksImport && <Badge value="high" label="would block" />}
+                      </div>
+                      <p className="text-muted mt-1">{f.explanation}</p>
+                    </li>
+                  ))}
+                </ul>
+                {done.normalization.findingCount > 8 && (
+                  <p className="text-xs text-subtle mt-1.5">
+                    {done.normalization.findingCount - 8} more finding(s) — see the Data Quality Center.
+                  </p>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <label className="text-xs text-muted" htmlFor="cat-filter">Category</label>
+        <select id="cat-filter" className="border border-line-strong rounded-lg px-2 py-1 bg-surface text-sm"
+          value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
+          <option value="">All</option>
+          {Object.keys(CATEGORY_TONE).map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+        <label className="text-xs text-muted" htmlFor="dir-filter">Direction</label>
+        <select id="dir-filter" className="border border-line-strong rounded-lg px-2 py-1 bg-surface text-sm"
+          value={directionFilter} onChange={(e) => setDirectionFilter(e.target.value)}>
+          <option value="">All</option>
+          {Object.keys(DIRECTION_TONE).map((d) => <option key={d} value={d}>{d}</option>)}
+        </select>
+        <span className="text-xs text-subtle ms-auto">
+          Showing {canonicalRows.length.toLocaleString()} of {canonicalTotal.toLocaleString()} canonical row(s)
+        </span>
+      </div>
+
+      <div className="mt-2">
+        {canonicalLoading
+          ? <Spinner label="Loading canonical transactions…" />
+          : canonicalRows.length === 0
+            ? <EmptyState title="No canonical transactions match this filter" icon="database" />
+            : (
+              <DataTable<CanonicalRow>
+                columns={[
+                  { key: 'source_row_number', label: 'Row', numeric: true, render: (r) => r.source_row_number + 2 },
+                  { key: 'material_id', label: 'Material' },
+                  { key: 'transaction_date', label: 'Date' },
+                  { key: 'raw_quantity', label: 'Raw qty', numeric: true },
+                  { key: 'signed_quantity', label: 'Signed qty', numeric: true },
+                  { key: 'transaction_direction', label: 'Direction', render: (r) => <Badge value={DIRECTION_TONE[r.transaction_direction] ?? 'info'} label={r.transaction_direction} /> },
+                  { key: 'transaction_category', label: 'Category', render: (r) => <Badge value={CATEGORY_TONE[r.transaction_category] ?? 'info'} label={r.transaction_category} /> },
+                  { key: 'classification_confidence', label: 'Confidence', render: (r) => <Meter value={r.classification_confidence} /> },
+                  {
+                    key: 'conflicts', label: 'Conflicts',
+                    render: (r) => (r.sign_conflict || r.direction_conflict) ? <Badge value="high" label="conflict" /> : <span className="text-subtle">—</span>,
+                  },
+                ]}
+                rows={canonicalRows}
+                searchable
+                exportName={`dataset-${done.id}-canonical-transactions`}
+              />
+            )}
+      </div>
+    </Card>
   );
 }
 
