@@ -146,13 +146,23 @@ const createSchema = z.object({
   dateOrder: z.enum(['DMY', 'MDY']).optional(),
 });
 
-datasetsRouter.post('/', requirePermission('approve_cleansing'), asyncHandler(async (req, res) => {
-  const body = createSchema.parse(req.body);
-  const uploadRow = await db('uploads').where({ id: body.uploadId }).first();
+/**
+ * Shared preparation pipeline: upload -> mapping -> cleansing -> quality
+ * scoring -> canonical normalization. Used by BOTH the read-only preview
+ * endpoint and the dataset-creation endpoint below, so the preview can never
+ * drift from what creation actually does. Pure/in-memory — no DB writes.
+ * Throws only for genuine errors (upload not found, IDOR, missing material
+ * mapping); it does NOT throw on remaining-critical-issues or ambiguous-dates,
+ * since the preview needs to report those as data, not as a request failure.
+ */
+async function prepareImport(
+  uploadId: number, approvedActionIds: string[], dateOrder: 'DMY' | 'MDY' | undefined, user: { id: number; role: string },
+) {
+  const uploadRow = await db('uploads').where({ id: uploadId }).first();
   if (!uploadRow) throw new HttpError(404, 'Upload not found');
-  // Object-level access: only the uploader or an admin may turn an upload into a dataset.
-  if (uploadRow.user_id !== req.user!.id && req.user!.role !== 'system_admin' && req.user!.role !== 'data_admin') {
-    throw new HttpError(403, 'You can only create datasets from uploads you created');
+  // Object-level access: only the uploader or an admin may prepare/create from this upload.
+  if (uploadRow.user_id !== user.id && user.role !== 'system_admin' && user.role !== 'data_admin') {
+    throw new HttpError(403, 'You can only use uploads you created');
   }
 
   const sheets = parseWorkbook(path.join(config.uploadDir, uploadRow.stored_name));
@@ -167,17 +177,11 @@ datasetsRouter.post('/', requirePermission('approve_cleansing'), asyncHandler(as
   const mapped = applyMapping(sheet.rows, mapping) as MappedRow[];
   const issues = runQualityRules(kind, mapped);
   const proposals = proposeCleansing(kind, mapped, issues);
-  const approved = proposals.filter((p) => body.approvedActionIds.includes(p.id));
+  const approved = proposals.filter((p) => approvedActionIds.includes(p.id));
   const { rows: cleaned, log, excludedRows } = applyCleansing(mapped, approved);
 
-  // Critical issues block finalisation unless the cleansing excluded the affected rows.
   const postIssues = runQualityRules(kind, cleaned);
   const remainingCritical = postIssues.filter((i) => i.severity === 'critical');
-  if (remainingCritical.length > 0) {
-    throw new HttpError(422,
-      `Critical data issues remain after cleansing: ${remainingCritical.map((i) => i.title).join('; ')}. `
-      + 'Approve the exclusion actions or fix the source file.');
-  }
   const scores = computeQualityScores(kind, cleaned, postIssues);
 
   // Phase 2: source-independent canonical normalization. Additive — it produces
@@ -193,12 +197,64 @@ datasetsRouter.post('/', requirePermission('approve_cleansing'), asyncHandler(as
     sourceReportType,
     sourceFileName: uploadRow.original_name,
     sheetName: sheet.name ?? null,
-    dateOrder: body.dateOrder,
-    dateOrderUserConfirmed: !!body.dateOrder,
+    dateOrder,
+    dateOrderUserConfirmed: !!dateOrder,
     // Raw (pre-cleansing) dates so ambiguity is judged before the "normalize
     // dates" cleansing action rewrites the values to ISO.
     rawDateValues: mapped.map((r) => r.posting_date ?? r.document_date ?? null),
   });
+
+  return {
+    uploadRow, sheet, mapping, kind, mapped, cleaned, log, excludedRows, approved,
+    postIssues, remainingCritical, scores, sourceSystem, sourceReportType, normalization,
+  };
+}
+
+// Read-only: lets the Workspace UI show the full normalization preview (source
+// system, date-format decision, category breakdown, findings) and let the
+// user resolve ambiguous dates BEFORE creating the dataset, instead of only
+// discovering blocking issues from a 422 at creation time. Never writes to
+// the DB.
+const previewSchema = z.object({
+  uploadId: z.number().int().positive(),
+  approvedActionIds: z.array(z.string()).default([]),
+  dateOrder: z.enum(['DMY', 'MDY']).optional(),
+});
+
+datasetsRouter.post('/preview', requirePermission('approve_cleansing'), asyncHandler(async (req, res) => {
+  const body = previewSchema.parse(req.body);
+  const p = await prepareImport(body.uploadId, body.approvedActionIds, body.dateOrder, req.user!);
+  res.json({
+    kind: p.kind,
+    rowCount: p.cleaned.length,
+    excludedRowCount: p.excludedRows.length,
+    qualityScores: p.scores,
+    wouldBlock: p.remainingCritical.length > 0,
+    criticalIssues: p.remainingCritical,
+    sourceSystem: p.sourceSystem,
+    sourceReportType: p.sourceReportType,
+    normalization: {
+      summary: p.normalization.summary,
+      findings: p.normalization.findings,
+      canonicalRowCount: p.normalization.canonicalRows.length,
+      ambiguousDatesNeedConfirmation: p.normalization.ambiguousDatesNeedConfirmation,
+    },
+  });
+}));
+
+datasetsRouter.post('/', requirePermission('approve_cleansing'), asyncHandler(async (req, res) => {
+  const body = createSchema.parse(req.body);
+  const {
+    uploadRow, mapping, kind, cleaned, log, excludedRows, approved,
+    postIssues, remainingCritical, scores, sourceSystem, sourceReportType, normalization,
+  } = await prepareImport(body.uploadId, body.approvedActionIds, body.dateOrder, req.user!);
+
+  // Critical issues block finalisation unless the cleansing excluded the affected rows.
+  if (remainingCritical.length > 0) {
+    throw new HttpError(422,
+      `Critical data issues remain after cleansing: ${remainingCritical.map((i) => i.title).join('; ')}. `
+      + 'Approve the exclusion actions or fix the source file.');
+  }
 
   // Ambiguous date columns block activation until the user confirms the order.
   // Unambiguous files (e.g. SAP ISO dates) never trigger this.

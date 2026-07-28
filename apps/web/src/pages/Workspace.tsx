@@ -69,6 +69,17 @@ interface DoneResult {
   normalization?: { summary: NormalizationSummary; canonicalRowCount: number; findingCount: number };
 }
 
+// ---- Phase 2: import-time preview, before the dataset is ever created -----
+interface PreImportPreview {
+  kind: string; rowCount: number; excludedRowCount: number;
+  wouldBlock: boolean; criticalIssues: { title: string }[];
+  sourceSystem: string | null; sourceReportType: string | null;
+  normalization: {
+    summary: NormalizationSummary; findings: NormalizationFinding[];
+    canonicalRowCount: number; ambiguousDatesNeedConfirmation: boolean;
+  };
+}
+
 const CANONICAL_FIELDS = [
   '', 'material', 'material_description', 'material_type', 'material_group', 'base_unit',
   'plant', 'storage_location', 'warehouse', 'bin', 'batch', 'valuation_class',
@@ -116,6 +127,13 @@ export function WorkspacePage() {
   // Phase 2: ambiguous transaction-date columns block dataset creation (422)
   // until the user confirms day/month order.
   const [dateOrderRequired, setDateOrderRequired] = useState(false);
+  const [dateOrderChoice, setDateOrderChoice] = useState<'DMY' | 'MDY' | null>(null);
+
+  // Phase 2: import-time preview — see exactly how this file will be
+  // normalized (source system, categories, findings) before a dataset row
+  // is ever written.
+  const [preImportPreview, setPreImportPreview] = useState<PreImportPreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   // Phase 2: canonical transaction normalization preview (movements datasets).
   const [normDetail, setNormDetail] = useState<NormalizationDetail | null>(null);
@@ -158,6 +176,7 @@ export function WorkspacePage() {
 
   const createDataset = async (dateOrder?: 'DMY' | 'MDY') => {
     if (!upload) return;
+    const resolvedDateOrder = dateOrder ?? dateOrderChoice ?? undefined;
     setBusy(true); setError(null);
     try {
       const res = await apiSend<DoneResult>(
@@ -168,7 +187,7 @@ export function WorkspacePage() {
           approvedActionIds: [...approved],
           periodStart: periodStart || undefined,
           periodEnd: periodEnd || undefined,
-          dateOrder,
+          dateOrder: resolvedDateOrder,
         },
       );
       setDone(res);
@@ -187,6 +206,25 @@ export function WorkspacePage() {
         fail(e);
       }
     } finally { setBusy(false); }
+  };
+
+  // Phase 2: preview exactly how this file will be normalized — source
+  // system, date-order decision, category/direction breakdown, findings —
+  // without writing anything. Shares the same prepareImport() pipeline the
+  // server uses for real dataset creation, so what's shown here is what
+  // creation will actually produce.
+  const runPreview = async (dateOrder?: 'DMY' | 'MDY') => {
+    if (!upload) return;
+    const resolvedDateOrder = dateOrder ?? dateOrderChoice ?? undefined;
+    setPreviewLoading(true); setError(null);
+    try {
+      const res = await apiSend<PreImportPreview>(
+        'POST', '/api/datasets/preview',
+        { uploadId: upload.id, approvedActionIds: [...approved], dateOrder: resolvedDateOrder },
+      );
+      setPreImportPreview(res);
+      if (dateOrder) setDateOrderChoice(dateOrder);
+    } catch (e) { fail(e); } finally { setPreviewLoading(false); }
   };
 
   const loadCanonical = async (datasetId: number) => {
@@ -216,7 +254,8 @@ export function WorkspacePage() {
 
   const restart = () => {
     setStep(1); setUpload(null); setValidation(null); setDone(null); setApproved(new Set());
-    setDateOrderRequired(false); setNormDetail(null); setCanonicalRows([]); setCanonicalTotal(0);
+    setDateOrderRequired(false); setDateOrderChoice(null); setPreImportPreview(null);
+    setNormDetail(null); setCanonicalRows([]); setCanonicalTotal(0);
     setCategoryFilter(''); setDirectionFilter('');
   };
 
@@ -418,6 +457,91 @@ export function WorkspacePage() {
                 <input id="ds-end" type="date" className="w-full border border-line-strong rounded-lg px-3 py-1.5 text-sm bg-surface text-body" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
               </div>
             </div>
+
+            {validation.kind === 'movements' && (
+              <div className="mt-4 rounded-lg border border-line p-3.5 bg-sunken/40">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div>
+                    <p className="font-medium text-body text-sm">Preview normalization</p>
+                    <p className="text-xs text-muted">See how this file will be classified — source system, category/direction breakdown, findings — before anything is saved.</p>
+                  </div>
+                  <Button variant="secondary" icon="search" onClick={() => void runPreview()} disabled={previewLoading}>
+                    {previewLoading ? 'Previewing…' : preImportPreview ? 'Refresh preview' : 'Preview normalization'}
+                  </Button>
+                </div>
+
+                {previewLoading && <div className="mt-3"><Spinner label="Running normalization preview…" /></div>}
+
+                {preImportPreview && !previewLoading && (
+                  <div className="mt-3 space-y-3">
+                    <div className="flex flex-wrap gap-1.5">
+                      {preImportPreview.sourceSystem && <ContextChip icon="database" label="Source" value={preImportPreview.sourceSystem} />}
+                      {preImportPreview.sourceReportType && <ContextChip label="Report" value={preImportPreview.sourceReportType} />}
+                      {preImportPreview.normalization.summary.dateFormat && (
+                        <ContextChip icon="quality" label="Date format" value={preImportPreview.normalization.summary.dateFormat} />
+                      )}
+                    </div>
+
+                    {preImportPreview.wouldBlock && (
+                      <InsightCallout tone="risk" title="This would still be blocked at save">
+                        {preImportPreview.criticalIssues.length} critical issue(s) remain — approve their cleansing actions above before saving.
+                      </InsightCallout>
+                    )}
+
+                    {preImportPreview.normalization.ambiguousDatesNeedConfirmation ? (
+                      <div className="rounded-lg border border-warning/30 bg-warning-soft p-3">
+                        <p className="text-sm font-medium text-body">Confirm the transaction date format</p>
+                        <p className="text-xs text-muted mt-1">
+                          Both DD/MM/YYYY and MM/DD/YYYY are possible for this file's date values, so it was not guessed.
+                          Choose the format used in the source file — this choice carries through to "Apply approved cleansing".
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                          <Button variant={dateOrderChoice === 'DMY' ? 'primary' : 'secondary'} onClick={() => void runPreview('DMY')}>Day first — DD/MM/YYYY</Button>
+                          <Button variant={dateOrderChoice === 'MDY' ? 'primary' : 'secondary'} onClick={() => void runPreview('MDY')}>Month first — MM/DD/YYYY</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+                        <StatTile label="Canonical rows" value={preImportPreview.normalization.canonicalRowCount} tone="neutral" />
+                        <StatTile label="Receipt" value={preImportPreview.normalization.summary.receiptRows} tone="positive" />
+                        <StatTile label="Consumption" value={preImportPreview.normalization.summary.consumptionRows} tone="warning" />
+                        <StatTile label="Transfers" value={preImportPreview.normalization.summary.transferRows} tone="info" />
+                        <StatTile label="Returns" value={preImportPreview.normalization.summary.returnRows} tone="info" />
+                        <StatTile label="Adjustments" value={preImportPreview.normalization.summary.adjustmentRows} tone="warning" />
+                        <StatTile label="Unknown" value={preImportPreview.normalization.summary.unknownTransactionRows}
+                          tone={preImportPreview.normalization.summary.unknownTransactionRows > 0 ? 'risk' : 'positive'} />
+                      </div>
+                    )}
+
+                    {preImportPreview.normalization.findings.length > 0 && (
+                      <div>
+                        <p className="text-sm font-medium text-body mb-1.5">
+                          Normalization findings ({preImportPreview.normalization.findings.length})
+                        </p>
+                        <ul className="space-y-2">
+                          {preImportPreview.normalization.findings.slice(0, 6).map((f, i) => (
+                            <li key={i} className="border border-line rounded-lg p-2.5 text-sm bg-bg">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Badge value={f.severity} />
+                                <span className="font-medium text-body">{f.code}</span>
+                                {f.rowNumber !== null && <span className="text-subtle">· row {f.rowNumber + 2}</span>}
+                              </div>
+                              <p className="text-muted mt-1">{f.explanation}</p>
+                            </li>
+                          ))}
+                        </ul>
+                        {preImportPreview.normalization.findings.length > 6 && (
+                          <p className="text-xs text-subtle mt-1.5">
+                            {preImportPreview.normalization.findings.length - 6} more finding(s) — full detail is shown after the dataset is saved.
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {dateOrderRequired ? (
               <div className="mt-4 rounded-lg border border-warning/30 bg-warning-soft p-3.5">
                 <p className="font-medium text-body text-sm">Confirm the transaction date format</p>

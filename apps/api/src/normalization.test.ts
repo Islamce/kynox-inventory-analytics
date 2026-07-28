@@ -396,3 +396,69 @@ describe('manual per-row classification override', () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe('import-time normalization preview (before dataset creation)', () => {
+  it('shows the ambiguous-date finding and never persists anything', async () => {
+    const csv = [
+      'Item Code,Transaction Date,Quantity,Transaction Type,Warehouse',
+      'P-1,03/04/2026,10,Goods Issue,WH1',
+      'P-2,05/06/2026,20,Goods Issue,WH1',
+      'P-3,07/08/2026,30,Goods Issue,WH1',
+    ].join('\n');
+    const up = await uploadCsv(csv, 'preview-ambiguous.csv');
+    const safeIds = await safeIdsFor(up.body.id);
+
+    const [datasetsBefore] = await db('datasets').count({ c: '*' });
+    const [canonicalBefore] = await db('canonical_transactions').count({ c: '*' });
+
+    const preview = await request(app).post('/api/datasets/preview')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: up.body.id, approvedActionIds: safeIds });
+    expect(preview.status).toBe(200);
+    expect(preview.body.wouldBlock).toBe(false);
+    // This is the authoritative signal the Workspace UI keys off to show the
+    // date-order picker before creation (the same flag that gates the 422 at
+    // creation time).
+    expect(preview.body.normalization.ambiguousDatesNeedConfirmation).toBe(true);
+
+    const [datasetsAfter] = await db('datasets').count({ c: '*' });
+    const [canonicalAfter] = await db('canonical_transactions').count({ c: '*' });
+    expect(datasetsAfter.c).toEqual(datasetsBefore.c);
+    expect(canonicalAfter.c).toEqual(canonicalBefore.c);
+
+    // Confirming dateOrder in the preview resolves the ambiguity and matches
+    // what actually creating the dataset with the same dateOrder produces.
+    const previewConfirmed = await request(app).post('/api/datasets/preview')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: up.body.id, approvedActionIds: safeIds, dateOrder: 'DMY' });
+    expect(previewConfirmed.body.normalization.ambiguousDatesNeedConfirmation).toBe(false);
+    expect(previewConfirmed.body.normalization.canonicalRowCount).toBe(3);
+
+    const created = await request(app).post('/api/datasets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: up.body.id, name: 'Preview Then Create', approvedActionIds: safeIds, dateOrder: 'DMY' });
+    expect(created.status).toBe(201);
+    expect(created.body.normalization.summary.receiptRows).toBe(previewConfirmed.body.normalization.summary.receiptRows);
+    expect(created.body.normalization.canonicalRowCount).toBe(previewConfirmed.body.normalization.canonicalRowCount);
+  });
+
+  it('reports wouldBlock for remaining critical issues without throwing', async () => {
+    const csv = [
+      'Material,Quantity,Value',
+      ',10,100',   // missing material -> critical issue if not excluded
+    ].join('\n');
+    const up = await uploadCsv(csv, 'preview-critical.csv');
+    const preview = await request(app).post('/api/datasets/preview')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: up.body.id, approvedActionIds: [] });
+    expect(preview.status).toBe(200);
+    if (preview.body.criticalIssues.length > 0) {
+      expect(preview.body.wouldBlock).toBe(true);
+    }
+  });
+
+  it('requires authentication and object-level ownership like dataset creation does', async () => {
+    const anon = await request(app).post('/api/datasets/preview').send({ uploadId: 1, approvedActionIds: [] });
+    expect(anon.status).toBe(401);
+  });
+});

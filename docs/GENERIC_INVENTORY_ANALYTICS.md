@@ -244,7 +244,8 @@ added for both.
 **Not yet done from this increment:** a richer date/direction preview *before*
 dataset creation (currently the preview appears after creation, since
 blocking/preview both run through the same `POST /api/datasets` call), and
-full user override of individual row classifications.
+full user override of individual row classifications. (Both were delivered in
+a later increment — see below.)
 
 ## Data Quality Center surfacing (delivered)
 
@@ -293,11 +294,11 @@ per material, optionally compared against a linked stock dataset's current
 quantity to surface a variance.
 
 **Honest scope limits, stated in the UI itself:**
-- Transfer/reversal "pairing" is **net per material**, not document-level.
-  `canonical_transactions` reserves `transfer_id` / `paired_transaction_id` /
-  `reversal_of_transaction_id` columns for exact pairing, but the ingestion
-  pipeline does not populate them yet — that is a real, larger follow-up (it
-  needs a matching algorithm, not just a query).
+- Transfer/reversal pairing is document-level (see "Document-level
+  transfer/reversal pairing" below) but scoped to a single dataset — both legs
+  of a transfer or a reversal and its original must be in the same import.
+  Legitimate misses are reported as low-severity findings, not treated as
+  errors.
 - Variance against a linked stock dataset is only meaningful when the
   movements dataset's period covers the material's full history since stock
   was last a known value (an explicit opening balance, or genuinely zero);
@@ -322,23 +323,73 @@ answer these questions from real evidence — the AI still never computes a
 number itself; it only interprets deterministically-computed evidence, per
 existing governance.
 
+## Document-level transfer/reversal pairing (delivered)
+
+`pairTransfersAndReversals()` in `apps/api/src/services/normalization.ts`
+matches unclaimed `TRANSFER_OUT`↔`TRANSFER_IN` canonical rows on
+material + exact absolute quantity + closest date and assigns them a shared
+`transfer_id` and cross-referenced `paired_transaction_id`; `REVERSAL_IN`/
+`REVERSAL_OUT` rows are matched to the most recent qualifying
+`RECEIPT`/`CONSUMPTION` row (same material + quantity, original date on or
+before the reversal date) and stamped with `reversal_of_transaction_id`.
+Unmatched rows produce low-severity, non-blocking
+`TRANSFER_PAIR_NOT_FOUND` / `REVERSAL_ORIGINAL_NOT_FOUND` findings — a miss is
+reported honestly rather than silently ignored. Matching is scoped to a single
+dataset (both legs must be in the same import); cross-dataset pairing is not
+attempted. `apps/api/src/services/reconciliation.ts` now reports
+`unpairedTransferRows` / `unpairedReversalRows` per material and
+`materialsWithUnpairedTransfers` / `materialsWithUnpairedReversals` in the
+summary, surfaced in the Inventory Reconciliation page.
+
+## Manual per-row classification override (delivered)
+
+`PATCH /api/datasets/:id/canonical/:canonicalId` (permission: `edit_mapping`,
+IDOR-safe — the row is looked up scoped to `{ id, dataset_id }`) lets a user
+correct a single canonical row's `transaction_category`. The handler
+recomputes `transaction_direction`, `signed_quantity`,
+`receipt_quantity`/`consumption_quantity` from the corrected category, marks
+`classification_source: 'user_rule'`, clears any stale sign/direction-conflict
+flags, and recomputes the dataset's `normalization_summary` from the current
+row set — all inside one DB transaction so the row and the dataset-level
+aggregates never drift apart. Audited as `canonical_reclassified`. The
+Dashboard's "Transaction categories" browser (`Dashboard.tsx`) exposes this as
+an inline category `<select>` per row.
+
+## Import-time preview before dataset creation (delivered)
+
+`POST /api/datasets/preview` runs the exact same `prepareImport()` pipeline
+(mapping → cleansing → quality scoring → canonical normalization) that
+`POST /api/datasets` uses, but never writes to the database — it reports row
+counts, quality scores, whether creation would still be blocked by remaining
+critical issues, and the full normalization summary/findings, including
+`ambiguousDatesNeedConfirmation`. `Workspace.tsx` adds a "Preview
+normalization" button in the Cleansing step (movements datasets only): it
+shows the category/direction breakdown and findings inline, and — when the
+date column is genuinely ambiguous — an inline DD/MM/YYYY vs MM/DD/YYYY picker
+that resolves the preview *and* carries the chosen order through to "Apply
+approved cleansing" automatically, so the user never has to make the same
+choice twice. The reactive post-422 picker from the previous increment is kept
+as a fallback for anyone who skips the preview button. A test asserts preview
+output and actual creation output agree exactly, and that preview never
+persists a row.
+
 ## Testing evidence (this increment)
 
-`@kynox/api` **58** tests (+5: 1 AI-evidence regression in
-`normalization.test.ts`, 4 in the new `reconciliation.test.ts` covering
-no-canonical-data / basic reconciliation / variance-against-linked-stock /
-auth). Full monorepo: **185** tests green; typecheck, build and
-`npm audit --audit-level=high` all clean. All four features verified in a
-real browser (Playwright/Chromium): light, dark and a 390px mobile viewport,
-no horizontal overflow.
+`@kynox/api` **66** tests (+8 since the previous increment: 2 transfer/
+reversal pairing, 3 manual override, 3 import-time preview — including the
+preview-equals-creation equality check and an unauthenticated/cross-dataset
+IDOR check). Full monorepo: **193** tests green; typecheck and build clean.
+All features verified in a real browser (Playwright/Chromium): light, dark
+and a 390px mobile viewport, no horizontal overflow — including the new
+inline preview panel and its ambiguous-date picker.
 
 ## Still pending (future work, honestly scoped)
 
-1. A richer import-time date/direction preview *before* dataset creation.
-2. Full user override of individual canonical row classifications.
-3. Document-level transfer/reversal pairing (the schema is ready; the matching
-   algorithm is not built).
-4. Reconciling the legacy SAP-heuristic demand calculation
+1. Reconciling the legacy SAP-heuristic demand calculation
    (`loadMovementsByMaterial`) with the canonical `TransactionCategory` model
    for consumption/ABC/XYZ/shortage/excess/health — requires an explicit
-   decision on reversal semantics before it can be done safely.
+   decision on reversal semantics before it can be done safely (the legacy
+   path subtracts issue reversals from consumption; the canonical model keeps
+   `REVERSAL_IN`/`REVERSAL_OUT` separate from `CONSUMPTION` by design). This
+   was deliberately raised as a question rather than implemented silently,
+   since it would change already-reconciled/UAT-tested computed numbers.
