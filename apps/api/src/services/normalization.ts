@@ -302,7 +302,6 @@ export function buildNormalization(opts: NormalizeOptions): NormalizationResult 
   }
 
   const ctx = { fileName: sourceFileName, sheetName, datasetId: opts.datasetId ?? null };
-  const isSap = sourceSystem === 'SAP';
 
   // --- date normalization (whole column, ambiguity resolved cross-row) ------
   // Ambiguity + day/month order are decided from the RAW column (before the
@@ -323,15 +322,20 @@ export function buildNormalization(opts: NormalizeOptions): NormalizationResult 
   const results = rows.map((r) => classifyTransaction({
     rawQuantity: (r.movement_qty ?? r.quantity ?? r.demand_qty ?? null) as string | number | null,
     directionHint: str(r.transaction_direction, 40),
-    // Always pass the type text as a generic fallback. For SAP sources the
-    // numeric BWART is matched first via `sapMovementType`; when that yields
-    // nothing (e.g. a generic file the detector labelled movements), the generic
-    // keyword classifier still sees the text.
+    // The numeric SAP movement-type map (`sapMovementType`) is tried first
+    // regardless of the dataset's *display* source-system label — a value
+    // like "201" or "261" is unambiguous SAP movement-type evidence on its
+    // own, even when the rest of the file uses friendly column headers
+    // rather than raw SAP technical names (so `sourceSystem` conservatively
+    // stayed non-SAP for provenance purposes, per `classifySource()`). It can
+    // only ever match an exact known code, so it never misfires on generic
+    // text. When it finds nothing, the generic keyword classifier sees the
+    // same text as a fallback.
     typeCode: str(r.movement_type, 40),
     debitCredit: str(r.debit_credit_indicator, 20),
     receiptQty: (r.receipt_qty ?? null) as string | number | null,
     consumptionQty: (r.issue_qty ?? r.consumption_qty ?? null) as string | number | null,
-    sapMovementType: isSap ? str(r.movement_type, 40) : null,
+    sapMovementType: str(r.movement_type, 40),
   }));
 
   const summary = emptySummary();
