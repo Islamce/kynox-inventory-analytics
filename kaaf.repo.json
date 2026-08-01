@@ -1,0 +1,25 @@
+{
+  "conventions": {
+    "branchNaming": [
+      "chore/*",
+      "feat/*",
+      "fix/*",
+      "wip/*"
+    ],
+    "generatedContextRoot": ".ai/",
+    "moduleManifestFile": "kaaf.module.json",
+    "monorepo": "apps/* are deployable applications; packages/* are shared libraries consumed through npm workspaces under the @kynox scope"
+  },
+  "defaultBranch": "main",
+  "deployment": {
+    "environments": [
+      "production"
+    ],
+    "note": "Managed Hostinger Node.js with MySQL is the documented target; apps/api serves the built apps/web SPA from a single process started by app.js under PM2 (ecosystem.config.cjs). No accepted production or UAT deployment record exists at the time of adoption, so deployment topology is documented rather than verified."
+  },
+  "description": "Kynox Inventory Intelligence — a source-neutral inventory diagnostic that ingests customer exports, normalizes them into a canonical transaction model, and serves data-quality, reconciliation, and inventory analytics.",
+  "kaafPhase": 7,
+  "name": "Kynox Inventory Intelligence",
+  "repository": "Islamce/kynox-inventory-analytics",
+  "schemaVersion": "1.0.0"
+}

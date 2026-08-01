@@ -1,0 +1,84 @@
+{
+  "_meta": {
+    "artifact": "modules/analytics-data-quality.json",
+    "bodyDigest": "e46d14515dc57828ee1e5456bd3ed21e36b21c1e22139b582e8b9483aa8c3d19",
+    "confidence": "verified",
+    "doNotEdit": true,
+    "generator": "kaaf",
+    "generatorVersion": "0.7.0",
+    "inputDigest": "7bd9f5ceaa001762e9d0c4e07a599d887769f8d78375045450a8bd985fdc2b04",
+    "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
+    "schemaVersion": "1.0.0"
+  },
+  "apis": [],
+  "confidence": "verified",
+  "confidenceReason": "Declared and corroborated by 10 discovered code file(s).",
+  "declared": true,
+  "declaredConfidence": "verified",
+  "dependedOnBy": [
+    "analytics-api"
+  ],
+  "dependsOn": [
+    "analytics-shared-types"
+  ],
+  "discovery": {
+    "codeFiles": [
+      "packages/data-quality/src/cleansing.ts",
+      "packages/data-quality/src/date-normalization.ts",
+      "packages/data-quality/src/index.ts",
+      "packages/data-quality/src/normalization-rules.ts",
+      "packages/data-quality/src/normalization.test.ts",
+      "packages/data-quality/src/parsers.ts",
+      "packages/data-quality/src/quality.test.ts",
+      "packages/data-quality/src/rules.ts",
+      "packages/data-quality/src/scoring.ts",
+      "packages/data-quality/src/transaction-classification.ts"
+    ],
+    "discovered": true,
+    "entryPoints": [],
+    "languages": [
+      "json",
+      "typescript"
+    ],
+    "parseErrors": [],
+    "publicSymbols": [],
+    "sourceFiles": [
+      "packages/data-quality/kaaf.module.json",
+      "packages/data-quality/package.json",
+      "packages/data-quality/src/cleansing.ts",
+      "packages/data-quality/src/date-normalization.ts",
+      "packages/data-quality/src/index.ts",
+      "packages/data-quality/src/normalization-rules.ts",
+      "packages/data-quality/src/normalization.test.ts",
+      "packages/data-quality/src/parsers.ts",
+      "packages/data-quality/src/quality.test.ts",
+      "packages/data-quality/src/rules.ts",
+      "packages/data-quality/src/scoring.ts",
+      "packages/data-quality/src/transaction-classification.ts",
+      "packages/data-quality/tsconfig.json"
+    ]
+  },
+  "driftFindings": [],
+  "externalIntegrations": [],
+  "id": "analytics-data-quality",
+  "ownedEntities": [
+    "cleansing-proposal",
+    "date-normalization-result",
+    "normalization-finding",
+    "quality-rule",
+    "quality-score"
+  ],
+  "owner": "Data",
+  "path": "packages/data-quality",
+  "permissions": [],
+  "publicEntryPoints": [
+    "packages/data-quality/package.json",
+    "packages/data-quality/src/index.ts"
+  ],
+  "purpose": "Score incoming customer data, propose and apply cleansing, and normalize ambiguous values such as dates so downstream analytics receive evidence-tagged input.",
+  "readNext": [
+    "packages/data-quality/package.json",
+    "packages/data-quality/src/index.ts"
+  ],
+  "sourceManifest": "packages/data-quality/kaaf.module.json"
+}

@@ -1,0 +1,192 @@
+{
+  "_meta": {
+    "artifact": "drift.json",
+    "bodyDigest": "ddc6a0a67233d54daccef5dba97e012728e50d6415542252702ab27c0943720e",
+    "confidence": "derived",
+    "doNotEdit": true,
+    "generator": "kaaf",
+    "generatorVersion": "0.7.0",
+    "inputDigest": "7bd9f5ceaa001762e9d0c4e07a599d887769f8d78375045450a8bd985fdc2b04",
+    "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
+    "schemaVersion": "1.0.0"
+  },
+  "confidenceByModule": {
+    "analytics-ai-engine": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 5 discovered code file(s)."
+    },
+    "analytics-api": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 35 discovered code file(s)."
+    },
+    "analytics-data-quality": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 10 discovered code file(s)."
+    },
+    "analytics-deployment": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 7 discovered code file(s)."
+    },
+    "analytics-engine": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 13 discovered code file(s)."
+    },
+    "analytics-fixtures": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 1 discovered code file(s)."
+    },
+    "analytics-kaaf-tooling": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 31 discovered code file(s)."
+    },
+    "analytics-runtime-entry": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 2 discovered code file(s)."
+    },
+    "analytics-shared-types": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 2 discovered code file(s)."
+    },
+    "analytics-web": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 29 discovered code file(s)."
+    }
+  },
+  "counts": {
+    "error": 0,
+    "info": 1,
+    "warning": 0
+  },
+  "declaredModules": [
+    "analytics-ai-engine",
+    "analytics-api",
+    "analytics-data-quality",
+    "analytics-deployment",
+    "analytics-engine",
+    "analytics-fixtures",
+    "analytics-kaaf-tooling",
+    "analytics-runtime-entry",
+    "analytics-shared-types",
+    "analytics-web"
+  ],
+  "discoveredImportEdges": [
+    {
+      "evidence": [
+        "packages/ai-engine/src/agents.ts",
+        "packages/ai-engine/src/ai.test.ts",
+        "packages/ai-engine/src/orchestrator.ts"
+      ],
+      "from": "analytics-ai-engine",
+      "to": "analytics-shared-types"
+    },
+    {
+      "evidence": [
+        "apps/api/src/middleware/errors.ts",
+        "apps/api/src/routes/ai.ts"
+      ],
+      "from": "analytics-api",
+      "to": "analytics-ai-engine"
+    },
+    {
+      "evidence": [
+        "apps/api/src/routes/datasets.ts",
+        "apps/api/src/routes/uploads.ts",
+        "apps/api/src/services/mapping.ts",
+        "apps/api/src/services/normalization.ts"
+      ],
+      "from": "analytics-api",
+      "to": "analytics-data-quality"
+    },
+    {
+      "evidence": [
+        "apps/api/src/routes/analytics.ts",
+        "apps/api/src/services/analytics.ts",
+        "apps/api/src/services/reconciliation.ts"
+      ],
+      "from": "analytics-api",
+      "to": "analytics-engine"
+    },
+    {
+      "evidence": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/admin.ts",
+        "apps/api/src/routes/ai.ts",
+        "apps/api/src/routes/auth.ts",
+        "apps/api/src/routes/datasets.ts",
+        "apps/api/src/routes/uploads.ts",
+        "apps/api/src/services/analytics.ts",
+        "apps/api/src/services/detection.ts",
+        "apps/api/src/services/mapping.ts",
+        "apps/api/src/services/normalization.ts"
+      ],
+      "from": "analytics-api",
+      "to": "analytics-shared-types"
+    },
+    {
+      "evidence": [
+        "packages/data-quality/src/cleansing.ts",
+        "packages/data-quality/src/date-normalization.ts",
+        "packages/data-quality/src/normalization-rules.ts",
+        "packages/data-quality/src/rules.ts",
+        "packages/data-quality/src/scoring.ts",
+        "packages/data-quality/src/transaction-classification.ts"
+      ],
+      "from": "analytics-data-quality",
+      "to": "analytics-shared-types"
+    },
+    {
+      "evidence": [
+        "packages/analytics-engine/src/abc.ts",
+        "packages/analytics-engine/src/aging.ts",
+        "packages/analytics-engine/src/excess-shortage.ts",
+        "packages/analytics-engine/src/forecasting.ts",
+        "packages/analytics-engine/src/health.ts",
+        "packages/analytics-engine/src/movement-category.ts",
+        "packages/analytics-engine/src/xyz.ts"
+      ],
+      "from": "analytics-engine",
+      "to": "analytics-shared-types"
+    }
+  ],
+  "discoveredModules": [
+    "analytics-ai-engine",
+    "analytics-api",
+    "analytics-data-quality",
+    "analytics-deployment",
+    "analytics-engine",
+    "analytics-fixtures",
+    "analytics-kaaf-tooling",
+    "analytics-runtime-entry",
+    "analytics-shared-types",
+    "analytics-web"
+  ],
+  "findings": [
+    {
+      "evidence": [
+        "ALL_ROLES",
+        "AbcClass",
+        "AbcResult",
+        "AgingBucket",
+        "AgingResult",
+        "AiChatResponse",
+        "AiEvidence",
+        "AiInsight",
+        "CanonicalField",
+        "CleansingAction"
+      ],
+      "module": "analytics-shared-types",
+      "recommendation": "Consider whether this module is really two (docs/kaaf/STANDARDS.md §1).",
+      "severity": "info",
+      "summary": "34 public symbols at the entry points (guideline is 10).",
+      "type": "large-public-surface"
+    }
+  ],
+  "hasErrors": false,
+  "howToRead": [
+    "error: the declaration and the code disagree in a way that must be fixed; CI fails.",
+    "warning: real drift that does not block, most often code with no manifest.",
+    "info: expected divergence, such as a documentation-only dependency.",
+    "Everything here is derived from a static read of the source: dynamic imports and runtime wiring are invisible to it, so absence of a finding is not proof of absence."
+  ],
+  "undeclaredCode": []
+}

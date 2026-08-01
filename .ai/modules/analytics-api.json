@@ -1,0 +1,436 @@
+{
+  "_meta": {
+    "artifact": "modules/analytics-api.json",
+    "bodyDigest": "e62ab1c3e69a78270ab1aaca123fc74b3bde1d3119bee0ec6aed3c984b1dbcf9",
+    "confidence": "verified",
+    "doNotEdit": true,
+    "generator": "kaaf",
+    "generatorVersion": "0.7.0",
+    "inputDigest": "7bd9f5ceaa001762e9d0c4e07a599d887769f8d78375045450a8bd985fdc2b04",
+    "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
+    "schemaVersion": "1.0.0"
+  },
+  "apis": [
+    {
+      "auth": "jwt",
+      "id": "admin-api",
+      "kind": "rest",
+      "path": "apps/api/src/routes/admin.ts",
+      "requestType": "HTTP /api/admin — user management, configuration and audit access",
+      "responseType": "User, config and audit records",
+      "stability": "evolving",
+      "version": "1"
+    },
+    {
+      "auth": "jwt",
+      "id": "ai-api",
+      "kind": "rest",
+      "path": "apps/api/src/routes/ai.ts",
+      "requestType": "HTTP /api/ai — run documented agents over evidence packages",
+      "responseType": "Agent output, or a controlled error when no provider is configured",
+      "stability": "experimental",
+      "version": "1"
+    },
+    {
+      "auth": "jwt",
+      "id": "analytics-api-surface",
+      "kind": "rest",
+      "path": "apps/api/src/routes/analytics.ts",
+      "requestType": "HTTP /api/analytics — stock, aging, ABC, XYZ, excess, shortage, health, consumption, forecast, planning, reconciliation, material 360",
+      "responseType": "Computed analytics results over canonical transactions",
+      "stability": "evolving",
+      "version": "1"
+    },
+    {
+      "auth": "none",
+      "id": "auth-api",
+      "kind": "rest",
+      "path": "apps/api/src/routes/auth.ts",
+      "requestType": "HTTP /api/auth — login and session establishment",
+      "responseType": "JWT bearer token, non-revocable before its documented expiry",
+      "stability": "stable",
+      "version": "1"
+    },
+    {
+      "auth": "jwt",
+      "id": "datasets-api",
+      "kind": "rest",
+      "path": "apps/api/src/routes/datasets.ts",
+      "requestType": "HTTP /api/datasets — create, preview, list, version and delete datasets",
+      "responseType": "DatasetSummary and normalization findings",
+      "stability": "evolving",
+      "version": "1"
+    },
+    {
+      "auth": "jwt",
+      "id": "exports-api",
+      "kind": "rest",
+      "path": "apps/api/src/routes/exports.ts",
+      "requestType": "HTTP /api/exports — generate and retrieve report exports",
+      "responseType": "Export records and generated files",
+      "stability": "evolving",
+      "version": "1"
+    },
+    {
+      "auth": "jwt",
+      "id": "maintenance-api",
+      "kind": "rest",
+      "path": "apps/api/src/routes/maintenance.ts",
+      "requestType": "HTTP /api/maintenance — operational maintenance endpoints",
+      "responseType": "Maintenance operation results",
+      "stability": "experimental",
+      "version": "1"
+    },
+    {
+      "auth": "jwt",
+      "id": "uploads-api",
+      "kind": "rest",
+      "path": "apps/api/src/routes/uploads.ts",
+      "requestType": "HTTP /api/uploads — file upload, type detection, mapping and preview",
+      "responseType": "Upload records and detected mapping proposals",
+      "stability": "evolving",
+      "version": "1"
+    }
+  ],
+  "confidence": "verified",
+  "confidenceReason": "Declared and corroborated by 35 discovered code file(s).",
+  "declared": true,
+  "declaredConfidence": "verified",
+  "dependedOnBy": [],
+  "dependsOn": [
+    "analytics-ai-engine",
+    "analytics-data-quality",
+    "analytics-engine",
+    "analytics-shared-types"
+  ],
+  "discovery": {
+    "codeFiles": [
+      "apps/api/knexfile.js",
+      "apps/api/src/app.test.ts",
+      "apps/api/src/app.ts",
+      "apps/api/src/config.ts",
+      "apps/api/src/db/index.ts",
+      "apps/api/src/db/migrations/20260719000001_initial_schema.js",
+      "apps/api/src/db/migrations/20260719000002_ai_usage_columns.js",
+      "apps/api/src/db/migrations/20260722000003_canonical_normalization.js",
+      "apps/api/src/db/seeds/001_admin_user.js",
+      "apps/api/src/logger.ts",
+      "apps/api/src/mapping.test.ts",
+      "apps/api/src/middleware/auth.ts",
+      "apps/api/src/middleware/correlation.ts",
+      "apps/api/src/middleware/errors.ts",
+      "apps/api/src/normalization.test.ts",
+      "apps/api/src/pipeline.test.ts",
+      "apps/api/src/reconciliation.test.ts",
+      "apps/api/src/routes/admin.ts",
+      "apps/api/src/routes/ai.ts",
+      "apps/api/src/routes/analytics.ts",
+      "apps/api/src/routes/auth.ts",
+      "apps/api/src/routes/datasets.ts",
+      "apps/api/src/routes/exports.ts",
+      "apps/api/src/routes/maintenance.ts",
+      "apps/api/src/routes/uploads.ts",
+      "apps/api/src/server.ts",
+      "apps/api/src/services/analytics.ts",
+      "apps/api/src/services/audit.ts",
+      "apps/api/src/services/cleanup.ts",
+      "apps/api/src/services/detection.ts",
+      "apps/api/src/services/files.ts",
+      "apps/api/src/services/mapping.ts",
+      "apps/api/src/services/normalization.ts",
+      "apps/api/src/services/reconciliation.ts",
+      "apps/api/vitest.config.ts"
+    ],
+    "discovered": true,
+    "entryPoints": [],
+    "languages": [
+      "javascript",
+      "json",
+      "typescript"
+    ],
+    "parseErrors": [],
+    "publicSymbols": [
+      "createApp"
+    ],
+    "sourceFiles": [
+      "apps/api/kaaf.module.json",
+      "apps/api/knexfile.js",
+      "apps/api/package.json",
+      "apps/api/src/app.test.ts",
+      "apps/api/src/app.ts",
+      "apps/api/src/config.ts",
+      "apps/api/src/db/index.ts",
+      "apps/api/src/db/migrations/20260719000001_initial_schema.js",
+      "apps/api/src/db/migrations/20260719000002_ai_usage_columns.js",
+      "apps/api/src/db/migrations/20260722000003_canonical_normalization.js",
+      "apps/api/src/db/seeds/001_admin_user.js",
+      "apps/api/src/logger.ts",
+      "apps/api/src/mapping.test.ts",
+      "apps/api/src/middleware/auth.ts",
+      "apps/api/src/middleware/correlation.ts",
+      "apps/api/src/middleware/errors.ts",
+      "apps/api/src/normalization.test.ts",
+      "apps/api/src/pipeline.test.ts",
+      "apps/api/src/reconciliation.test.ts",
+      "apps/api/src/routes/admin.ts",
+      "apps/api/src/routes/ai.ts",
+      "apps/api/src/routes/analytics.ts",
+      "apps/api/src/routes/auth.ts",
+      "apps/api/src/routes/datasets.ts",
+      "apps/api/src/routes/exports.ts",
+      "apps/api/src/routes/maintenance.ts",
+      "apps/api/src/routes/uploads.ts",
+      "apps/api/src/server.ts",
+      "apps/api/src/services/analytics.ts",
+      "apps/api/src/services/audit.ts",
+      "apps/api/src/services/cleanup.ts",
+      "apps/api/src/services/detection.ts",
+      "apps/api/src/services/files.ts",
+      "apps/api/src/services/mapping.ts",
+      "apps/api/src/services/normalization.ts",
+      "apps/api/src/services/reconciliation.ts",
+      "apps/api/tsconfig.json",
+      "apps/api/vitest.config.ts"
+    ]
+  },
+  "driftFindings": [],
+  "externalIntegrations": [
+    {
+      "criticality": "required",
+      "kind": "database",
+      "name": "Knex relational database (SQLite in development; PostgreSQL and MySQL adapters for hosted environments)",
+      "onUnavailable": "The API cannot serve or ingest any dataset. Production startup refuses SQLite."
+    }
+  ],
+  "id": "analytics-api",
+  "ownedEntities": [
+    "ai_log",
+    "audit_log",
+    "canonical_transaction",
+    "config",
+    "dataset",
+    "export",
+    "material_master",
+    "movement",
+    "physical_inventory",
+    "stock_item",
+    "upload",
+    "user"
+  ],
+  "owner": "Backend",
+  "path": "apps/api",
+  "permissions": [
+    {
+      "action": "execute",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/ai.ts"
+      ],
+      "key": "analytics.ai.use",
+      "resource": "ai-agent",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_director",
+        "supply_chain_manager",
+        "inventory_manager",
+        "warehouse_manager",
+        "material_planner",
+        "inventory_controller",
+        "data_analyst",
+        "executive_viewer"
+      ]
+    },
+    {
+      "action": "execute",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/analytics.ts"
+      ],
+      "key": "analytics.analysis.run",
+      "resource": "analysis",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_director",
+        "supply_chain_manager",
+        "inventory_manager",
+        "warehouse_manager",
+        "material_planner",
+        "inventory_controller",
+        "data_analyst",
+        "executive_viewer"
+      ]
+    },
+    {
+      "action": "read",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/admin.ts"
+      ],
+      "key": "analytics.audit.read",
+      "resource": "audit_log",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_director",
+        "auditor"
+      ]
+    },
+    {
+      "action": "approve",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/datasets.ts"
+      ],
+      "key": "analytics.cleansing.approve",
+      "resource": "cleansing-proposal",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_manager",
+        "inventory_manager",
+        "material_planner"
+      ]
+    },
+    {
+      "action": "update",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/admin.ts"
+      ],
+      "key": "analytics.config.update",
+      "resource": "config",
+      "roles": [
+        "system_admin"
+      ]
+    },
+    {
+      "action": "delete",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/datasets.ts"
+      ],
+      "key": "analytics.dataset.delete",
+      "resource": "dataset",
+      "roles": [
+        "system_admin",
+        "data_admin"
+      ]
+    },
+    {
+      "action": "read",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/datasets.ts"
+      ],
+      "key": "analytics.dataset.read",
+      "resource": "dataset",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_director",
+        "supply_chain_manager",
+        "inventory_manager",
+        "warehouse_manager",
+        "material_planner",
+        "inventory_controller",
+        "data_analyst",
+        "auditor",
+        "executive_viewer",
+        "read_only"
+      ]
+    },
+    {
+      "action": "execute",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/exports.ts"
+      ],
+      "key": "analytics.export.execute",
+      "resource": "export",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_director",
+        "supply_chain_manager",
+        "inventory_manager",
+        "warehouse_manager",
+        "material_planner",
+        "inventory_controller",
+        "data_analyst",
+        "auditor"
+      ]
+    },
+    {
+      "action": "update",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/datasets.ts"
+      ],
+      "key": "analytics.mapping.update",
+      "resource": "mapping",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_manager",
+        "inventory_manager",
+        "material_planner",
+        "data_analyst"
+      ]
+    },
+    {
+      "action": "create",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/uploads.ts"
+      ],
+      "key": "analytics.upload.create",
+      "resource": "upload",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_manager",
+        "inventory_manager",
+        "warehouse_manager",
+        "material_planner",
+        "data_analyst"
+      ]
+    },
+    {
+      "action": "manage",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/admin.ts"
+      ],
+      "key": "analytics.user.manage",
+      "resource": "user",
+      "roles": [
+        "system_admin"
+      ]
+    }
+  ],
+  "publicEntryPoints": [
+    "apps/api/package.json",
+    "apps/api/src/app.ts",
+    "apps/api/src/server.ts"
+  ],
+  "purpose": "Serve the inventory diagnostic over HTTP: ingest and version customer datasets, normalize them into the canonical transaction model, enforce role-based access, and expose every analytics, reconciliation and export surface.",
+  "readNext": [
+    "apps/api/package.json",
+    "apps/api/src/app.ts",
+    "apps/api/src/server.ts"
+  ],
+  "sourceManifest": "apps/api/kaaf.module.json"
+}

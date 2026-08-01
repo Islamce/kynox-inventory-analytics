@@ -1,0 +1,124 @@
+{
+  "_meta": {
+    "artifact": "modules/analytics-shared-types.json",
+    "bodyDigest": "7c44cc7a8e53afeb4d5decddb30135718eabd613d47f272074a74be913fab596",
+    "confidence": "verified",
+    "doNotEdit": true,
+    "generator": "kaaf",
+    "generatorVersion": "0.7.0",
+    "inputDigest": "7bd9f5ceaa001762e9d0c4e07a599d887769f8d78375045450a8bd985fdc2b04",
+    "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
+    "schemaVersion": "1.0.0"
+  },
+  "apis": [],
+  "confidence": "verified",
+  "confidenceReason": "Declared and corroborated by 2 discovered code file(s).",
+  "declared": true,
+  "declaredConfidence": "verified",
+  "dependedOnBy": [
+    "analytics-ai-engine",
+    "analytics-api",
+    "analytics-data-quality",
+    "analytics-engine"
+  ],
+  "dependsOn": [],
+  "discovery": {
+    "codeFiles": [
+      "packages/shared-types/src/canonical.ts",
+      "packages/shared-types/src/index.ts"
+    ],
+    "discovered": true,
+    "entryPoints": [],
+    "languages": [
+      "json",
+      "typescript"
+    ],
+    "parseErrors": [],
+    "publicSymbols": [
+      "ALL_ROLES",
+      "AbcClass",
+      "AbcResult",
+      "AgingBucket",
+      "AgingResult",
+      "AiChatResponse",
+      "AiEvidence",
+      "AiInsight",
+      "CanonicalField",
+      "CleansingAction",
+      "ColumnMapping",
+      "DatasetSummary",
+      "ExcessResult",
+      "ForecastAccuracy",
+      "ForecastComparison",
+      "ForecastResult",
+      "HealthWeights",
+      "IssueSeverity",
+      "KpiValue",
+      "MaterialMasterRow",
+      "MovementCategory",
+      "MovementRow",
+      "Permission",
+      "PhysicalInventoryRow",
+      "QualityIssue",
+      "QualityScores",
+      "ROLE_PERMISSIONS",
+      "ReportDetectionResult",
+      "ReportType",
+      "Role",
+      "ShortageResult",
+      "StockRow",
+      "XyzClass",
+      "XyzResult"
+    ],
+    "sourceFiles": [
+      "packages/shared-types/kaaf.module.json",
+      "packages/shared-types/package.json",
+      "packages/shared-types/src/canonical.ts",
+      "packages/shared-types/src/index.ts",
+      "packages/shared-types/tsconfig.json"
+    ]
+  },
+  "driftFindings": [
+    {
+      "evidence": [
+        "ALL_ROLES",
+        "AbcClass",
+        "AbcResult",
+        "AgingBucket",
+        "AgingResult",
+        "AiChatResponse",
+        "AiEvidence",
+        "AiInsight",
+        "CanonicalField",
+        "CleansingAction"
+      ],
+      "module": "analytics-shared-types",
+      "recommendation": "Consider whether this module is really two (docs/kaaf/STANDARDS.md §1).",
+      "severity": "info",
+      "summary": "34 public symbols at the entry points (guideline is 10).",
+      "type": "large-public-surface"
+    }
+  ],
+  "externalIntegrations": [],
+  "id": "analytics-shared-types",
+  "ownedEntities": [
+    "canonical-transaction-category",
+    "permission",
+    "role",
+    "role-permission-matrix",
+    "shared-api-dto"
+  ],
+  "owner": "Backend",
+  "path": "packages/shared-types",
+  "permissions": [],
+  "publicEntryPoints": [
+    "packages/shared-types/package.json",
+    "packages/shared-types/src/index.ts"
+  ],
+  "purpose": "Define the types, canonical transaction vocabulary, and the single role-to-permission matrix that every other module in the platform shares.",
+  "readNext": [
+    "packages/shared-types/package.json",
+    "packages/shared-types/src/index.ts"
+  ],
+  "sourceManifest": "packages/shared-types/kaaf.module.json"
+}

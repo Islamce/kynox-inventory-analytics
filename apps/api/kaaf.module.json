@@ -1,0 +1,397 @@
+{
+  "apis": [
+    {
+      "auth": "jwt",
+      "id": "datasets-api",
+      "kind": "rest",
+      "path": "apps/api/src/routes/datasets.ts",
+      "requestType": "HTTP /api/datasets — create, preview, list, version and delete datasets",
+      "responseType": "DatasetSummary and normalization findings",
+      "stability": "evolving",
+      "version": "1"
+    },
+    {
+      "auth": "jwt",
+      "id": "analytics-api-surface",
+      "kind": "rest",
+      "path": "apps/api/src/routes/analytics.ts",
+      "requestType": "HTTP /api/analytics — stock, aging, ABC, XYZ, excess, shortage, health, consumption, forecast, planning, reconciliation, material 360",
+      "responseType": "Computed analytics results over canonical transactions",
+      "stability": "evolving",
+      "version": "1"
+    },
+    {
+      "auth": "jwt",
+      "id": "uploads-api",
+      "kind": "rest",
+      "path": "apps/api/src/routes/uploads.ts",
+      "requestType": "HTTP /api/uploads — file upload, type detection, mapping and preview",
+      "responseType": "Upload records and detected mapping proposals",
+      "stability": "evolving",
+      "version": "1"
+    },
+    {
+      "auth": "jwt",
+      "id": "ai-api",
+      "kind": "rest",
+      "path": "apps/api/src/routes/ai.ts",
+      "requestType": "HTTP /api/ai — run documented agents over evidence packages",
+      "responseType": "Agent output, or a controlled error when no provider is configured",
+      "stability": "experimental",
+      "version": "1"
+    },
+    {
+      "auth": "none",
+      "id": "auth-api",
+      "kind": "rest",
+      "path": "apps/api/src/routes/auth.ts",
+      "requestType": "HTTP /api/auth — login and session establishment",
+      "responseType": "JWT bearer token, non-revocable before its documented expiry",
+      "stability": "stable",
+      "version": "1"
+    },
+    {
+      "auth": "jwt",
+      "id": "exports-api",
+      "kind": "rest",
+      "path": "apps/api/src/routes/exports.ts",
+      "requestType": "HTTP /api/exports — generate and retrieve report exports",
+      "responseType": "Export records and generated files",
+      "stability": "evolving",
+      "version": "1"
+    },
+    {
+      "auth": "jwt",
+      "id": "admin-api",
+      "kind": "rest",
+      "path": "apps/api/src/routes/admin.ts",
+      "requestType": "HTTP /api/admin — user management, configuration and audit access",
+      "responseType": "User, config and audit records",
+      "stability": "evolving",
+      "version": "1"
+    },
+    {
+      "auth": "jwt",
+      "id": "maintenance-api",
+      "kind": "rest",
+      "path": "apps/api/src/routes/maintenance.ts",
+      "requestType": "HTTP /api/maintenance — operational maintenance endpoints",
+      "responseType": "Maintenance operation results",
+      "stability": "experimental",
+      "version": "1"
+    }
+  ],
+  "confidence": "verified",
+  "consumes": [],
+  "dependsOn": [
+    "analytics-shared-types",
+    "analytics-engine",
+    "analytics-data-quality",
+    "analytics-ai-engine"
+  ],
+  "externalIntegrations": [
+    {
+      "criticality": "required",
+      "kind": "database",
+      "name": "Knex relational database (SQLite in development; PostgreSQL and MySQL adapters for hosted environments)",
+      "onUnavailable": "The API cannot serve or ingest any dataset. Production startup refuses SQLite."
+    }
+  ],
+  "flows": [
+    {
+      "id": "ingest-dataset",
+      "steps": [
+        {
+          "action": "upload a customer export",
+          "from": "analytics-web",
+          "to": "uploads-api"
+        },
+        {
+          "action": "detect file type and propose a column mapping",
+          "from": "uploads-api",
+          "to": "analytics-data-quality"
+        },
+        {
+          "action": "score quality and propose cleansing",
+          "from": "analytics-data-quality",
+          "kind": "response",
+          "to": "analytics-web"
+        },
+        {
+          "action": "create the dataset with approved mapping and cleansing",
+          "from": "analytics-web",
+          "to": "datasets-api"
+        },
+        {
+          "action": "normalize rows into the canonical transaction model and pair transfers and reversals",
+          "from": "datasets-api",
+          "to": "analytics-shared-types"
+        },
+        {
+          "action": "persist canonical rows and findings in one transaction",
+          "from": "datasets-api",
+          "to": "database"
+        },
+        {
+          "action": "dataset version with normalization findings",
+          "from": "datasets-api",
+          "kind": "response",
+          "to": "analytics-web"
+        }
+      ],
+      "title": "Ingest a customer export into the canonical model"
+    },
+    {
+      "id": "serve-analytics",
+      "steps": [
+        {
+          "action": "request an analytics surface for a dataset",
+          "from": "analytics-web",
+          "to": "analytics-api-surface"
+        },
+        {
+          "action": "load canonical transactions for the dataset",
+          "from": "analytics-api-surface",
+          "to": "database"
+        },
+        {
+          "action": "compute the requested analytic as a pure function",
+          "from": "analytics-api-surface",
+          "to": "analytics-engine"
+        },
+        {
+          "action": "computed result",
+          "from": "analytics-engine",
+          "kind": "response",
+          "to": "analytics-web"
+        }
+      ],
+      "title": "Serve an analytics surface from canonical transactions"
+    }
+  ],
+  "id": "analytics-api",
+  "ownedEntities": [
+    "user",
+    "dataset",
+    "upload",
+    "canonical_transaction",
+    "movement",
+    "stock_item",
+    "material_master",
+    "physical_inventory",
+    "export",
+    "config",
+    "audit_log",
+    "ai_log"
+  ],
+  "owner": "Backend",
+  "permissions": [
+    {
+      "action": "create",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/uploads.ts"
+      ],
+      "key": "analytics.upload.create",
+      "resource": "upload",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_manager",
+        "inventory_manager",
+        "warehouse_manager",
+        "material_planner",
+        "data_analyst"
+      ]
+    },
+    {
+      "action": "read",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/datasets.ts"
+      ],
+      "key": "analytics.dataset.read",
+      "resource": "dataset",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_director",
+        "supply_chain_manager",
+        "inventory_manager",
+        "warehouse_manager",
+        "material_planner",
+        "inventory_controller",
+        "data_analyst",
+        "auditor",
+        "executive_viewer",
+        "read_only"
+      ]
+    },
+    {
+      "action": "update",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/datasets.ts"
+      ],
+      "key": "analytics.mapping.update",
+      "resource": "mapping",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_manager",
+        "inventory_manager",
+        "material_planner",
+        "data_analyst"
+      ]
+    },
+    {
+      "action": "approve",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/datasets.ts"
+      ],
+      "key": "analytics.cleansing.approve",
+      "resource": "cleansing-proposal",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_manager",
+        "inventory_manager",
+        "material_planner"
+      ]
+    },
+    {
+      "action": "execute",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/analytics.ts"
+      ],
+      "key": "analytics.analysis.run",
+      "resource": "analysis",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_director",
+        "supply_chain_manager",
+        "inventory_manager",
+        "warehouse_manager",
+        "material_planner",
+        "inventory_controller",
+        "data_analyst",
+        "executive_viewer"
+      ]
+    },
+    {
+      "action": "execute",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/ai.ts"
+      ],
+      "key": "analytics.ai.use",
+      "resource": "ai-agent",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_director",
+        "supply_chain_manager",
+        "inventory_manager",
+        "warehouse_manager",
+        "material_planner",
+        "inventory_controller",
+        "data_analyst",
+        "executive_viewer"
+      ]
+    },
+    {
+      "action": "execute",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/exports.ts"
+      ],
+      "key": "analytics.export.execute",
+      "resource": "export",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_director",
+        "supply_chain_manager",
+        "inventory_manager",
+        "warehouse_manager",
+        "material_planner",
+        "inventory_controller",
+        "data_analyst",
+        "auditor"
+      ]
+    },
+    {
+      "action": "delete",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/datasets.ts"
+      ],
+      "key": "analytics.dataset.delete",
+      "resource": "dataset",
+      "roles": [
+        "system_admin",
+        "data_admin"
+      ]
+    },
+    {
+      "action": "manage",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/admin.ts"
+      ],
+      "key": "analytics.user.manage",
+      "resource": "user",
+      "roles": [
+        "system_admin"
+      ]
+    },
+    {
+      "action": "read",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/admin.ts"
+      ],
+      "key": "analytics.audit.read",
+      "resource": "audit_log",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_director",
+        "auditor"
+      ]
+    },
+    {
+      "action": "update",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/admin.ts"
+      ],
+      "key": "analytics.config.update",
+      "resource": "config",
+      "roles": [
+        "system_admin"
+      ]
+    }
+  ],
+  "publicEntryPoints": [
+    "apps/api/package.json",
+    "apps/api/src/server.ts",
+    "apps/api/src/app.ts"
+  ],
+  "purpose": "Serve the inventory diagnostic over HTTP: ingest and version customer datasets, normalize them into the canonical transaction model, enforce role-based access, and expose every analytics, reconciliation and export surface.",
+  "schemaVersion": "1.0.0"
+}

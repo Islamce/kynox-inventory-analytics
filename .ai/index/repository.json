@@ -1,0 +1,482 @@
+{
+  "_meta": {
+    "artifact": "index/repository.json",
+    "bodyDigest": "1247c53a73c97da8c9b094ee017559c8705a52d945fd44e1fbdd76188dffd670",
+    "confidence": "derived",
+    "doNotEdit": true,
+    "generator": "kaaf",
+    "generatorVersion": "0.7.0",
+    "inputDigest": "7bd9f5ceaa001762e9d0c4e07a599d887769f8d78375045450a8bd985fdc2b04",
+    "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
+    "schemaVersion": "1.0.0"
+  },
+  "apis": [
+    {
+      "confidence": "verified",
+      "id": "admin-api",
+      "kind": "rest",
+      "module": "analytics-api",
+      "path": "apps/api/src/routes/admin.ts",
+      "qualifiedId": "Islamce/kynox-inventory-analytics#analytics-api/admin-api",
+      "stability": "evolving",
+      "version": "1"
+    },
+    {
+      "confidence": "verified",
+      "id": "ai-api",
+      "kind": "rest",
+      "module": "analytics-api",
+      "path": "apps/api/src/routes/ai.ts",
+      "qualifiedId": "Islamce/kynox-inventory-analytics#analytics-api/ai-api",
+      "stability": "experimental",
+      "version": "1"
+    },
+    {
+      "confidence": "verified",
+      "id": "analytics-api-surface",
+      "kind": "rest",
+      "module": "analytics-api",
+      "path": "apps/api/src/routes/analytics.ts",
+      "qualifiedId": "Islamce/kynox-inventory-analytics#analytics-api/analytics-api-surface",
+      "stability": "evolving",
+      "version": "1"
+    },
+    {
+      "confidence": "verified",
+      "id": "auth-api",
+      "kind": "rest",
+      "module": "analytics-api",
+      "path": "apps/api/src/routes/auth.ts",
+      "qualifiedId": "Islamce/kynox-inventory-analytics#analytics-api/auth-api",
+      "stability": "stable",
+      "version": "1"
+    },
+    {
+      "confidence": "verified",
+      "id": "datasets-api",
+      "kind": "rest",
+      "module": "analytics-api",
+      "path": "apps/api/src/routes/datasets.ts",
+      "qualifiedId": "Islamce/kynox-inventory-analytics#analytics-api/datasets-api",
+      "stability": "evolving",
+      "version": "1"
+    },
+    {
+      "confidence": "verified",
+      "id": "exports-api",
+      "kind": "rest",
+      "module": "analytics-api",
+      "path": "apps/api/src/routes/exports.ts",
+      "qualifiedId": "Islamce/kynox-inventory-analytics#analytics-api/exports-api",
+      "stability": "evolving",
+      "version": "1"
+    },
+    {
+      "confidence": "verified",
+      "id": "maintenance-api",
+      "kind": "rest",
+      "module": "analytics-api",
+      "path": "apps/api/src/routes/maintenance.ts",
+      "qualifiedId": "Islamce/kynox-inventory-analytics#analytics-api/maintenance-api",
+      "stability": "experimental",
+      "version": "1"
+    },
+    {
+      "confidence": "verified",
+      "id": "uploads-api",
+      "kind": "rest",
+      "module": "analytics-api",
+      "path": "apps/api/src/routes/uploads.ts",
+      "qualifiedId": "Islamce/kynox-inventory-analytics#analytics-api/uploads-api",
+      "stability": "evolving",
+      "version": "1"
+    }
+  ],
+  "externalIntegrations": [
+    {
+      "criticality": "optional",
+      "kind": "ai-provider",
+      "module": "analytics-ai-engine",
+      "name": "Anthropic API"
+    },
+    {
+      "criticality": "optional",
+      "kind": "ai-provider",
+      "module": "analytics-ai-engine",
+      "name": "OpenAI API"
+    },
+    {
+      "criticality": "required",
+      "kind": "database",
+      "module": "analytics-api",
+      "name": "Knex relational database (SQLite in development; PostgreSQL and MySQL adapters for hosted environments)"
+    },
+    {
+      "criticality": "required",
+      "kind": "process-manager",
+      "module": "analytics-runtime-entry",
+      "name": "PM2"
+    }
+  ],
+  "health": {
+    "confidenceByLevel": {
+      "verified": 10
+    },
+    "driftCounts": {
+      "error": 0,
+      "info": 1,
+      "warning": 0
+    },
+    "hasDriftErrors": false,
+    "moduleCount": 10,
+    "modulesUndeclared": 0,
+    "modulesWithoutOwner": [],
+    "note": "No publication timestamp is embedded: it would break byte-identical regeneration. Time-based staleness is computed at aggregation time from publication metadata supplied to the aggregator.",
+    "ownershipCoverage": 1.0
+  },
+  "indexSchemaVersion": "1.1.0",
+  "kaafGeneratorVersion": "0.7.0",
+  "modules": [
+    {
+      "confidence": "verified",
+      "consumes": [],
+      "declared": true,
+      "dependsOn": [
+        "analytics-shared-types"
+      ],
+      "id": "analytics-ai-engine",
+      "ownedEntities": [
+        "ai-agent",
+        "ai-usage-record",
+        "evidence-package",
+        "provider-adapter"
+      ],
+      "owner": "AI Engineering",
+      "path": "packages/ai-engine",
+      "purpose": "Run the documented analytics agents over evidence packages built from verified data, behind a provider abstraction so no single vendor is load-bearing.",
+      "qualifiedId": "Islamce/kynox-inventory-analytics#analytics-ai-engine"
+    },
+    {
+      "confidence": "verified",
+      "consumes": [],
+      "declared": true,
+      "dependsOn": [
+        "analytics-ai-engine",
+        "analytics-data-quality",
+        "analytics-engine",
+        "analytics-shared-types"
+      ],
+      "id": "analytics-api",
+      "ownedEntities": [
+        "ai_log",
+        "audit_log",
+        "canonical_transaction",
+        "config",
+        "dataset",
+        "export",
+        "material_master",
+        "movement",
+        "physical_inventory",
+        "stock_item",
+        "upload",
+        "user"
+      ],
+      "owner": "Backend",
+      "path": "apps/api",
+      "purpose": "Serve the inventory diagnostic over HTTP: ingest and version customer datasets, normalize them into the canonical transaction model, enforce role-based access, and expose every analytics, reconciliation and export surface.",
+      "qualifiedId": "Islamce/kynox-inventory-analytics#analytics-api"
+    },
+    {
+      "confidence": "verified",
+      "consumes": [],
+      "declared": true,
+      "dependsOn": [
+        "analytics-shared-types"
+      ],
+      "id": "analytics-data-quality",
+      "ownedEntities": [
+        "cleansing-proposal",
+        "date-normalization-result",
+        "normalization-finding",
+        "quality-rule",
+        "quality-score"
+      ],
+      "owner": "Data",
+      "path": "packages/data-quality",
+      "purpose": "Score incoming customer data, propose and apply cleansing, and normalize ambiguous values such as dates so downstream analytics receive evidence-tagged input.",
+      "qualifiedId": "Islamce/kynox-inventory-analytics#analytics-data-quality"
+    },
+    {
+      "confidence": "verified",
+      "consumes": [],
+      "declared": true,
+      "dependsOn": [],
+      "id": "analytics-deployment",
+      "ownedEntities": [
+        "database-backup",
+        "deployment-procedure",
+        "rollback-procedure",
+        "smoke-test"
+      ],
+      "owner": "DevOps",
+      "path": "scripts/deployment",
+      "purpose": "Carry out staged deployment and its safety operations — preflight checks, database backup and restore, rollback, and post-deploy smoke tests. Executing any of these against a real environment is a protected action requiring approval.",
+      "qualifiedId": "Islamce/kynox-inventory-analytics#analytics-deployment"
+    },
+    {
+      "confidence": "verified",
+      "consumes": [],
+      "declared": true,
+      "dependsOn": [
+        "analytics-shared-types"
+      ],
+      "id": "analytics-engine",
+      "ownedEntities": [
+        "abc-classification",
+        "aging-bucket",
+        "consumption-profile",
+        "excess-result",
+        "forecast",
+        "health-score",
+        "planning-recommendation",
+        "shortage-result",
+        "xyz-classification"
+      ],
+      "owner": "Data",
+      "path": "packages/analytics-engine",
+      "purpose": "Compute the inventory analytics the product sells — ABC, XYZ, aging, consumption, excess, shortage, health, forecasting and planning — as pure functions over canonical transactions.",
+      "qualifiedId": "Islamce/kynox-inventory-analytics#analytics-engine"
+    },
+    {
+      "confidence": "verified",
+      "consumes": [],
+      "declared": true,
+      "dependsOn": [],
+      "id": "analytics-fixtures",
+      "ownedEntities": [
+        "uat-dataset-fixture"
+      ],
+      "owner": "Data",
+      "path": "scripts",
+      "purpose": "Generate synthetic UAT and demonstration datasets so the platform can be exercised without customer data.",
+      "qualifiedId": "Islamce/kynox-inventory-analytics#analytics-fixtures"
+    },
+    {
+      "confidence": "verified",
+      "consumes": [],
+      "declared": true,
+      "dependsOn": [],
+      "id": "analytics-kaaf-tooling",
+      "ownedEntities": [
+        "generated-architecture-context"
+      ],
+      "owner": "DevOps",
+      "path": "scripts/architecture",
+      "purpose": "Generate and validate this repository's KAAF architecture context. Vendored from Islamce/KAAF; see VENDORED.md before changing anything here.",
+      "qualifiedId": "Islamce/kynox-inventory-analytics#analytics-kaaf-tooling"
+    },
+    {
+      "confidence": "verified",
+      "consumes": [],
+      "declared": true,
+      "dependsOn": [],
+      "id": "analytics-runtime-entry",
+      "ownedEntities": [
+        "production-process"
+      ],
+      "owner": "DevOps",
+      "path": ".",
+      "purpose": "Start the production process: boot the API, which also serves the built web SPA, under the PM2 configuration used on the managed host.",
+      "qualifiedId": "Islamce/kynox-inventory-analytics#analytics-runtime-entry"
+    },
+    {
+      "confidence": "verified",
+      "consumes": [],
+      "declared": true,
+      "dependsOn": [],
+      "id": "analytics-shared-types",
+      "ownedEntities": [
+        "canonical-transaction-category",
+        "permission",
+        "role",
+        "role-permission-matrix",
+        "shared-api-dto"
+      ],
+      "owner": "Backend",
+      "path": "packages/shared-types",
+      "purpose": "Define the types, canonical transaction vocabulary, and the single role-to-permission matrix that every other module in the platform shares.",
+      "qualifiedId": "Islamce/kynox-inventory-analytics#analytics-shared-types"
+    },
+    {
+      "confidence": "verified",
+      "consumes": [],
+      "declared": true,
+      "dependsOn": [],
+      "id": "analytics-web",
+      "ownedEntities": [
+        "dashboard-view",
+        "data-quality-view",
+        "reconciliation-view",
+        "workspace-route"
+      ],
+      "owner": "Frontend",
+      "path": "apps/web",
+      "purpose": "Present the inventory, data-quality, reconciliation, analytics, planning, AI, reports, administration and audit workspaces to users as a React SPA served by the API in production.",
+      "qualifiedId": "Islamce/kynox-inventory-analytics#analytics-web"
+    }
+  ],
+  "permissions": [
+    {
+      "confidence": "verified",
+      "key": "analytics.ai.use",
+      "module": "analytics-api",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_director",
+        "supply_chain_manager",
+        "inventory_manager",
+        "warehouse_manager",
+        "material_planner",
+        "inventory_controller",
+        "data_analyst",
+        "executive_viewer"
+      ]
+    },
+    {
+      "confidence": "verified",
+      "key": "analytics.analysis.run",
+      "module": "analytics-api",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_director",
+        "supply_chain_manager",
+        "inventory_manager",
+        "warehouse_manager",
+        "material_planner",
+        "inventory_controller",
+        "data_analyst",
+        "executive_viewer"
+      ]
+    },
+    {
+      "confidence": "verified",
+      "key": "analytics.audit.read",
+      "module": "analytics-api",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_director",
+        "auditor"
+      ]
+    },
+    {
+      "confidence": "verified",
+      "key": "analytics.cleansing.approve",
+      "module": "analytics-api",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_manager",
+        "inventory_manager",
+        "material_planner"
+      ]
+    },
+    {
+      "confidence": "verified",
+      "key": "analytics.config.update",
+      "module": "analytics-api",
+      "roles": [
+        "system_admin"
+      ]
+    },
+    {
+      "confidence": "verified",
+      "key": "analytics.dataset.delete",
+      "module": "analytics-api",
+      "roles": [
+        "system_admin",
+        "data_admin"
+      ]
+    },
+    {
+      "confidence": "verified",
+      "key": "analytics.dataset.read",
+      "module": "analytics-api",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_director",
+        "supply_chain_manager",
+        "inventory_manager",
+        "warehouse_manager",
+        "material_planner",
+        "inventory_controller",
+        "data_analyst",
+        "auditor",
+        "executive_viewer",
+        "read_only"
+      ]
+    },
+    {
+      "confidence": "verified",
+      "key": "analytics.export.execute",
+      "module": "analytics-api",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_director",
+        "supply_chain_manager",
+        "inventory_manager",
+        "warehouse_manager",
+        "material_planner",
+        "inventory_controller",
+        "data_analyst",
+        "auditor"
+      ]
+    },
+    {
+      "confidence": "verified",
+      "key": "analytics.mapping.update",
+      "module": "analytics-api",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_manager",
+        "inventory_manager",
+        "material_planner",
+        "data_analyst"
+      ]
+    },
+    {
+      "confidence": "verified",
+      "key": "analytics.upload.create",
+      "module": "analytics-api",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_manager",
+        "inventory_manager",
+        "warehouse_manager",
+        "material_planner",
+        "data_analyst"
+      ]
+    },
+    {
+      "confidence": "verified",
+      "key": "analytics.user.manage",
+      "module": "analytics-api",
+      "roles": [
+        "system_admin"
+      ]
+    }
+  ],
+  "repository": {
+    "defaultBranch": "main",
+    "description": "Kynox Inventory Intelligence — a source-neutral inventory diagnostic that ingests customer exports, normalizes them into a canonical transaction model, and serves data-quality, reconciliation, and inventory analytics.",
+    "kaafPhase": 7,
+    "name": "Kynox Inventory Intelligence",
+    "repository": "Islamce/kynox-inventory-analytics"
+  }
+}
