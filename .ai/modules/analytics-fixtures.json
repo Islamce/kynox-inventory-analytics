@@ -1,0 +1,56 @@
+{
+  "_meta": {
+    "artifact": "modules/analytics-fixtures.json",
+    "bodyDigest": "c65c13a1d277faec104e30d8c6b0f2877ea76e927b47e1f319746d97f76cbdd9",
+    "confidence": "verified",
+    "doNotEdit": true,
+    "generator": "kaaf",
+    "generatorVersion": "0.7.0",
+    "inputDigest": "24ed4a755f9dc604ff1e82015e48414263987b91bfae1c8f02ea005636bb871c",
+    "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
+    "schemaVersion": "1.0.0"
+  },
+  "apis": [],
+  "confidence": "verified",
+  "confidenceReason": "Declared and corroborated by 1 discovered code file(s).",
+  "declared": true,
+  "declaredConfidence": "verified",
+  "dependedOnBy": [],
+  "dependsOn": [],
+  "discovery": {
+    "codeFiles": [
+      "scripts/generate-uat-data.js"
+    ],
+    "discovered": true,
+    "entryPoints": [
+      "scripts/generate-uat-data.js"
+    ],
+    "languages": [
+      "javascript",
+      "json"
+    ],
+    "parseErrors": [],
+    "publicSymbols": [],
+    "sourceFiles": [
+      "scripts/generate-uat-data.js",
+      "scripts/kaaf.module.json"
+    ]
+  },
+  "driftFindings": [],
+  "externalIntegrations": [],
+  "id": "analytics-fixtures",
+  "ownedEntities": [
+    "uat-dataset-fixture"
+  ],
+  "owner": "Data",
+  "path": "scripts",
+  "permissions": [],
+  "publicEntryPoints": [
+    "scripts/generate-uat-data.js"
+  ],
+  "purpose": "Generate synthetic UAT and demonstration datasets so the platform can be exercised without customer data.",
+  "readNext": [
+    "scripts/generate-uat-data.js"
+  ],
+  "sourceManifest": "scripts/kaaf.module.json"
+}

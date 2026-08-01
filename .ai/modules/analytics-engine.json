@@ -1,0 +1,94 @@
+{
+  "_meta": {
+    "artifact": "modules/analytics-engine.json",
+    "bodyDigest": "37bea39600796c04bf9560957fefbb3b89ad08b64cf810569b405288895a3278",
+    "confidence": "verified",
+    "doNotEdit": true,
+    "generator": "kaaf",
+    "generatorVersion": "0.7.0",
+    "inputDigest": "24ed4a755f9dc604ff1e82015e48414263987b91bfae1c8f02ea005636bb871c",
+    "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
+    "schemaVersion": "1.0.0"
+  },
+  "apis": [],
+  "confidence": "verified",
+  "confidenceReason": "Declared and corroborated by 13 discovered code file(s).",
+  "declared": true,
+  "declaredConfidence": "verified",
+  "dependedOnBy": [
+    "analytics-api"
+  ],
+  "dependsOn": [
+    "analytics-shared-types"
+  ],
+  "discovery": {
+    "codeFiles": [
+      "packages/analytics-engine/src/abc.ts",
+      "packages/analytics-engine/src/aging.ts",
+      "packages/analytics-engine/src/analytics.test.ts",
+      "packages/analytics-engine/src/consumption.ts",
+      "packages/analytics-engine/src/excess-shortage.ts",
+      "packages/analytics-engine/src/fixtures.test.ts",
+      "packages/analytics-engine/src/forecasting.ts",
+      "packages/analytics-engine/src/health.ts",
+      "packages/analytics-engine/src/index.ts",
+      "packages/analytics-engine/src/movement-category.ts",
+      "packages/analytics-engine/src/planning.ts",
+      "packages/analytics-engine/src/stats.ts",
+      "packages/analytics-engine/src/xyz.ts"
+    ],
+    "discovered": true,
+    "entryPoints": [],
+    "languages": [
+      "json",
+      "typescript"
+    ],
+    "parseErrors": [],
+    "publicSymbols": [],
+    "sourceFiles": [
+      "packages/analytics-engine/kaaf.module.json",
+      "packages/analytics-engine/package.json",
+      "packages/analytics-engine/src/abc.ts",
+      "packages/analytics-engine/src/aging.ts",
+      "packages/analytics-engine/src/analytics.test.ts",
+      "packages/analytics-engine/src/consumption.ts",
+      "packages/analytics-engine/src/excess-shortage.ts",
+      "packages/analytics-engine/src/fixtures.test.ts",
+      "packages/analytics-engine/src/forecasting.ts",
+      "packages/analytics-engine/src/health.ts",
+      "packages/analytics-engine/src/index.ts",
+      "packages/analytics-engine/src/movement-category.ts",
+      "packages/analytics-engine/src/planning.ts",
+      "packages/analytics-engine/src/stats.ts",
+      "packages/analytics-engine/src/xyz.ts",
+      "packages/analytics-engine/tsconfig.json"
+    ]
+  },
+  "driftFindings": [],
+  "externalIntegrations": [],
+  "id": "analytics-engine",
+  "ownedEntities": [
+    "abc-classification",
+    "aging-bucket",
+    "consumption-profile",
+    "excess-result",
+    "forecast",
+    "health-score",
+    "planning-recommendation",
+    "shortage-result",
+    "xyz-classification"
+  ],
+  "owner": "Data",
+  "path": "packages/analytics-engine",
+  "permissions": [],
+  "publicEntryPoints": [
+    "packages/analytics-engine/package.json",
+    "packages/analytics-engine/src/index.ts"
+  ],
+  "purpose": "Compute the inventory analytics the product sells — ABC, XYZ, aging, consumption, excess, shortage, health, forecasting and planning — as pure functions over canonical transactions.",
+  "readNext": [
+    "packages/analytics-engine/package.json",
+    "packages/analytics-engine/src/index.ts"
+  ],
+  "sourceManifest": "packages/analytics-engine/kaaf.module.json"
+}

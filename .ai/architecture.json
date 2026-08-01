@@ -1,0 +1,1010 @@
+{
+  "_meta": {
+    "artifact": "architecture.json",
+    "bodyDigest": "28bc4fcc40c7a398859ec25467a82a4fe57d59b1280e50ff82f9046de9f0ae4a",
+    "confidence": "verified",
+    "doNotEdit": true,
+    "generator": "kaaf",
+    "generatorVersion": "0.7.0",
+    "inputDigest": "24ed4a755f9dc604ff1e82015e48414263987b91bfae1c8f02ea005636bb871c",
+    "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
+    "schemaVersion": "1.0.0"
+  },
+  "apis": [
+    {
+      "auth": "jwt",
+      "confidence": "verified",
+      "id": "admin-api",
+      "kind": "rest",
+      "module": "analytics-api",
+      "path": "apps/api/src/routes/admin.ts",
+      "requestType": "HTTP /api/admin — user management, configuration and audit access",
+      "responseType": "User, config and audit records",
+      "sourceManifest": "apps/api/kaaf.module.json",
+      "stability": "evolving",
+      "version": "1"
+    },
+    {
+      "auth": "jwt",
+      "confidence": "verified",
+      "id": "ai-api",
+      "kind": "rest",
+      "module": "analytics-api",
+      "path": "apps/api/src/routes/ai.ts",
+      "requestType": "HTTP /api/ai — run documented agents over evidence packages",
+      "responseType": "Agent output, or a controlled error when no provider is configured",
+      "sourceManifest": "apps/api/kaaf.module.json",
+      "stability": "experimental",
+      "version": "1"
+    },
+    {
+      "auth": "jwt",
+      "confidence": "verified",
+      "id": "analytics-api-surface",
+      "kind": "rest",
+      "module": "analytics-api",
+      "path": "apps/api/src/routes/analytics.ts",
+      "requestType": "HTTP /api/analytics — stock, aging, ABC, XYZ, excess, shortage, health, consumption, forecast, planning, reconciliation, material 360",
+      "responseType": "Computed analytics results over canonical transactions",
+      "sourceManifest": "apps/api/kaaf.module.json",
+      "stability": "evolving",
+      "version": "1"
+    },
+    {
+      "auth": "none",
+      "confidence": "verified",
+      "id": "auth-api",
+      "kind": "rest",
+      "module": "analytics-api",
+      "path": "apps/api/src/routes/auth.ts",
+      "requestType": "HTTP /api/auth — login and session establishment",
+      "responseType": "JWT bearer token, non-revocable before its documented expiry",
+      "sourceManifest": "apps/api/kaaf.module.json",
+      "stability": "stable",
+      "version": "1"
+    },
+    {
+      "auth": "jwt",
+      "confidence": "verified",
+      "id": "datasets-api",
+      "kind": "rest",
+      "module": "analytics-api",
+      "path": "apps/api/src/routes/datasets.ts",
+      "requestType": "HTTP /api/datasets — create, preview, list, version and delete datasets",
+      "responseType": "DatasetSummary and normalization findings",
+      "sourceManifest": "apps/api/kaaf.module.json",
+      "stability": "evolving",
+      "version": "1"
+    },
+    {
+      "auth": "jwt",
+      "confidence": "verified",
+      "id": "exports-api",
+      "kind": "rest",
+      "module": "analytics-api",
+      "path": "apps/api/src/routes/exports.ts",
+      "requestType": "HTTP /api/exports — generate and retrieve report exports",
+      "responseType": "Export records and generated files",
+      "sourceManifest": "apps/api/kaaf.module.json",
+      "stability": "evolving",
+      "version": "1"
+    },
+    {
+      "auth": "jwt",
+      "confidence": "verified",
+      "id": "maintenance-api",
+      "kind": "rest",
+      "module": "analytics-api",
+      "path": "apps/api/src/routes/maintenance.ts",
+      "requestType": "HTTP /api/maintenance — operational maintenance endpoints",
+      "responseType": "Maintenance operation results",
+      "sourceManifest": "apps/api/kaaf.module.json",
+      "stability": "experimental",
+      "version": "1"
+    },
+    {
+      "auth": "jwt",
+      "confidence": "verified",
+      "id": "uploads-api",
+      "kind": "rest",
+      "module": "analytics-api",
+      "path": "apps/api/src/routes/uploads.ts",
+      "requestType": "HTTP /api/uploads — file upload, type detection, mapping and preview",
+      "responseType": "Upload records and detected mapping proposals",
+      "sourceManifest": "apps/api/kaaf.module.json",
+      "stability": "evolving",
+      "version": "1"
+    }
+  ],
+  "dependencies": {
+    "declaredEdges": [
+      {
+        "from": "analytics-ai-engine",
+        "to": "analytics-shared-types"
+      },
+      {
+        "from": "analytics-api",
+        "to": "analytics-ai-engine"
+      },
+      {
+        "from": "analytics-api",
+        "to": "analytics-data-quality"
+      },
+      {
+        "from": "analytics-api",
+        "to": "analytics-engine"
+      },
+      {
+        "from": "analytics-api",
+        "to": "analytics-shared-types"
+      },
+      {
+        "from": "analytics-data-quality",
+        "to": "analytics-shared-types"
+      },
+      {
+        "from": "analytics-engine",
+        "to": "analytics-shared-types"
+      }
+    ],
+    "discoveredEdges": [
+      {
+        "declared": true,
+        "evidence": [
+          "packages/ai-engine/src/agents.ts",
+          "packages/ai-engine/src/ai.test.ts",
+          "packages/ai-engine/src/orchestrator.ts"
+        ],
+        "from": "analytics-ai-engine",
+        "to": "analytics-shared-types"
+      },
+      {
+        "declared": true,
+        "evidence": [
+          "apps/api/src/middleware/errors.ts",
+          "apps/api/src/routes/ai.ts"
+        ],
+        "from": "analytics-api",
+        "to": "analytics-ai-engine"
+      },
+      {
+        "declared": true,
+        "evidence": [
+          "apps/api/src/routes/datasets.ts",
+          "apps/api/src/routes/uploads.ts",
+          "apps/api/src/services/mapping.ts",
+          "apps/api/src/services/normalization.ts"
+        ],
+        "from": "analytics-api",
+        "to": "analytics-data-quality"
+      },
+      {
+        "declared": true,
+        "evidence": [
+          "apps/api/src/routes/analytics.ts",
+          "apps/api/src/services/analytics.ts",
+          "apps/api/src/services/reconciliation.ts"
+        ],
+        "from": "analytics-api",
+        "to": "analytics-engine"
+      },
+      {
+        "declared": true,
+        "evidence": [
+          "apps/api/src/middleware/auth.ts",
+          "apps/api/src/routes/admin.ts",
+          "apps/api/src/routes/ai.ts",
+          "apps/api/src/routes/auth.ts",
+          "apps/api/src/routes/datasets.ts",
+          "apps/api/src/routes/uploads.ts",
+          "apps/api/src/services/analytics.ts",
+          "apps/api/src/services/detection.ts",
+          "apps/api/src/services/mapping.ts",
+          "apps/api/src/services/normalization.ts"
+        ],
+        "from": "analytics-api",
+        "to": "analytics-shared-types"
+      },
+      {
+        "declared": true,
+        "evidence": [
+          "packages/data-quality/src/cleansing.ts",
+          "packages/data-quality/src/date-normalization.ts",
+          "packages/data-quality/src/normalization-rules.ts",
+          "packages/data-quality/src/rules.ts",
+          "packages/data-quality/src/scoring.ts",
+          "packages/data-quality/src/transaction-classification.ts"
+        ],
+        "from": "analytics-data-quality",
+        "to": "analytics-shared-types"
+      },
+      {
+        "declared": true,
+        "evidence": [
+          "packages/analytics-engine/src/abc.ts",
+          "packages/analytics-engine/src/aging.ts",
+          "packages/analytics-engine/src/excess-shortage.ts",
+          "packages/analytics-engine/src/forecasting.ts",
+          "packages/analytics-engine/src/health.ts",
+          "packages/analytics-engine/src/movement-category.ts",
+          "packages/analytics-engine/src/xyz.ts"
+        ],
+        "from": "analytics-engine",
+        "to": "analytics-shared-types"
+      }
+    ],
+    "edges": [
+      {
+        "from": "analytics-ai-engine",
+        "to": "analytics-shared-types"
+      },
+      {
+        "from": "analytics-api",
+        "to": "analytics-ai-engine"
+      },
+      {
+        "from": "analytics-api",
+        "to": "analytics-data-quality"
+      },
+      {
+        "from": "analytics-api",
+        "to": "analytics-engine"
+      },
+      {
+        "from": "analytics-api",
+        "to": "analytics-shared-types"
+      },
+      {
+        "from": "analytics-data-quality",
+        "to": "analytics-shared-types"
+      },
+      {
+        "from": "analytics-engine",
+        "to": "analytics-shared-types"
+      }
+    ],
+    "hasCycles": false,
+    "note": "'edges' and 'declaredEdges' come from the manifests; cycles there are rejected at scan time (KAAF-E004). 'discoveredEdges' come from real imports — see drift.json where the two disagree."
+  },
+  "deployment": {
+    "environments": [
+      "production"
+    ],
+    "note": "Managed Hostinger Node.js with MySQL is the documented target; apps/api serves the built apps/web SPA from a single process started by app.js under PM2 (ecosystem.config.cjs). No accepted production or UAT deployment record exists at the time of adoption, so deployment topology is documented rather than verified."
+  },
+  "drift": {
+    "counts": {
+      "error": 0,
+      "info": 1,
+      "warning": 0
+    },
+    "detail": ".ai/drift.json",
+    "hasErrors": false
+  },
+  "externalIntegrations": [
+    {
+      "confidence": "verified",
+      "criticality": "optional",
+      "kind": "ai-provider",
+      "module": "analytics-ai-engine",
+      "name": "Anthropic API",
+      "onUnavailable": "AI agents return a controlled error; every non-AI analytics surface is unaffected.",
+      "sourceManifest": "packages/ai-engine/kaaf.module.json"
+    },
+    {
+      "confidence": "verified",
+      "criticality": "optional",
+      "kind": "ai-provider",
+      "module": "analytics-ai-engine",
+      "name": "OpenAI API",
+      "onUnavailable": "AI agents return a controlled error; every non-AI analytics surface is unaffected.",
+      "sourceManifest": "packages/ai-engine/kaaf.module.json"
+    },
+    {
+      "confidence": "verified",
+      "criticality": "required",
+      "kind": "database",
+      "module": "analytics-api",
+      "name": "Knex relational database (SQLite in development; PostgreSQL and MySQL adapters for hosted environments)",
+      "onUnavailable": "The API cannot serve or ingest any dataset. Production startup refuses SQLite.",
+      "sourceManifest": "apps/api/kaaf.module.json"
+    },
+    {
+      "confidence": "verified",
+      "criticality": "required",
+      "kind": "process-manager",
+      "module": "analytics-runtime-entry",
+      "name": "PM2",
+      "onUnavailable": "The production process is not supervised; a crash is not restarted automatically.",
+      "sourceManifest": "kaaf.module.json"
+    }
+  ],
+  "modules": [
+    {
+      "confidence": "verified",
+      "confidenceReason": "Declared and corroborated by 5 discovered code file(s).",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependedOnBy": [
+        "analytics-api"
+      ],
+      "dependsOn": [
+        "analytics-shared-types"
+      ],
+      "discovery": {
+        "codeFileCount": 5,
+        "discovered": true,
+        "entryPoints": [],
+        "languages": [
+          "json",
+          "typescript"
+        ],
+        "parseErrors": [],
+        "publicSymbols": [],
+        "sourceFileCount": 8
+      },
+      "id": "analytics-ai-engine",
+      "ownedEntities": [
+        "ai-agent",
+        "ai-usage-record",
+        "evidence-package",
+        "provider-adapter"
+      ],
+      "owner": "AI Engineering",
+      "path": "packages/ai-engine",
+      "publicEntryPoints": [
+        "packages/ai-engine/package.json",
+        "packages/ai-engine/src/index.ts"
+      ],
+      "purpose": "Run the documented analytics agents over evidence packages built from verified data, behind a provider abstraction so no single vendor is load-bearing.",
+      "sourceManifest": "packages/ai-engine/kaaf.module.json"
+    },
+    {
+      "confidence": "verified",
+      "confidenceReason": "Declared and corroborated by 35 discovered code file(s).",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependedOnBy": [],
+      "dependsOn": [
+        "analytics-ai-engine",
+        "analytics-data-quality",
+        "analytics-engine",
+        "analytics-shared-types"
+      ],
+      "discovery": {
+        "codeFileCount": 35,
+        "discovered": true,
+        "entryPoints": [],
+        "languages": [
+          "javascript",
+          "json",
+          "typescript"
+        ],
+        "parseErrors": [],
+        "publicSymbols": [
+          "createApp"
+        ],
+        "sourceFileCount": 38
+      },
+      "id": "analytics-api",
+      "ownedEntities": [
+        "ai_log",
+        "audit_log",
+        "canonical_transaction",
+        "config",
+        "dataset",
+        "export",
+        "material_master",
+        "movement",
+        "physical_inventory",
+        "stock_item",
+        "upload",
+        "user"
+      ],
+      "owner": "Backend",
+      "path": "apps/api",
+      "publicEntryPoints": [
+        "apps/api/package.json",
+        "apps/api/src/app.ts",
+        "apps/api/src/server.ts"
+      ],
+      "purpose": "Serve the inventory diagnostic over HTTP: ingest and version customer datasets, normalize them into the canonical transaction model, enforce role-based access, and expose every analytics, reconciliation and export surface.",
+      "sourceManifest": "apps/api/kaaf.module.json"
+    },
+    {
+      "confidence": "verified",
+      "confidenceReason": "Declared and corroborated by 10 discovered code file(s).",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependedOnBy": [
+        "analytics-api"
+      ],
+      "dependsOn": [
+        "analytics-shared-types"
+      ],
+      "discovery": {
+        "codeFileCount": 10,
+        "discovered": true,
+        "entryPoints": [],
+        "languages": [
+          "json",
+          "typescript"
+        ],
+        "parseErrors": [],
+        "publicSymbols": [],
+        "sourceFileCount": 13
+      },
+      "id": "analytics-data-quality",
+      "ownedEntities": [
+        "cleansing-proposal",
+        "date-normalization-result",
+        "normalization-finding",
+        "quality-rule",
+        "quality-score"
+      ],
+      "owner": "Data",
+      "path": "packages/data-quality",
+      "publicEntryPoints": [
+        "packages/data-quality/package.json",
+        "packages/data-quality/src/index.ts"
+      ],
+      "purpose": "Score incoming customer data, propose and apply cleansing, and normalize ambiguous values such as dates so downstream analytics receive evidence-tagged input.",
+      "sourceManifest": "packages/data-quality/kaaf.module.json"
+    },
+    {
+      "confidence": "verified",
+      "confidenceReason": "Declared and corroborated by 7 discovered code file(s).",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependedOnBy": [],
+      "dependsOn": [],
+      "discovery": {
+        "codeFileCount": 7,
+        "discovered": true,
+        "entryPoints": [
+          "scripts/deployment/backup-db.sh",
+          "scripts/deployment/deploy-staging.sh",
+          "scripts/deployment/lib.sh",
+          "scripts/deployment/preflight.sh",
+          "scripts/deployment/restore-db.sh",
+          "scripts/deployment/rollback.sh",
+          "scripts/deployment/smoke-test.sh"
+        ],
+        "languages": [
+          "json",
+          "shell"
+        ],
+        "parseErrors": [],
+        "publicSymbols": [],
+        "sourceFileCount": 8
+      },
+      "id": "analytics-deployment",
+      "ownedEntities": [
+        "database-backup",
+        "deployment-procedure",
+        "rollback-procedure",
+        "smoke-test"
+      ],
+      "owner": "DevOps",
+      "path": "scripts/deployment",
+      "publicEntryPoints": [
+        "scripts/deployment/deploy-staging.sh",
+        "scripts/deployment/preflight.sh",
+        "scripts/deployment/rollback.sh"
+      ],
+      "purpose": "Carry out staged deployment and its safety operations — preflight checks, database backup and restore, rollback, and post-deploy smoke tests. Executing any of these against a real environment is a protected action requiring approval.",
+      "sourceManifest": "scripts/deployment/kaaf.module.json"
+    },
+    {
+      "confidence": "verified",
+      "confidenceReason": "Declared and corroborated by 13 discovered code file(s).",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependedOnBy": [
+        "analytics-api"
+      ],
+      "dependsOn": [
+        "analytics-shared-types"
+      ],
+      "discovery": {
+        "codeFileCount": 13,
+        "discovered": true,
+        "entryPoints": [],
+        "languages": [
+          "json",
+          "typescript"
+        ],
+        "parseErrors": [],
+        "publicSymbols": [],
+        "sourceFileCount": 16
+      },
+      "id": "analytics-engine",
+      "ownedEntities": [
+        "abc-classification",
+        "aging-bucket",
+        "consumption-profile",
+        "excess-result",
+        "forecast",
+        "health-score",
+        "planning-recommendation",
+        "shortage-result",
+        "xyz-classification"
+      ],
+      "owner": "Data",
+      "path": "packages/analytics-engine",
+      "publicEntryPoints": [
+        "packages/analytics-engine/package.json",
+        "packages/analytics-engine/src/index.ts"
+      ],
+      "purpose": "Compute the inventory analytics the product sells — ABC, XYZ, aging, consumption, excess, shortage, health, forecasting and planning — as pure functions over canonical transactions.",
+      "sourceManifest": "packages/analytics-engine/kaaf.module.json"
+    },
+    {
+      "confidence": "verified",
+      "confidenceReason": "Declared and corroborated by 1 discovered code file(s).",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependedOnBy": [],
+      "dependsOn": [],
+      "discovery": {
+        "codeFileCount": 1,
+        "discovered": true,
+        "entryPoints": [
+          "scripts/generate-uat-data.js"
+        ],
+        "languages": [
+          "javascript",
+          "json"
+        ],
+        "parseErrors": [],
+        "publicSymbols": [],
+        "sourceFileCount": 2
+      },
+      "id": "analytics-fixtures",
+      "ownedEntities": [
+        "uat-dataset-fixture"
+      ],
+      "owner": "Data",
+      "path": "scripts",
+      "publicEntryPoints": [
+        "scripts/generate-uat-data.js"
+      ],
+      "purpose": "Generate synthetic UAT and demonstration datasets so the platform can be exercised without customer data.",
+      "sourceManifest": "scripts/kaaf.module.json"
+    },
+    {
+      "confidence": "verified",
+      "confidenceReason": "Declared and corroborated by 31 discovered code file(s).",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependedOnBy": [],
+      "dependsOn": [],
+      "discovery": {
+        "codeFileCount": 31,
+        "discovered": true,
+        "entryPoints": [
+          "scripts/architecture/aggregate.py",
+          "scripts/architecture/compat.py",
+          "scripts/architecture/generate.py",
+          "scripts/architecture/generate.sh",
+          "scripts/architecture/validators/validate_drift.py",
+          "scripts/architecture/validators/validate_generated.py",
+          "scripts/architecture/validators/validate_index.py"
+        ],
+        "languages": [
+          "json",
+          "markdown",
+          "python",
+          "shell"
+        ],
+        "parseErrors": [],
+        "publicSymbols": [
+          "build_artifacts",
+          "check",
+          "main",
+          "write"
+        ],
+        "sourceFileCount": 33
+      },
+      "id": "analytics-kaaf-tooling",
+      "ownedEntities": [
+        "generated-architecture-context"
+      ],
+      "owner": "DevOps",
+      "path": "scripts/architecture",
+      "publicEntryPoints": [
+        "scripts/architecture/generate.py",
+        "scripts/architecture/generate.sh"
+      ],
+      "purpose": "Generate and validate this repository's KAAF architecture context. Vendored from Islamce/KAAF; see VENDORED.md before changing anything here.",
+      "sourceManifest": "scripts/architecture/kaaf.module.json"
+    },
+    {
+      "confidence": "verified",
+      "confidenceReason": "Declared and corroborated by 2 discovered code file(s).",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependedOnBy": [],
+      "dependsOn": [],
+      "discovery": {
+        "codeFileCount": 2,
+        "discovered": true,
+        "entryPoints": [],
+        "languages": [
+          "javascript",
+          "json",
+          "markdown",
+          "yaml"
+        ],
+        "parseErrors": [],
+        "publicSymbols": [],
+        "sourceFileCount": 39
+      },
+      "id": "analytics-runtime-entry",
+      "ownedEntities": [
+        "production-process"
+      ],
+      "owner": "DevOps",
+      "path": ".",
+      "publicEntryPoints": [
+        "app.js",
+        "ecosystem.config.cjs"
+      ],
+      "purpose": "Start the production process: boot the API, which also serves the built web SPA, under the PM2 configuration used on the managed host.",
+      "sourceManifest": "kaaf.module.json"
+    },
+    {
+      "confidence": "verified",
+      "confidenceReason": "Declared and corroborated by 2 discovered code file(s).",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependedOnBy": [
+        "analytics-ai-engine",
+        "analytics-api",
+        "analytics-data-quality",
+        "analytics-engine"
+      ],
+      "dependsOn": [],
+      "discovery": {
+        "codeFileCount": 2,
+        "discovered": true,
+        "entryPoints": [],
+        "languages": [
+          "json",
+          "typescript"
+        ],
+        "parseErrors": [],
+        "publicSymbols": [
+          "ALL_ROLES",
+          "AbcClass",
+          "AbcResult",
+          "AgingBucket",
+          "AgingResult",
+          "AiChatResponse",
+          "AiEvidence",
+          "AiInsight",
+          "CanonicalField",
+          "CleansingAction",
+          "ColumnMapping",
+          "DatasetSummary",
+          "ExcessResult",
+          "ForecastAccuracy",
+          "ForecastComparison",
+          "ForecastResult",
+          "HealthWeights",
+          "IssueSeverity",
+          "KpiValue",
+          "MaterialMasterRow",
+          "MovementCategory",
+          "MovementRow",
+          "Permission",
+          "PhysicalInventoryRow",
+          "QualityIssue",
+          "QualityScores",
+          "ROLE_PERMISSIONS",
+          "ReportDetectionResult",
+          "ReportType",
+          "Role",
+          "ShortageResult",
+          "StockRow",
+          "XyzClass",
+          "XyzResult"
+        ],
+        "sourceFileCount": 5
+      },
+      "id": "analytics-shared-types",
+      "ownedEntities": [
+        "canonical-transaction-category",
+        "permission",
+        "role",
+        "role-permission-matrix",
+        "shared-api-dto"
+      ],
+      "owner": "Backend",
+      "path": "packages/shared-types",
+      "publicEntryPoints": [
+        "packages/shared-types/package.json",
+        "packages/shared-types/src/index.ts"
+      ],
+      "purpose": "Define the types, canonical transaction vocabulary, and the single role-to-permission matrix that every other module in the platform shares.",
+      "sourceManifest": "packages/shared-types/kaaf.module.json"
+    },
+    {
+      "confidence": "verified",
+      "confidenceReason": "Declared and corroborated by 29 discovered code file(s).",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependedOnBy": [],
+      "dependsOn": [],
+      "discovery": {
+        "codeFileCount": 29,
+        "discovered": true,
+        "entryPoints": [],
+        "languages": [
+          "json",
+          "markdown",
+          "typescript"
+        ],
+        "parseErrors": [],
+        "publicSymbols": [],
+        "sourceFileCount": 33
+      },
+      "id": "analytics-web",
+      "ownedEntities": [
+        "dashboard-view",
+        "data-quality-view",
+        "reconciliation-view",
+        "workspace-route"
+      ],
+      "owner": "Frontend",
+      "path": "apps/web",
+      "publicEntryPoints": [
+        "apps/web/index.html",
+        "apps/web/package.json"
+      ],
+      "purpose": "Present the inventory, data-quality, reconciliation, analytics, planning, AI, reports, administration and audit workspaces to users as a React SPA served by the API in production.",
+      "sourceManifest": "apps/web/kaaf.module.json"
+    }
+  ],
+  "permissions": [
+    {
+      "action": "execute",
+      "confidence": "verified",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/ai.ts"
+      ],
+      "key": "analytics.ai.use",
+      "module": "analytics-api",
+      "resource": "ai-agent",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_director",
+        "supply_chain_manager",
+        "inventory_manager",
+        "warehouse_manager",
+        "material_planner",
+        "inventory_controller",
+        "data_analyst",
+        "executive_viewer"
+      ],
+      "sourceManifest": "apps/api/kaaf.module.json"
+    },
+    {
+      "action": "execute",
+      "confidence": "verified",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/analytics.ts"
+      ],
+      "key": "analytics.analysis.run",
+      "module": "analytics-api",
+      "resource": "analysis",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_director",
+        "supply_chain_manager",
+        "inventory_manager",
+        "warehouse_manager",
+        "material_planner",
+        "inventory_controller",
+        "data_analyst",
+        "executive_viewer"
+      ],
+      "sourceManifest": "apps/api/kaaf.module.json"
+    },
+    {
+      "action": "read",
+      "confidence": "verified",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/admin.ts"
+      ],
+      "key": "analytics.audit.read",
+      "module": "analytics-api",
+      "resource": "audit_log",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_director",
+        "auditor"
+      ],
+      "sourceManifest": "apps/api/kaaf.module.json"
+    },
+    {
+      "action": "approve",
+      "confidence": "verified",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/datasets.ts"
+      ],
+      "key": "analytics.cleansing.approve",
+      "module": "analytics-api",
+      "resource": "cleansing-proposal",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_manager",
+        "inventory_manager",
+        "material_planner"
+      ],
+      "sourceManifest": "apps/api/kaaf.module.json"
+    },
+    {
+      "action": "update",
+      "confidence": "verified",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/admin.ts"
+      ],
+      "key": "analytics.config.update",
+      "module": "analytics-api",
+      "resource": "config",
+      "roles": [
+        "system_admin"
+      ],
+      "sourceManifest": "apps/api/kaaf.module.json"
+    },
+    {
+      "action": "delete",
+      "confidence": "verified",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/datasets.ts"
+      ],
+      "key": "analytics.dataset.delete",
+      "module": "analytics-api",
+      "resource": "dataset",
+      "roles": [
+        "system_admin",
+        "data_admin"
+      ],
+      "sourceManifest": "apps/api/kaaf.module.json"
+    },
+    {
+      "action": "read",
+      "confidence": "verified",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/datasets.ts"
+      ],
+      "key": "analytics.dataset.read",
+      "module": "analytics-api",
+      "resource": "dataset",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_director",
+        "supply_chain_manager",
+        "inventory_manager",
+        "warehouse_manager",
+        "material_planner",
+        "inventory_controller",
+        "data_analyst",
+        "auditor",
+        "executive_viewer",
+        "read_only"
+      ],
+      "sourceManifest": "apps/api/kaaf.module.json"
+    },
+    {
+      "action": "execute",
+      "confidence": "verified",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/exports.ts"
+      ],
+      "key": "analytics.export.execute",
+      "module": "analytics-api",
+      "resource": "export",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_director",
+        "supply_chain_manager",
+        "inventory_manager",
+        "warehouse_manager",
+        "material_planner",
+        "inventory_controller",
+        "data_analyst",
+        "auditor"
+      ],
+      "sourceManifest": "apps/api/kaaf.module.json"
+    },
+    {
+      "action": "update",
+      "confidence": "verified",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/datasets.ts"
+      ],
+      "key": "analytics.mapping.update",
+      "module": "analytics-api",
+      "resource": "mapping",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_manager",
+        "inventory_manager",
+        "material_planner",
+        "data_analyst"
+      ],
+      "sourceManifest": "apps/api/kaaf.module.json"
+    },
+    {
+      "action": "create",
+      "confidence": "verified",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/uploads.ts"
+      ],
+      "key": "analytics.upload.create",
+      "module": "analytics-api",
+      "resource": "upload",
+      "roles": [
+        "system_admin",
+        "data_admin",
+        "supply_chain_manager",
+        "inventory_manager",
+        "warehouse_manager",
+        "material_planner",
+        "data_analyst"
+      ],
+      "sourceManifest": "apps/api/kaaf.module.json"
+    },
+    {
+      "action": "manage",
+      "confidence": "verified",
+      "domain": "analytics",
+      "enforcedAt": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/admin.ts"
+      ],
+      "key": "analytics.user.manage",
+      "module": "analytics-api",
+      "resource": "user",
+      "roles": [
+        "system_admin"
+      ],
+      "sourceManifest": "apps/api/kaaf.module.json"
+    }
+  ],
+  "repository": {
+    "defaultBranch": "main",
+    "kaafPhase": 7,
+    "name": "Kynox Inventory Intelligence",
+    "repository": "Islamce/kynox-inventory-analytics"
+  }
+}
