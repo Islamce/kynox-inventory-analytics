@@ -117,10 +117,10 @@ export function ReconciliationPage() {
           </div>
 
           <InsightCallout tone="neutral" title="Scope of this reconciliation">
-            Transfers and reversals are paired document-to-document within this dataset (matched by material, quantity
-            and closest date) when both legs are present — "Unpaired transfers"/"reversal net" below count rows where no
-            match was found here, which is expected (not necessarily wrong) when the other leg is in a different file or
-            outside this dataset&apos;s period. Variance against a linked stock dataset is only meaningful when this
+            Transfers and reversals are paired document-to-document within this import and older imports in the same
+            company/user scope. “Unpaired transfers”/“reversal net” below count rows where no safe exact match was found,
+            which can be expected when the counterpart is outside the available history. Variance against a linked stock
+            dataset is only meaningful when this
             movements dataset&apos;s period covers the material&apos;s full history since stock was last a known value
             (an explicit opening balance, or genuinely zero).
           </InsightCallout>

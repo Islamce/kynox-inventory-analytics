@@ -13,15 +13,12 @@
  *    full transaction history since stock was last a known value (an explicit
  *    OPENING_BALANCE, or truly zero) — otherwise treat the variance as
  *    informational, not a bug report.
- *  - Transfer/reversal pairing is best-effort and IN-DATASET ONLY: the
- *    ingestion pipeline matches transfer-out to transfer-in (and reversals to
- *    the original transaction) by material + quantity + closest date, and
- *    populates `transfer_id`/`reversal_of_transaction_id` when a match is
- *    found. `unpairedTransferRows`/`unpairedReversalRows` below count rows
- *    where no match was found in THIS dataset — that is expected, not
- *    necessarily wrong, when the other leg is in a different file or outside
- *    the dataset's period. `transferNet` (the coarser net-sum check) still
- *    works even for datasets imported before this pairing existed.
+ *  - Transfer/reversal pairing is best-effort across the current and older
+ *    imports within the same tenant boundary. `unpairedTransferRows` and
+ *    `unpairedReversalRows` count rows where no safe exact match was found;
+ *    that can still be expected when a counterpart is outside the available
+ *    history. `transferNet` (the coarser net-sum check) also works for datasets
+ *    imported before pairing existed.
  */
 import { db } from '../db';
 import { round } from '@kynox/analytics-engine';

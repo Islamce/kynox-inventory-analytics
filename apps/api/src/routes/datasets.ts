@@ -10,6 +10,7 @@ import { parseWorkbook } from '../services/files';
 import { applyMapping } from '../services/mapping';
 import { kindForReportType } from '../services/detection';
 import { buildNormalization, classifySource, recomputeCategorySummary, NORMALIZATION_VERSION } from '../services/normalization';
+import { pairAcrossDatasets } from '../services/cross-dataset-pairing';
 import {
   runQualityRules, computeQualityScores, proposeCleansing, applyCleansing,
   parseNumber, parseDate, normalizeText,
@@ -324,6 +325,10 @@ datasetsRouter.post('/', requirePermission('approve_cleansing'), asyncHandler(as
       for (let i = 0; i < canonicalRows.length; i += chunkSize) {
         await trx('canonical_transactions').insert(canonicalRows.slice(i, i + chunkSize));
       }
+      // Resolve counterparts that legitimately live in an older import. This
+      // stays inside dataset creation's transaction so reciprocal links and
+      // finding cleanup are committed atomically with the new canonical rows.
+      await pairAcrossDatasets(trx, id, req.user!.id, body.company ?? null);
     }
     return id;
   });

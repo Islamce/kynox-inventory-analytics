@@ -175,11 +175,10 @@ const REVERSAL_CATS: TransactionCategory[] = ['REVERSAL_IN', 'REVERSAL_OUT'];
  * the reversal). Populates `transfer_id`/`paired_transaction_id` and
  * `reversal_of_transaction_id` on the matched rows.
  *
- * Both legs must be present in THIS dataset to pair. When a transfer's other
- * leg or a reversal's original genuinely falls outside this dataset's scope
- * (a different warehouse's file, a different period), pairing legitimately
- * fails — that is reported as a low-severity, non-blocking finding, not an
- * error, since it is common and often expected.
+ * This pass pairs rows inside the current import. After persistence, a second
+ * conservative pass can resolve remaining rows against older imports within
+ * the same tenant boundary. Anything still unmatched is reported as a
+ * low-severity, non-blocking finding, not an error.
  */
 function pairTransfersAndReversals(
   canonicalRows: Record<string, unknown>[],

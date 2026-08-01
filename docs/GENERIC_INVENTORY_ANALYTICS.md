@@ -295,10 +295,9 @@ quantity to surface a variance.
 
 **Honest scope limits, stated in the UI itself:**
 - Transfer/reversal pairing is document-level (see "Document-level
-  transfer/reversal pairing" below) but scoped to a single dataset — both legs
-  of a transfer or a reversal and its original must be in the same import.
-  Legitimate misses are reported as low-severity findings, not treated as
-  errors.
+  transfer/reversal pairing" below), first within the import and then against
+  older imports in the same company/user scope. Legitimate misses are reported
+  as low-severity findings, not treated as errors.
 - Variance against a linked stock dataset is only meaningful when the
   movements dataset's period covers the material's full history since stock
   was last a known value (an explicit opening balance, or genuinely zero);
@@ -328,7 +327,7 @@ existing governance.
 `pairTransfersAndReversals()` in `apps/api/src/services/normalization.ts`
 matches unclaimed `TRANSFER_OUT`↔`TRANSFER_IN` canonical rows on
 material + exact absolute quantity + closest date and assigns them a shared
-`transfer_id` and cross-referenced `paired_transaction_id`; `REVERSAL_IN`/
+`transfer_id` and stable canonical-row `paired_transaction_id`; `REVERSAL_IN`/
 `REVERSAL_OUT` rows are matched to the most recent qualifying
 `RECEIPT`/`CONSUMPTION` row (same material + quantity, original date on or
 before the reversal date) and stamped with `reversal_of_transaction_id`.
@@ -435,10 +434,10 @@ checks the canonical row categories.
 
 ## Testing evidence (this increment)
 
-`@kynox/api` **66** tests (1 test updated in place for the new reversal
-semantics, none added — the rewire is a data-source change under an unchanged
-function signature). Full monorepo: **193** tests green; typecheck and build
-clean. Verified in a real browser (Playwright/Chromium) against a realistic
+`@kynox/api` **68** tests (2 cross-import pairing tests added after the
+canonical rewire: successful matching plus company/time-boundary rejection).
+Full monorepo: **195** tests green; typecheck and build clean. Verified in a
+real browser (Playwright/Chromium) against a realistic
 movements fixture (friendly headers + numeric movement-type codes, including
 a reversal and a transfer): Executive Dashboard, ABC-XYZ Analysis,
 Consumption Analytics, Inventory Reconciliation and Material 360 all render
@@ -460,6 +459,10 @@ found along the way rather than planned:
    infer from) rather than guessing from quantity sign — that is intentional,
    not a gap, but worth knowing when investigating an unexpectedly high
    `UNKNOWN` count.
-2. Transfer/reversal pairing (delivered earlier) is still single-dataset only;
-   a transfer or reversal whose other leg lives in a different import is
-   correctly reported as unpaired, not silently assumed balanced.
+2. Cross-import transfer/reversal pairing is now supported within a strict
+   tenant boundary: matching uses the dataset company when present, otherwise
+   the creating user. Only exact material + absolute-quantity matches with a
+   compatible unit are eligible; transfers must be within 31 days, while
+   reversals require an unclaimed original on or before the reversal date.
+   Ambiguous or absent matches remain visibly unpaired rather than being
+   guessed.

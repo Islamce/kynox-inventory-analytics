@@ -279,8 +279,8 @@ describe('document-level transfer/reversal pairing', () => {
 
     expect(t1Out.transfer_id).not.toBeNull();
     expect(t1Out.transfer_id).toBe(t1In.transfer_id);
-    expect(t1Out.paired_transaction_id).toBe('DOC2');
-    expect(t1In.paired_transaction_id).toBe('DOC1');
+    expect(t1Out.paired_transaction_id).toBe(`canonical:${t1In.id}`);
+    expect(t1In.paired_transaction_id).toBe(`canonical:${t1Out.id}`);
 
     // Unmatched transfer stays unpaired and is flagged, not silently dropped.
     expect(t2Out.transfer_id).toBeNull();
@@ -311,7 +311,7 @@ describe('document-level transfer/reversal pairing', () => {
 
     expect(receipt.transaction_category).toBe('RECEIPT');
     expect(reversal.transaction_category).toBe('REVERSAL_OUT');
-    expect(reversal.reversal_of_transaction_id).toBe('DOC1');
+    expect(reversal.reversal_of_transaction_id).toBe(`canonical:${receipt.id}`);
 
     expect(unmatchedReversal.reversal_of_transaction_id).toBeNull();
     const meta = await request(app).get(`/api/datasets/${ds.body.id}/normalization`)
@@ -319,6 +319,73 @@ describe('document-level transfer/reversal pairing', () => {
     const unpaired = meta.body.findings.filter((f: { code: string }) => f.code === 'REVERSAL_ORIGINAL_NOT_FOUND');
     expect(unpaired).toHaveLength(1);
     expect(unpaired[0].rowNumber).toBe(unmatchedReversal.source_row_number);
+  });
+
+  it('pairs transfers and reversals across imports within the same creator scope', async () => {
+    const first = [
+      'MATNR,BWART,BUDAT,ERFMG,DMBTR,MBLNR',
+      'X-1,311,2026-01-10,50,500,OUT1',
+      'X-2,101,2026-01-05,20,200,RCPT1',
+    ].join('\n');
+    const firstUpload = await uploadCsv(first, 'cross-pair-first.csv');
+    const firstDs = await request(app).post('/api/datasets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: firstUpload.body.id, name: 'Cross Pair First', approvedActionIds: await safeIdsFor(firstUpload.body.id) });
+    expect(firstDs.status).toBe(201);
+
+    const second = [
+      'MATNR,BWART,BUDAT,ERFMG,DMBTR,MBLNR',
+      'X-1,312,2026-01-11,50,500,IN1',
+      'X-2,102,2026-01-12,20,200,REV1',
+    ].join('\n');
+    const secondUpload = await uploadCsv(second, 'cross-pair-second.csv');
+    const secondDs = await request(app).post('/api/datasets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: secondUpload.body.id, name: 'Cross Pair Second', approvedActionIds: await safeIdsFor(secondUpload.body.id) });
+    expect(secondDs.status).toBe(201);
+
+    const out = await db('canonical_transactions').where({ dataset_id: firstDs.body.id, reference_document: 'OUT1' }).first();
+    const receipt = await db('canonical_transactions').where({ dataset_id: firstDs.body.id, reference_document: 'RCPT1' }).first();
+    const incoming = await db('canonical_transactions').where({ dataset_id: secondDs.body.id, reference_document: 'IN1' }).first();
+    const reversal = await db('canonical_transactions').where({ dataset_id: secondDs.body.id, reference_document: 'REV1' }).first();
+
+    expect(out.transfer_id).toBe(incoming.transfer_id);
+    expect(out.paired_transaction_id).toBe(`canonical:${incoming.id}`);
+    expect(incoming.paired_transaction_id).toBe(`canonical:${out.id}`);
+    expect(reversal.reversal_of_transaction_id).toBe(`canonical:${receipt.id}`);
+
+    for (const datasetId of [firstDs.body.id, secondDs.body.id]) {
+      const meta = await request(app).get(`/api/datasets/${datasetId}/normalization`)
+        .set('Authorization', `Bearer ${token}`);
+      expect(meta.body.findings.some((f: { code: string }) =>
+        f.code === 'TRANSFER_PAIR_NOT_FOUND' || f.code === 'REVERSAL_ORIGINAL_NOT_FOUND')).toBe(false);
+    }
+  });
+
+  it('does not pair across companies or beyond the cross-import transfer window', async () => {
+    const createTransfer = async (
+      material: string, movementType: '311' | '312', date: string, company: string, name: string,
+    ) => {
+      const csv = [
+        'MATNR,BWART,BUDAT,ERFMG,DMBTR,MBLNR',
+        `${material},${movementType},${date},75,750,${name}`,
+      ].join('\n');
+      const upload = await uploadCsv(csv, `${name}.csv`);
+      return request(app).post('/api/datasets')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ uploadId: upload.body.id, name, company, approvedActionIds: await safeIdsFor(upload.body.id) });
+    };
+
+    const companyOut = await createTransfer('BOUNDARY-1', '311', '2026-01-01', 'Company A', 'Company Out');
+    const companyIn = await createTransfer('BOUNDARY-1', '312', '2026-01-02', 'Company B', 'Company In');
+    const oldOut = await createTransfer('WINDOW-1', '311', '2026-01-01', 'Company C', 'Window Out');
+    const lateIn = await createTransfer('WINDOW-1', '312', '2026-02-02', 'Company C', 'Window In');
+
+    for (const datasetId of [companyOut.body.id, companyIn.body.id, oldOut.body.id, lateIn.body.id]) {
+      const row = await db('canonical_transactions').where({ dataset_id: datasetId }).first();
+      expect(row.transfer_id).toBeNull();
+      expect(row.paired_transaction_id).toBeNull();
+    }
   });
 });
 
