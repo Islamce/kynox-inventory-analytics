@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "modules/analytics-runtime-entry.json",
-    "bodyDigest": "5517d0a8f0b233db060ac3296c8e2114b9204baf13fc847b7d792db88c385538",
+    "bodyDigest": "e26fb77c8e3f207837947f20d74202e65f2c36d63554a5f7ead6e912d098bee9",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "24ed4a755f9dc604ff1e82015e48414263987b91bfae1c8f02ea005636bb871c",
+    "inputDigest": "7bd9f5ceaa001762e9d0c4e07a599d887769f8d78375045450a8bd985fdc2b04",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -33,7 +33,9 @@
     "parseErrors": [],
     "publicSymbols": [],
     "sourceFiles": [
+      ".github/workflows/architecture.yml",
       ".github/workflows/ci.yml",
+      "AGENTS.md",
       "README.md",
       "app.js",
       "docs/AI_GOVERNANCE.md",
