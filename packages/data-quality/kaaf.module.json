@@ -1,0 +1,26 @@
+{
+  "apis": [],
+  "confidence": "verified",
+  "consumes": [],
+  "dependsOn": [
+    "analytics-shared-types"
+  ],
+  "externalIntegrations": [],
+  "flows": [],
+  "id": "analytics-data-quality",
+  "ownedEntities": [
+    "quality-rule",
+    "quality-score",
+    "cleansing-proposal",
+    "normalization-finding",
+    "date-normalization-result"
+  ],
+  "owner": "Data",
+  "permissions": [],
+  "publicEntryPoints": [
+    "packages/data-quality/package.json",
+    "packages/data-quality/src/index.ts"
+  ],
+  "purpose": "Score incoming customer data, propose and apply cleansing, and normalize ambiguous values such as dates so downstream analytics receive evidence-tagged input.",
+  "schemaVersion": "1.0.0"
+}

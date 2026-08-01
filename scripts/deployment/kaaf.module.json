@@ -1,0 +1,24 @@
+{
+  "apis": [],
+  "confidence": "verified",
+  "consumes": [],
+  "dependsOn": [],
+  "externalIntegrations": [],
+  "flows": [],
+  "id": "analytics-deployment",
+  "ownedEntities": [
+    "deployment-procedure",
+    "database-backup",
+    "rollback-procedure",
+    "smoke-test"
+  ],
+  "owner": "DevOps",
+  "permissions": [],
+  "publicEntryPoints": [
+    "scripts/deployment/deploy-staging.sh",
+    "scripts/deployment/preflight.sh",
+    "scripts/deployment/rollback.sh"
+  ],
+  "purpose": "Carry out staged deployment and its safety operations — preflight checks, database backup and restore, rollback, and post-deploy smoke tests. Executing any of these against a real environment is a protected action requiring approval.",
+  "schemaVersion": "1.0.0"
+}

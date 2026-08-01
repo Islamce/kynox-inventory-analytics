@@ -1,0 +1,19 @@
+{
+  "apis": [],
+  "confidence": "verified",
+  "consumes": [],
+  "dependsOn": [],
+  "externalIntegrations": [],
+  "flows": [],
+  "id": "analytics-fixtures",
+  "ownedEntities": [
+    "uat-dataset-fixture"
+  ],
+  "owner": "Data",
+  "permissions": [],
+  "publicEntryPoints": [
+    "scripts/generate-uat-data.js"
+  ],
+  "purpose": "Generate synthetic UAT and demonstration datasets so the platform can be exercised without customer data.",
+  "schemaVersion": "1.0.0"
+}
