@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { db, insertGetId } from '../db';
 import { config } from '../config';
 import { requireAuth, requirePermission } from '../middleware/auth';
+import { guardGuestDatasetParam, guardGuestDatasetQueryParams, guestActionLimiter } from '../middleware/guestScope';
 import { asyncHandler, HttpError } from '../middleware/errors';
 import { audit } from '../services/audit';
 import { parseWorkbook } from '../services/files';
@@ -20,6 +21,11 @@ import { CATEGORY_DIRECTION } from '@kynox/shared-types';
 
 export const datasetsRouter = Router();
 datasetsRouter.use(requireAuth);
+datasetsRouter.use(guardGuestDatasetQueryParams);
+// Guards every route using :id (GET/:id, /:id/rows, /:id/normalization,
+// /:id/canonical, PATCH /:id/canonical/:canonicalId, DELETE /:id) — never
+// :canonicalId, which is a canonical_transactions row id, not a dataset id.
+datasetsRouter.param('id', guardGuestDatasetParam);
 
 const num = (v: unknown): number | null => parseNumber(v).value;
 const dt = (v: unknown): string | null => parseDate(v).value;
@@ -221,7 +227,7 @@ const previewSchema = z.object({
   dateOrder: z.enum(['DMY', 'MDY']).optional(),
 });
 
-datasetsRouter.post('/preview', requirePermission('approve_cleansing'), asyncHandler(async (req, res) => {
+datasetsRouter.post('/preview', requirePermission('approve_cleansing'), guestActionLimiter(20, 3600_000), asyncHandler(async (req, res) => {
   const body = previewSchema.parse(req.body);
   const p = await prepareImport(body.uploadId, body.approvedActionIds, body.dateOrder, req.user!);
   res.json({
@@ -242,7 +248,7 @@ datasetsRouter.post('/preview', requirePermission('approve_cleansing'), asyncHan
   });
 }));
 
-datasetsRouter.post('/', requirePermission('approve_cleansing'), asyncHandler(async (req, res) => {
+datasetsRouter.post('/', requirePermission('approve_cleansing'), guestActionLimiter(20, 3600_000), asyncHandler(async (req, res) => {
   const body = createSchema.parse(req.body);
   const {
     uploadRow, mapping, kind, cleaned, log, excludedRows, approved,
@@ -358,11 +364,15 @@ datasetsRouter.post('/', requirePermission('approve_cleansing'), asyncHandler(as
 
 // ---- Listing / detail / delete ---------------------------------------------
 
-datasetsRouter.get('/', requirePermission('view_dataset'), asyncHandler(async (_req, res) => {
-  const rows = await db('datasets')
+datasetsRouter.get('/', requirePermission('view_dataset'), asyncHandler(async (req, res) => {
+  let query = db('datasets')
     .leftJoin('users', 'datasets.created_by', 'users.id')
     .select('datasets.*', 'users.name as created_by_name')
     .orderBy('datasets.id', 'desc');
+  // Every other role shares one org-wide dataset list by design; a guest must
+  // only ever see datasets it created itself (see guardGuestDatasetAccess doc).
+  if (req.user!.role === 'guest') query = query.where('datasets.created_by', req.user!.id);
+  const rows = await query;
   res.json({
     datasets: rows.map((r) => ({
       id: r.id,

@@ -7,6 +7,7 @@ import PDFDocument from 'pdfkit';
 import { db } from '../db';
 import { config } from '../config';
 import { requireAuth, requirePermission } from '../middleware/auth';
+import { guardGuestDatasetParam, guardGuestDatasetQueryParams } from '../middleware/guestScope';
 import { asyncHandler, HttpError } from '../middleware/errors';
 import { audit } from '../services/audit';
 import * as svc from '../services/analytics';
@@ -30,7 +31,10 @@ function sanitizeRows(rows: object[]): Record<string, unknown>[] {
 }
 
 export const exportsRouter = Router();
-exportsRouter.use(requireAuth, requirePermission('export'));
+exportsRouter.use(requireAuth, requirePermission('export'), guardGuestDatasetQueryParams);
+// Covers /dataset/:id, /analysis/:stockDatasetId, /report/:stockDatasetId.
+exportsRouter.param('id', guardGuestDatasetParam);
+exportsRouter.param('stockDatasetId', guardGuestDatasetParam);
 
 const TABLE_FOR_KIND: Record<string, string> = {
   stock: 'stock_items',

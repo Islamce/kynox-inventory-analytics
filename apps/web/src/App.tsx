@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { getToken } from './lib/api';
+import { apiGet, getPublicConfig, getToken, setGuestUser, type SessionUser } from './lib/api';
+import { Spinner } from './components/ui';
 import { Layout } from './components/Layout';
 import { LoginPage } from './pages/Login';
 import { DashboardPage } from './pages/Dashboard';
@@ -16,8 +18,35 @@ import { ReportsPage } from './pages/Reports';
 import { AdminPage } from './pages/Admin';
 import { AuditPage } from './pages/Audit';
 
+type AuthGate = 'checking' | 'allow' | 'deny';
+
+/**
+ * Real logins pass through instantly (unchanged fast path — no network wait).
+ * With no token, this checks GET /api/config/public: when PUBLIC_DEMO_MODE is
+ * on, it resolves (and caches for display) the anonymous guest identity via
+ * GET /api/auth/me — which apiGet already sends with the X-Guest-Session
+ * fallback header — and lets the visitor through with no login at all.
+ * Everything server-side still enforces the guest permission scope; this is
+ * purely about not forcing a login screen in front of the public demo.
+ */
 function RequireAuth({ children }: { children: JSX.Element }) {
-  return getToken() ? children : <Navigate to="/login" replace />;
+  const [gate, setGate] = useState<AuthGate>(getToken() ? 'allow' : 'checking');
+
+  useEffect(() => {
+    if (getToken()) { setGate('allow'); return; }
+    let cancelled = false;
+    getPublicConfig().then(({ publicDemoMode }) => {
+      if (cancelled) return;
+      if (!publicDemoMode) { setGate('deny'); return; }
+      apiGet<{ user: SessionUser }>('/api/auth/me')
+        .then((r) => { if (!cancelled) { setGuestUser(r.user); setGate('allow'); } })
+        .catch(() => { if (!cancelled) setGate('deny'); });
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  if (gate === 'checking') return <div className="min-h-full grid place-items-center"><Spinner /></div>;
+  return gate === 'allow' ? children : <Navigate to="/login" replace />;
 }
 
 export function App() {

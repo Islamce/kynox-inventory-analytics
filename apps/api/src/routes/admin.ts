@@ -83,7 +83,11 @@ const KNOWN_CONFIG_KEYS = [
   'ai_feature_enabled',
 ] as const;
 
-adminRouter.get('/config', asyncHandler(async (_req, res) => {
+// Pre-existing gap closed here: this previously had no explicit permission
+// check (any authenticated role could read it), which mattered little when
+// every caller was a real employee but becomes a real exposure once
+// PUBLIC_DEMO_MODE lets anonymous 'guest' identities authenticate at all.
+adminRouter.get('/config', requirePermission('change_config'), asyncHandler(async (_req, res) => {
   const rows = await db('config').select('key', 'value', 'updated_at');
   const configMap: Record<string, unknown> = {};
   for (const row of rows) configMap[row.key] = JSON.parse(row.value);
