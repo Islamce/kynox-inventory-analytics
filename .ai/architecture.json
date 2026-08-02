@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "architecture.json",
-    "bodyDigest": "f6e8be66c3c466f832758a5d5b6056c8edd2dcee7bb18dc614b7a1c1b646e3c0",
+    "bodyDigest": "00d3ebdace3e3d02fabcaa0dce640ff7729ca42ec5e61fbb8fb9fc795d7bf3eb",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "7bd9f5ceaa001762e9d0c4e07a599d887769f8d78375045450a8bd985fdc2b04",
+    "inputDigest": "aea036e862c2a592995ef2beaf159b76a4625efdb9992e36eaf09f3b3abdf398",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -361,7 +361,7 @@
     },
     {
       "confidence": "verified",
-      "confidenceReason": "Declared and corroborated by 35 discovered code file(s).",
+      "confidenceReason": "Declared and corroborated by 37 discovered code file(s).",
       "declared": true,
       "declaredConfidence": "verified",
       "dependedOnBy": [],
@@ -372,7 +372,7 @@
         "analytics-shared-types"
       ],
       "discovery": {
-        "codeFileCount": 35,
+        "codeFileCount": 37,
         "discovered": true,
         "entryPoints": [],
         "languages": [
@@ -384,7 +384,7 @@
         "publicSymbols": [
           "createApp"
         ],
-        "sourceFileCount": 38
+        "sourceFileCount": 40
       },
       "id": "analytics-api",
       "ownedEntities": [
@@ -638,7 +638,7 @@
         ],
         "parseErrors": [],
         "publicSymbols": [],
-        "sourceFileCount": 41
+        "sourceFileCount": 42
       },
       "id": "analytics-runtime-entry",
       "ownedEntities": [
