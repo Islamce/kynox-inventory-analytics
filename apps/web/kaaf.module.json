@@ -1,0 +1,23 @@
+{
+  "apis": [],
+  "confidence": "verified",
+  "consumes": [],
+  "dependsOn": [],
+  "externalIntegrations": [],
+  "flows": [],
+  "id": "analytics-web",
+  "ownedEntities": [
+    "workspace-route",
+    "dashboard-view",
+    "reconciliation-view",
+    "data-quality-view"
+  ],
+  "owner": "Frontend",
+  "permissions": [],
+  "publicEntryPoints": [
+    "apps/web/package.json",
+    "apps/web/index.html"
+  ],
+  "purpose": "Present the inventory, data-quality, reconciliation, analytics, planning, AI, reports, administration and audit workspaces to users as a React SPA served by the API in production.",
+  "schemaVersion": "1.0.0"
+}

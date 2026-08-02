@@ -1,0 +1,38 @@
+{
+  "apis": [],
+  "confidence": "verified",
+  "consumes": [],
+  "dependsOn": [
+    "analytics-shared-types"
+  ],
+  "externalIntegrations": [
+    {
+      "criticality": "optional",
+      "kind": "ai-provider",
+      "name": "Anthropic API",
+      "onUnavailable": "AI agents return a controlled error; every non-AI analytics surface is unaffected."
+    },
+    {
+      "criticality": "optional",
+      "kind": "ai-provider",
+      "name": "OpenAI API",
+      "onUnavailable": "AI agents return a controlled error; every non-AI analytics surface is unaffected."
+    }
+  ],
+  "flows": [],
+  "id": "analytics-ai-engine",
+  "ownedEntities": [
+    "ai-agent",
+    "evidence-package",
+    "provider-adapter",
+    "ai-usage-record"
+  ],
+  "owner": "AI Engineering",
+  "permissions": [],
+  "publicEntryPoints": [
+    "packages/ai-engine/package.json",
+    "packages/ai-engine/src/index.ts"
+  ],
+  "purpose": "Run the documented analytics agents over evidence packages built from verified data, behind a provider abstraction so no single vendor is load-bearing.",
+  "schemaVersion": "1.0.0"
+}

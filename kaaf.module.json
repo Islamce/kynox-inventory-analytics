@@ -1,0 +1,27 @@
+{
+  "apis": [],
+  "confidence": "verified",
+  "consumes": [],
+  "dependsOn": [],
+  "externalIntegrations": [
+    {
+      "criticality": "required",
+      "kind": "process-manager",
+      "name": "PM2",
+      "onUnavailable": "The production process is not supervised; a crash is not restarted automatically."
+    }
+  ],
+  "flows": [],
+  "id": "analytics-runtime-entry",
+  "ownedEntities": [
+    "production-process"
+  ],
+  "owner": "DevOps",
+  "permissions": [],
+  "publicEntryPoints": [
+    "app.js",
+    "ecosystem.config.cjs"
+  ],
+  "purpose": "Start the production process: boot the API, which also serves the built web SPA, under the PM2 configuration used on the managed host.",
+  "schemaVersion": "1.0.0"
+}

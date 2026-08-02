@@ -1,0 +1,81 @@
+{
+  "_meta": {
+    "artifact": "modules/analytics-deployment.json",
+    "bodyDigest": "c7b3328446f85df08850154cb5770301fd747dcfe84dca49060674456bc3d08e",
+    "confidence": "verified",
+    "doNotEdit": true,
+    "generator": "kaaf",
+    "generatorVersion": "0.7.0",
+    "inputDigest": "7bd9f5ceaa001762e9d0c4e07a599d887769f8d78375045450a8bd985fdc2b04",
+    "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
+    "schemaVersion": "1.0.0"
+  },
+  "apis": [],
+  "confidence": "verified",
+  "confidenceReason": "Declared and corroborated by 7 discovered code file(s).",
+  "declared": true,
+  "declaredConfidence": "verified",
+  "dependedOnBy": [],
+  "dependsOn": [],
+  "discovery": {
+    "codeFiles": [
+      "scripts/deployment/backup-db.sh",
+      "scripts/deployment/deploy-staging.sh",
+      "scripts/deployment/lib.sh",
+      "scripts/deployment/preflight.sh",
+      "scripts/deployment/restore-db.sh",
+      "scripts/deployment/rollback.sh",
+      "scripts/deployment/smoke-test.sh"
+    ],
+    "discovered": true,
+    "entryPoints": [
+      "scripts/deployment/backup-db.sh",
+      "scripts/deployment/deploy-staging.sh",
+      "scripts/deployment/lib.sh",
+      "scripts/deployment/preflight.sh",
+      "scripts/deployment/restore-db.sh",
+      "scripts/deployment/rollback.sh",
+      "scripts/deployment/smoke-test.sh"
+    ],
+    "languages": [
+      "json",
+      "shell"
+    ],
+    "parseErrors": [],
+    "publicSymbols": [],
+    "sourceFiles": [
+      "scripts/deployment/backup-db.sh",
+      "scripts/deployment/deploy-staging.sh",
+      "scripts/deployment/kaaf.module.json",
+      "scripts/deployment/lib.sh",
+      "scripts/deployment/preflight.sh",
+      "scripts/deployment/restore-db.sh",
+      "scripts/deployment/rollback.sh",
+      "scripts/deployment/smoke-test.sh"
+    ]
+  },
+  "driftFindings": [],
+  "externalIntegrations": [],
+  "id": "analytics-deployment",
+  "ownedEntities": [
+    "database-backup",
+    "deployment-procedure",
+    "rollback-procedure",
+    "smoke-test"
+  ],
+  "owner": "DevOps",
+  "path": "scripts/deployment",
+  "permissions": [],
+  "publicEntryPoints": [
+    "scripts/deployment/deploy-staging.sh",
+    "scripts/deployment/preflight.sh",
+    "scripts/deployment/rollback.sh"
+  ],
+  "purpose": "Carry out staged deployment and its safety operations — preflight checks, database backup and restore, rollback, and post-deploy smoke tests. Executing any of these against a real environment is a protected action requiring approval.",
+  "readNext": [
+    "scripts/deployment/deploy-staging.sh",
+    "scripts/deployment/preflight.sh",
+    "scripts/deployment/rollback.sh"
+  ],
+  "sourceManifest": "scripts/deployment/kaaf.module.json"
+}

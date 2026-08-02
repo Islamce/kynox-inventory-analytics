@@ -1,0 +1,246 @@
+{
+  "_meta": {
+    "artifact": "ai-context.json",
+    "bodyDigest": "8662befd7da035b6d22bdd8957500bea8971c8ce516e7bb055b859dff33e479d",
+    "confidence": "verified",
+    "doNotEdit": true,
+    "generator": "kaaf",
+    "generatorVersion": "0.7.0",
+    "inputDigest": "7bd9f5ceaa001762e9d0c4e07a599d887769f8d78375045450a8bd985fdc2b04",
+    "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
+    "schemaVersion": "1.0.0"
+  },
+  "conventions": {
+    "branchNaming": [
+      "chore/*",
+      "feat/*",
+      "fix/*",
+      "wip/*"
+    ],
+    "generatedContextRoot": ".ai/",
+    "moduleManifestFile": "kaaf.module.json",
+    "monorepo": "apps/* are deployable applications; packages/* are shared libraries consumed through npm workspaces under the @kynox scope"
+  },
+  "counts": {
+    "apis": 8,
+    "externalIntegrations": 4,
+    "modules": 10,
+    "modulesDeclared": 10,
+    "modulesUndeclared": 0,
+    "permissions": 11
+  },
+  "drift": {
+    "counts": {
+      "error": 0,
+      "info": 1,
+      "warning": 0
+    },
+    "detail": ".ai/drift.json",
+    "hasErrors": false
+  },
+  "kaafPhase": 7,
+  "modules": [
+    {
+      "confidence": "verified",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependsOn": [
+        "analytics-shared-types"
+      ],
+      "detail": "modules/analytics-ai-engine.json",
+      "hasDiscoveredCode": true,
+      "id": "analytics-ai-engine",
+      "owner": "AI Engineering",
+      "path": "packages/ai-engine",
+      "publicEntryPoints": [
+        "packages/ai-engine/package.json",
+        "packages/ai-engine/src/index.ts"
+      ],
+      "purpose": "Run the documented analytics agents over evidence packages built from verified data, behind a provider abstraction so no single vendor is load-bearing."
+    },
+    {
+      "confidence": "verified",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependsOn": [
+        "analytics-ai-engine",
+        "analytics-data-quality",
+        "analytics-engine",
+        "analytics-shared-types"
+      ],
+      "detail": "modules/analytics-api.json",
+      "hasDiscoveredCode": true,
+      "id": "analytics-api",
+      "owner": "Backend",
+      "path": "apps/api",
+      "publicEntryPoints": [
+        "apps/api/package.json",
+        "apps/api/src/app.ts",
+        "apps/api/src/server.ts"
+      ],
+      "purpose": "Serve the inventory diagnostic over HTTP: ingest and version customer datasets, normalize them into the canonical transaction model, enforce role-based access, and expose every analytics, reconciliation and export surface."
+    },
+    {
+      "confidence": "verified",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependsOn": [
+        "analytics-shared-types"
+      ],
+      "detail": "modules/analytics-data-quality.json",
+      "hasDiscoveredCode": true,
+      "id": "analytics-data-quality",
+      "owner": "Data",
+      "path": "packages/data-quality",
+      "publicEntryPoints": [
+        "packages/data-quality/package.json",
+        "packages/data-quality/src/index.ts"
+      ],
+      "purpose": "Score incoming customer data, propose and apply cleansing, and normalize ambiguous values such as dates so downstream analytics receive evidence-tagged input."
+    },
+    {
+      "confidence": "verified",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependsOn": [],
+      "detail": "modules/analytics-deployment.json",
+      "hasDiscoveredCode": true,
+      "id": "analytics-deployment",
+      "owner": "DevOps",
+      "path": "scripts/deployment",
+      "publicEntryPoints": [
+        "scripts/deployment/deploy-staging.sh",
+        "scripts/deployment/preflight.sh",
+        "scripts/deployment/rollback.sh"
+      ],
+      "purpose": "Carry out staged deployment and its safety operations — preflight checks, database backup and restore, rollback, and post-deploy smoke tests. Executing any of these against a real environment is a protected action requiring approval."
+    },
+    {
+      "confidence": "verified",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependsOn": [
+        "analytics-shared-types"
+      ],
+      "detail": "modules/analytics-engine.json",
+      "hasDiscoveredCode": true,
+      "id": "analytics-engine",
+      "owner": "Data",
+      "path": "packages/analytics-engine",
+      "publicEntryPoints": [
+        "packages/analytics-engine/package.json",
+        "packages/analytics-engine/src/index.ts"
+      ],
+      "purpose": "Compute the inventory analytics the product sells — ABC, XYZ, aging, consumption, excess, shortage, health, forecasting and planning — as pure functions over canonical transactions."
+    },
+    {
+      "confidence": "verified",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependsOn": [],
+      "detail": "modules/analytics-fixtures.json",
+      "hasDiscoveredCode": true,
+      "id": "analytics-fixtures",
+      "owner": "Data",
+      "path": "scripts",
+      "publicEntryPoints": [
+        "scripts/generate-uat-data.js"
+      ],
+      "purpose": "Generate synthetic UAT and demonstration datasets so the platform can be exercised without customer data."
+    },
+    {
+      "confidence": "verified",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependsOn": [],
+      "detail": "modules/analytics-kaaf-tooling.json",
+      "hasDiscoveredCode": true,
+      "id": "analytics-kaaf-tooling",
+      "owner": "DevOps",
+      "path": "scripts/architecture",
+      "publicEntryPoints": [
+        "scripts/architecture/generate.py",
+        "scripts/architecture/generate.sh"
+      ],
+      "purpose": "Generate and validate this repository's KAAF architecture context. Vendored from Islamce/KAAF; see VENDORED.md before changing anything here."
+    },
+    {
+      "confidence": "verified",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependsOn": [],
+      "detail": "modules/analytics-runtime-entry.json",
+      "hasDiscoveredCode": true,
+      "id": "analytics-runtime-entry",
+      "owner": "DevOps",
+      "path": ".",
+      "publicEntryPoints": [
+        "app.js",
+        "ecosystem.config.cjs"
+      ],
+      "purpose": "Start the production process: boot the API, which also serves the built web SPA, under the PM2 configuration used on the managed host."
+    },
+    {
+      "confidence": "verified",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependsOn": [],
+      "detail": "modules/analytics-shared-types.json",
+      "hasDiscoveredCode": true,
+      "id": "analytics-shared-types",
+      "owner": "Backend",
+      "path": "packages/shared-types",
+      "publicEntryPoints": [
+        "packages/shared-types/package.json",
+        "packages/shared-types/src/index.ts"
+      ],
+      "purpose": "Define the types, canonical transaction vocabulary, and the single role-to-permission matrix that every other module in the platform shares."
+    },
+    {
+      "confidence": "verified",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependsOn": [],
+      "detail": "modules/analytics-web.json",
+      "hasDiscoveredCode": true,
+      "id": "analytics-web",
+      "owner": "Frontend",
+      "path": "apps/web",
+      "publicEntryPoints": [
+        "apps/web/index.html",
+        "apps/web/package.json"
+      ],
+      "purpose": "Present the inventory, data-quality, reconciliation, analytics, planning, AI, reports, administration and audit workspaces to users as a React SPA served by the API in production."
+    }
+  ],
+  "pointers": {
+    "architecture": ".ai/architecture.json",
+    "drift": ".ai/drift.json",
+    "governance": "docs/kaaf/GOVERNANCE.md",
+    "moduleDetail": ".ai/modules/<id>.json",
+    "prompts": "docs/ai/prompts/",
+    "roadmap": "docs/kaaf/ROADMAP.md",
+    "standards": "docs/kaaf/STANDARDS.md",
+    "summary": ".ai/summary.md"
+  },
+  "readOrder": [
+    ".ai/ai-context.json",
+    ".ai/summary.md",
+    ".ai/modules/<id>.json for the module the task touches",
+    "only the source files those steps referenced"
+  ],
+  "repository": {
+    "defaultBranch": "main",
+    "description": "Kynox Inventory Intelligence — a source-neutral inventory diagnostic that ingests customer exports, normalizes them into a canonical transaction model, and serves data-quality, reconciliation, and inventory analytics.",
+    "name": "Kynox Inventory Intelligence",
+    "repository": "Islamce/kynox-inventory-analytics"
+  },
+  "rules": [
+    "Never hand-edit anything under .ai/ except README.md and .gitkeep.",
+    "If a component is not described here and not in the source, it does not exist — say 'not found'.",
+    "Regenerate .ai/ in the same pull request as any structural change.",
+    "Tag every architectural claim with a confidence level.",
+    "Confidence here is computed from evidence, not copied from a manifest: 'verified' means declared and corroborated by discovered code, 'documented' means declared with no code to check it against, 'derived' means discovered with no declaration.",
+    "Check drift before trusting this: findings in .ai/drift.json mean the manifests have fallen behind the code."
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "_meta": {
+    "artifact": "modules/analytics-runtime-entry.json",
+    "bodyDigest": "e26fb77c8e3f207837947f20d74202e65f2c36d63554a5f7ead6e912d098bee9",
+    "confidence": "verified",
+    "doNotEdit": true,
+    "generator": "kaaf",
+    "generatorVersion": "0.7.0",
+    "inputDigest": "7bd9f5ceaa001762e9d0c4e07a599d887769f8d78375045450a8bd985fdc2b04",
+    "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
+    "schemaVersion": "1.0.0"
+  },
+  "apis": [],
+  "confidence": "verified",
+  "confidenceReason": "Declared and corroborated by 2 discovered code file(s).",
+  "declared": true,
+  "declaredConfidence": "verified",
+  "dependedOnBy": [],
+  "dependsOn": [],
+  "discovery": {
+    "codeFiles": [
+      "app.js",
+      "ecosystem.config.cjs"
+    ],
+    "discovered": true,
+    "entryPoints": [],
+    "languages": [
+      "javascript",
+      "json",
+      "markdown",
+      "yaml"
+    ],
+    "parseErrors": [],
+    "publicSymbols": [],
+    "sourceFiles": [
+      ".github/workflows/architecture.yml",
+      ".github/workflows/ci.yml",
+      "AGENTS.md",
+      "README.md",
+      "app.js",
+      "docs/AI_GOVERNANCE.md",
+      "docs/ARCHITECTURE.md",
+      "docs/BRANCH_PROTECTION.md",
+      "docs/DB_COMPATIBILITY.md",
+      "docs/DEPLOYMENT_HOSTINGER.md",
+      "docs/FRONTEND_CHECKLIST.md",
+      "docs/GENERIC_INVENTORY_ANALYTICS.md",
+      "docs/HOSTINGER_BACKUP_AND_RESTORE.md",
+      "docs/HOSTINGER_DEPLOYMENT_READINESS.md",
+      "docs/HOSTINGER_ENVIRONMENT_VARIABLES.md",
+      "docs/HOSTINGER_HPanel_CHECKLIST.md",
+      "docs/HOSTINGER_MANAGED_DEPLOYMENT.md",
+      "docs/HOSTINGER_MIGRATION_AND_SEED.md",
+      "docs/HOSTINGER_MYSQL_SETUP.md",
+      "docs/HOSTINGER_STORAGE_ASSESSMENT.md",
+      "docs/HOSTINGER_TROUBLESHOOTING.md",
+      "docs/HOSTINGER_UAT_CHECKLIST.md",
+      "docs/INDEPENDENT_REVIEW_GUIDE.md",
+      "docs/KPI_DICTIONARY.md",
+      "docs/PRODUCTION_READINESS.md",
+      "docs/SECURITY_REVIEW.md",
+      "docs/STAGING_DEPLOYMENT.md",
+      "docs/STAGING_MONITORING.md",
+      "docs/STAGING_UAT_PLAN.md",
+      "docs/UAT_DATA_PACKAGE.md",
+      "docs/UI_ACCESSIBILITY_VALIDATION.md",
+      "docs/UI_UX_AUDIT.md",
+      "docs/UI_UX_TRANSFORMATION.md",
+      "docs/UI_VISUAL_QA_REPORT.md",
+      "docs/USER_GUIDE.md",
+      "ecosystem.config.cjs",
+      "kaaf.module.json",
+      "kaaf.repo.json",
+      "package-lock.json",
+      "package.json",
+      "tsconfig.base.json"
+    ]
+  },
+  "driftFindings": [],
+  "externalIntegrations": [
+    {
+      "criticality": "required",
+      "kind": "process-manager",
+      "name": "PM2",
+      "onUnavailable": "The production process is not supervised; a crash is not restarted automatically."
+    }
+  ],
+  "id": "analytics-runtime-entry",
+  "ownedEntities": [
+    "production-process"
+  ],
+  "owner": "DevOps",
+  "path": ".",
+  "permissions": [],
+  "publicEntryPoints": [
+    "app.js",
+    "ecosystem.config.cjs"
+  ],
+  "purpose": "Start the production process: boot the API, which also serves the built web SPA, under the PM2 configuration used on the managed host.",
+  "readNext": [
+    "app.js",
+    "ecosystem.config.cjs"
+  ],
+  "sourceManifest": "kaaf.module.json"
+}
