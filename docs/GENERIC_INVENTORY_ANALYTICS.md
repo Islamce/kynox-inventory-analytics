@@ -244,7 +244,8 @@ added for both.
 **Not yet done from this increment:** a richer date/direction preview *before*
 dataset creation (currently the preview appears after creation, since
 blocking/preview both run through the same `POST /api/datasets` call), and
-full user override of individual row classifications.
+full user override of individual row classifications. (Both were delivered in
+a later increment — see below.)
 
 ## Data Quality Center surfacing (delivered)
 
@@ -293,11 +294,11 @@ per material, optionally compared against a linked stock dataset's current
 quantity to surface a variance.
 
 **Honest scope limits, stated in the UI itself:**
-- Transfer/reversal "pairing" is **net per material**, not document-level.
-  `canonical_transactions` reserves `transfer_id` / `paired_transaction_id` /
-  `reversal_of_transaction_id` columns for exact pairing, but the ingestion
-  pipeline does not populate them yet — that is a real, larger follow-up (it
-  needs a matching algorithm, not just a query).
+- Transfer/reversal pairing is document-level (see "Document-level
+  transfer/reversal pairing" below) but scoped to a single dataset — both legs
+  of a transfer or a reversal and its original must be in the same import.
+  Legitimate misses are reported as low-severity findings, not treated as
+  errors.
 - Variance against a linked stock dataset is only meaningful when the
   movements dataset's period covers the material's full history since stock
   was last a known value (an explicit opening balance, or genuinely zero);
@@ -322,23 +323,143 @@ answer these questions from real evidence — the AI still never computes a
 number itself; it only interprets deterministically-computed evidence, per
 existing governance.
 
+## Document-level transfer/reversal pairing (delivered)
+
+`pairTransfersAndReversals()` in `apps/api/src/services/normalization.ts`
+matches unclaimed `TRANSFER_OUT`↔`TRANSFER_IN` canonical rows on
+material + exact absolute quantity + closest date and assigns them a shared
+`transfer_id` and cross-referenced `paired_transaction_id`; `REVERSAL_IN`/
+`REVERSAL_OUT` rows are matched to the most recent qualifying
+`RECEIPT`/`CONSUMPTION` row (same material + quantity, original date on or
+before the reversal date) and stamped with `reversal_of_transaction_id`.
+Unmatched rows produce low-severity, non-blocking
+`TRANSFER_PAIR_NOT_FOUND` / `REVERSAL_ORIGINAL_NOT_FOUND` findings — a miss is
+reported honestly rather than silently ignored. Matching is scoped to a single
+dataset (both legs must be in the same import); cross-dataset pairing is not
+attempted. `apps/api/src/services/reconciliation.ts` now reports
+`unpairedTransferRows` / `unpairedReversalRows` per material and
+`materialsWithUnpairedTransfers` / `materialsWithUnpairedReversals` in the
+summary, surfaced in the Inventory Reconciliation page.
+
+## Manual per-row classification override (delivered)
+
+`PATCH /api/datasets/:id/canonical/:canonicalId` (permission: `edit_mapping`,
+IDOR-safe — the row is looked up scoped to `{ id, dataset_id }`) lets a user
+correct a single canonical row's `transaction_category`. The handler
+recomputes `transaction_direction`, `signed_quantity`,
+`receipt_quantity`/`consumption_quantity` from the corrected category, marks
+`classification_source: 'user_rule'`, clears any stale sign/direction-conflict
+flags, and recomputes the dataset's `normalization_summary` from the current
+row set — all inside one DB transaction so the row and the dataset-level
+aggregates never drift apart. Audited as `canonical_reclassified`. The
+Dashboard's "Transaction categories" browser (`Dashboard.tsx`) exposes this as
+an inline category `<select>` per row.
+
+## Import-time preview before dataset creation (delivered)
+
+`POST /api/datasets/preview` runs the exact same `prepareImport()` pipeline
+(mapping → cleansing → quality scoring → canonical normalization) that
+`POST /api/datasets` uses, but never writes to the database — it reports row
+counts, quality scores, whether creation would still be blocked by remaining
+critical issues, and the full normalization summary/findings, including
+`ambiguousDatesNeedConfirmation`. `Workspace.tsx` adds a "Preview
+normalization" button in the Cleansing step (movements datasets only): it
+shows the category/direction breakdown and findings inline, and — when the
+date column is genuinely ambiguous — an inline DD/MM/YYYY vs MM/DD/YYYY picker
+that resolves the preview *and* carries the chosen order through to "Apply
+approved cleansing" automatically, so the user never has to make the same
+choice twice. The reactive post-422 picker from the previous increment is kept
+as a fallback for anyone who skips the preview button. A test asserts preview
+output and actual creation output agree exactly, and that preview never
+persists a row.
+
+## Testing evidence (previous sub-increment)
+
+`@kynox/api` **66** tests (+8 since the prior increment: 2 transfer/
+reversal pairing, 3 manual override, 3 import-time preview — including the
+preview-equals-creation equality check and an unauthenticated/cross-dataset
+IDOR check). Full monorepo: **193** tests green; typecheck and build clean.
+All features verified in a real browser (Playwright/Chromium): light, dark
+and a 390px mobile viewport, no horizontal overflow — including the new
+inline preview panel and its ambiguous-date picker.
+
+## Consumption/ABC/XYZ/shortage/excess/health rewired to the canonical model (delivered)
+
+This was previously listed as "still pending" because it is an explicit
+architectural decision (reconciling reversal semantics between the legacy
+heuristic and the canonical model) rather than a mechanical change — it was
+raised as a question and the user chose to proceed with the rewire.
+
+`loadMovementsByMaterial()` in `apps/api/src/services/analytics.ts` (the
+single aggregation function feeding consumption, ABC (consumption-value
+metric), XYZ, excess, shortage and health analytics) now prefers
+`canonical_transactions` when the dataset has canonical rows (every dataset
+imported since the Phase 2 normalization engine shipped): demand is
+`DEMAND_CATEGORIES` — `CONSUMPTION` only, per `@kynox/shared-types` — and
+`REVERSAL_IN`/`REVERSAL_OUT` are tracked separately and intentionally **not**
+netted against consumption, unlike the legacy path. Datasets imported before
+the canonical engine existed (no canonical rows) fall back unchanged to the
+legacy `movements` table + SAP movement-type heuristic (renamed
+`loadLegacyMovementsByMaterial`, logic untouched), so old datasets keep
+producing the numbers they always did. The function's return type and every
+call site (`abcAnalysis`, `xyzAnalysis`, `movementCategoryAnalysis`,
+`excessAnalysis`, `shortageAnalysis`, `healthAnalysis`, `consumptionAnalysis`,
+`forecastAnalysis`, `planningProposal`) are unchanged — the rewire is
+entirely inside the aggregation function.
+
+**A real, independent classification bug was found and fixed while verifying
+this rewire against a realistic SAP movement fixture** (friendly column
+headers like "Movement Type" rather than raw SAP technical names like
+`BWART`): `classifyTransaction()`'s numeric SAP movement-type lookup
+(`sapMovementTypeCategory`, e.g. `201` → `CONSUMPTION`, `101` → `RECEIPT`) was
+only attempted when the *dataset* had already been labelled `sourceSystem:
+'SAP'` — a deliberately conservative determination from an earlier increment
+requiring an explicit hint or a real `sap_technical`-mapped column. Numeric
+movement-type codes are unambiguous evidence on their own regardless of that
+display label, so every row of a real SAP movement file that used friendly
+headers was silently classified `UNKNOWN` — zero consumption, zero receipts,
+even though the legacy `movements` table (used before this rewire) parsed the
+same codes correctly via its own hardcoded set. Fixed by decoupling the
+numeric lookup from the `sourceSystem` label in
+`apps/api/src/services/normalization.ts`: the lookup is now always attempted
+first (it can only ever match one of a small set of exact known codes, so it
+cannot misfire on generic text), while `sourceSystem` labelling itself is
+completely unchanged. Existing SAP-source-labelling regression tests still
+pass unmodified.
+
+**Test semantics updated to match the new, intended behaviour** (not a
+regression): `pipeline.test.ts`'s reversal test previously asserted the
+legacy net-of-reversal number (100 − 60 + 40 = 80); it now asserts the
+canonical number (100 + 40 = 140, reversal tracked separately) and explicitly
+checks the canonical row categories.
+
 ## Testing evidence (this increment)
 
-`@kynox/api` **58** tests (+5: 1 AI-evidence regression in
-`normalization.test.ts`, 4 in the new `reconciliation.test.ts` covering
-no-canonical-data / basic reconciliation / variance-against-linked-stock /
-auth). Full monorepo: **185** tests green; typecheck, build and
-`npm audit --audit-level=high` all clean. All four features verified in a
-real browser (Playwright/Chromium): light, dark and a 390px mobile viewport,
-no horizontal overflow.
+`@kynox/api` **66** tests (1 test updated in place for the new reversal
+semantics, none added — the rewire is a data-source change under an unchanged
+function signature). Full monorepo: **193** tests green; typecheck and build
+clean. Verified in a real browser (Playwright/Chromium) against a realistic
+movements fixture (friendly headers + numeric movement-type codes, including
+a reversal and a transfer): Executive Dashboard, ABC-XYZ Analysis,
+Consumption Analytics, Inventory Reconciliation and Material 360 all render
+correct canonical-derived numbers in light, dark and a 390px mobile viewport,
+no horizontal overflow, no console/page errors. Stale UI copy referencing
+"SAP issue-reversal semantics already applied" on the Consumption Analytics
+page was corrected to describe the actual (source-neutral) behaviour.
 
 ## Still pending (future work, honestly scoped)
 
-1. A richer import-time date/direction preview *before* dataset creation.
-2. Full user override of individual canonical row classifications.
-3. Document-level transfer/reversal pairing (the schema is ready; the matching
-   algorithm is not built).
-4. Reconciling the legacy SAP-heuristic demand calculation
-   (`loadMovementsByMaterial`) with the canonical `TransactionCategory` model
-   for consumption/ABC/XYZ/shortage/excess/health — requires an explicit
-   decision on reversal semantics before it can be done safely.
+None from the original "still pending" list — all four items (document-level
+transfer/reversal pairing, manual per-row override, import-time preview, and
+the canonical-model rewire) have been delivered. Real gaps that remain,
+found along the way rather than planned:
+
+1. The numeric SAP movement-type lookup fix only helps when a movement-type
+   *column* is present and mapped; a file with neither recognisable type text
+   nor a numeric SAP code still classifies as `UNKNOWN` by design (no data to
+   infer from) rather than guessing from quantity sign — that is intentional,
+   not a gap, but worth knowing when investigating an unexpectedly high
+   `UNKNOWN` count.
+2. Transfer/reversal pairing (delivered earlier) is still single-dataset only;
+   a transfer or reversal whose other leg lives in a different import is
+   correctly reported as unpaired, not silently assumed balanced.

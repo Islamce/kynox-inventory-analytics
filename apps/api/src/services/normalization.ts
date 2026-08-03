@@ -166,6 +166,113 @@ const ADJUST_CATS: TransactionCategory[] = ['ADJUSTMENT_IN', 'ADJUSTMENT_OUT'];
 const REVERSAL_CATS: TransactionCategory[] = ['REVERSAL_IN', 'REVERSAL_OUT'];
 
 /**
+ * Document-level transfer/reversal pairing (best-effort, in-dataset only).
+ *
+ * Matches unclaimed TRANSFER_OUT rows to TRANSFER_IN rows (same material, same
+ * absolute quantity, closest date) and REVERSAL_IN/REVERSAL_OUT rows to the
+ * specific earlier CONSUMPTION/RECEIPT row they most likely reverse (same
+ * material, same absolute quantity, most recent qualifying date on or before
+ * the reversal). Populates `transfer_id`/`paired_transaction_id` and
+ * `reversal_of_transaction_id` on the matched rows.
+ *
+ * Both legs must be present in THIS dataset to pair. When a transfer's other
+ * leg or a reversal's original genuinely falls outside this dataset's scope
+ * (a different warehouse's file, a different period), pairing legitimately
+ * fails — that is reported as a low-severity, non-blocking finding, not an
+ * error, since it is common and often expected.
+ */
+function pairTransfersAndReversals(
+  canonicalRows: Record<string, unknown>[],
+  ctx: { fileName: string; sheetName: string | null; datasetId: number | null },
+): NormalizationIssue[] {
+  const findings: NormalizationIssue[] = [];
+  const sameLine = (a: Record<string, unknown>, b: Record<string, unknown>) =>
+    a.material_id === b.material_id
+    && Math.abs(((a.absolute_quantity as number) ?? -1) - ((b.absolute_quantity as number) ?? -2)) < 1e-9;
+  const idFor = (r: Record<string, unknown>) => (r.transaction_id as string | null) ?? `row-${r.source_row_number}`;
+
+  const pairingFinding = (
+    code: 'TRANSFER_PAIR_NOT_FOUND' | 'REVERSAL_ORIGINAL_NOT_FOUND',
+    r: Record<string, unknown>, explanation: string,
+  ): NormalizationIssue => ({
+    code, severity: 'low',
+    fileName: ctx.fileName, sheetName: ctx.sheetName, datasetId: ctx.datasetId,
+    rowNumber: r.source_row_number as number, columnName: null,
+    originalValue: null, parsedValue: null, normalizedValue: null,
+    explanation,
+    recommendedCorrection: code === 'TRANSFER_PAIR_NOT_FOUND'
+      ? "Confirm this transfer's other leg exists — import the destination/source warehouse file together, or this is expected if the counterpart falls outside this dataset's scope."
+      : 'Confirm this is a genuine reversal, or that the original transaction falls outside this dataset\'s scope.',
+    confidenceScore: 1,
+    classificationSource: null,
+    blocksImport: false,
+    userActionRequired: false,
+  });
+
+  // --- Transfers -------------------------------------------------------------
+  const transferOuts = canonicalRows
+    .map((r, i) => ({ r, i }))
+    .filter(({ r }) => r.transaction_category === 'TRANSFER_OUT');
+  const unclaimedIns = new Set(
+    canonicalRows.map((r, i) => ({ r, i })).filter(({ r }) => r.transaction_category === 'TRANSFER_IN').map(({ i }) => i),
+  );
+  for (const { r: outRow, i: outIdx } of transferOuts) {
+    let best: number | null = null;
+    let bestDiff = Infinity;
+    for (const inIdx of unclaimedIns) {
+      const inRow = canonicalRows[inIdx];
+      if (!sameLine(outRow, inRow)) continue;
+      const diff = Math.abs(new Date(String(inRow.transaction_date)).getTime() - new Date(String(outRow.transaction_date)).getTime());
+      if (diff < bestDiff) { bestDiff = diff; best = inIdx; }
+    }
+    if (best === null) {
+      findings.push(pairingFinding('TRANSFER_PAIR_NOT_FOUND', outRow,
+        `Row ${(outRow.source_row_number as number) + 2}: no matching transfer-in transaction found in this dataset for material "${outRow.material_id}" (quantity ${outRow.absolute_quantity}).`));
+      continue;
+    }
+    const inRow = canonicalRows[best];
+    const transferId = `TXFER-${outIdx}-${best}`;
+    outRow.transfer_id = transferId;
+    inRow.transfer_id = transferId;
+    outRow.paired_transaction_id = idFor(inRow);
+    inRow.paired_transaction_id = idFor(outRow);
+    unclaimedIns.delete(best);
+  }
+  for (const inIdx of unclaimedIns) {
+    const inRow = canonicalRows[inIdx];
+    findings.push(pairingFinding('TRANSFER_PAIR_NOT_FOUND', inRow,
+      `Row ${(inRow.source_row_number as number) + 2}: no matching transfer-out transaction found in this dataset for material "${inRow.material_id}" (quantity ${inRow.absolute_quantity}).`));
+  }
+
+  // --- Reversals ---------------------------------------------------------------
+  const claimedOriginals = new Set<number>();
+  const reversals = canonicalRows
+    .map((r, i) => ({ r, i }))
+    .filter(({ r }) => r.transaction_category === 'REVERSAL_IN' || r.transaction_category === 'REVERSAL_OUT')
+    .sort((a, b) => String(a.r.transaction_date).localeCompare(String(b.r.transaction_date)));
+  for (const { r: revRow } of reversals) {
+    const targetCategory = revRow.transaction_category === 'REVERSAL_OUT' ? 'RECEIPT' : 'CONSUMPTION';
+    let best: number | null = null;
+    let bestDate = '';
+    canonicalRows.forEach((origRow, j) => {
+      if (claimedOriginals.has(j) || origRow.transaction_category !== targetCategory || !sameLine(revRow, origRow)) return;
+      const origDate = String(origRow.transaction_date);
+      if (origDate > String(revRow.transaction_date)) return; // original must be on/before the reversal
+      if (origDate > bestDate) { bestDate = origDate; best = j; } // most recent qualifying original wins
+    });
+    if (best === null) {
+      findings.push(pairingFinding('REVERSAL_ORIGINAL_NOT_FOUND', revRow,
+        `Row ${(revRow.source_row_number as number) + 2}: no matching ${targetCategory.toLowerCase()} transaction found in this dataset to reverse for material "${revRow.material_id}" (quantity ${revRow.absolute_quantity}).`));
+      continue;
+    }
+    claimedOriginals.add(best);
+    revRow.reversal_of_transaction_id = idFor(canonicalRows[best]);
+  }
+
+  return findings;
+}
+
+/**
  * Builds canonical transaction rows + summary + findings for a
  * movements/transaction dataset. Only `movements`-kind datasets produce
  * canonical rows today; other kinds return an empty result (the existing
@@ -195,7 +302,6 @@ export function buildNormalization(opts: NormalizeOptions): NormalizationResult 
   }
 
   const ctx = { fileName: sourceFileName, sheetName, datasetId: opts.datasetId ?? null };
-  const isSap = sourceSystem === 'SAP';
 
   // --- date normalization (whole column, ambiguity resolved cross-row) ------
   // Ambiguity + day/month order are decided from the RAW column (before the
@@ -216,15 +322,20 @@ export function buildNormalization(opts: NormalizeOptions): NormalizationResult 
   const results = rows.map((r) => classifyTransaction({
     rawQuantity: (r.movement_qty ?? r.quantity ?? r.demand_qty ?? null) as string | number | null,
     directionHint: str(r.transaction_direction, 40),
-    // Always pass the type text as a generic fallback. For SAP sources the
-    // numeric BWART is matched first via `sapMovementType`; when that yields
-    // nothing (e.g. a generic file the detector labelled movements), the generic
-    // keyword classifier still sees the text.
+    // The numeric SAP movement-type map (`sapMovementType`) is tried first
+    // regardless of the dataset's *display* source-system label — a value
+    // like "201" or "261" is unambiguous SAP movement-type evidence on its
+    // own, even when the rest of the file uses friendly column headers
+    // rather than raw SAP technical names (so `sourceSystem` conservatively
+    // stayed non-SAP for provenance purposes, per `classifySource()`). It can
+    // only ever match an exact known code, so it never misfires on generic
+    // text. When it finds nothing, the generic keyword classifier sees the
+    // same text as a fallback.
     typeCode: str(r.movement_type, 40),
     debitCredit: str(r.debit_credit_indicator, 20),
     receiptQty: (r.receipt_qty ?? null) as string | number | null,
     consumptionQty: (r.issue_qty ?? r.consumption_qty ?? null) as string | number | null,
-    sapMovementType: isSap ? str(r.movement_type, 40) : null,
+    sapMovementType: str(r.movement_type, 40),
   }));
 
   const summary = emptySummary();
@@ -329,12 +440,52 @@ export function buildNormalization(opts: NormalizeOptions): NormalizationResult 
   const findings: NormalizationIssue[] = [
     ...dateIssues(dates, analysis, { ...ctx, columnName: 'posting_date' }, { required: true }),
     ...classificationIssues(results, ctx),
+    ...pairTransfersAndReversals(canonicalRows, ctx),
   ];
 
   const ambiguousDatesNeedConfirmation = !opts.dateOrder
     && (rawNorm.analysis.ambiguous || summary.ambiguousDateRows > 0);
 
   return { canonicalRows, summary, findings, analysis, ambiguousDatesNeedConfirmation };
+}
+
+/**
+ * Recomputes the category/direction-derived fields of a stored
+ * NormalizationSummary from the CURRENT canonical_transactions rows of a
+ * dataset — used after a manual per-row classification override, since the
+ * summary persisted at import time would otherwise go stale. Date-format and
+ * row-count fields (rejectedRows, dateFormat, …) are untouched: they describe
+ * the import itself, not the current classification state.
+ */
+export function recomputeCategorySummary(
+  existing: NormalizationSummary,
+  rows: { transaction_category: string; transaction_direction: string; receipt_quantity: number | null; consumption_quantity: number | null; sign_conflict: boolean | number; direction_conflict: boolean | number }[],
+): NormalizationSummary {
+  const summary: NormalizationSummary = {
+    ...existing,
+    receiptRows: 0, consumptionRows: 0, transferRows: 0, returnRows: 0,
+    adjustmentRows: 0, reversalRows: 0, neutralRows: 0, unknownTransactionRows: 0,
+    signConflicts: 0, directionConflicts: 0,
+    totalReceiptQuantity: 0, totalConsumptionQuantity: 0,
+    categoryCounts: {}, directionCounts: {},
+  };
+  for (const r of rows) {
+    const cat = r.transaction_category;
+    const dir = r.transaction_direction;
+    summary.categoryCounts[cat] = (summary.categoryCounts[cat] ?? 0) + 1;
+    summary.directionCounts[dir] = (summary.directionCounts[dir] ?? 0) + 1;
+    if (cat === 'UNKNOWN') summary.unknownTransactionRows += 1;
+    if (cat === 'RECEIPT') { summary.receiptRows += 1; summary.totalReceiptQuantity += r.receipt_quantity ?? 0; }
+    if (cat === 'CONSUMPTION') { summary.consumptionRows += 1; summary.totalConsumptionQuantity += r.consumption_quantity ?? 0; }
+    if (TRANSFER_CATS.includes(cat as TransactionCategory)) summary.transferRows += 1;
+    if (RETURN_CATS.includes(cat as TransactionCategory)) summary.returnRows += 1;
+    if (ADJUST_CATS.includes(cat as TransactionCategory)) summary.adjustmentRows += 1;
+    if (REVERSAL_CATS.includes(cat as TransactionCategory)) summary.reversalRows += 1;
+    if (cat === 'NEUTRAL') summary.neutralRows += 1;
+    if (r.sign_conflict) summary.signConflicts += 1;
+    if (r.direction_conflict) summary.directionConflicts += 1;
+  }
+  return summary;
 }
 
 export { NORMALIZATION_VERSION };

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { apiGet } from '../lib/api';
+import { apiGet, apiSend } from '../lib/api';
 import { useWorkspaceIds } from '../components/Layout';
 import { Card, DataTable, EmptyState, ErrorState, Kpi, Spinner, Badge, PageHeader } from '../components/ui';
 import { StatTile } from '../components/intelligence';
@@ -188,23 +188,47 @@ const NON_DEMAND_CATEGORIES = new Set([
   'ADJUSTMENT_IN', 'ADJUSTMENT_OUT', 'REVERSAL_IN', 'REVERSAL_OUT',
 ]);
 
+/** Every category a row can be manually reclassified into (matches the API's accepted values). */
+const OVERRIDE_CATEGORIES = [
+  'RECEIPT', 'CONSUMPTION', 'TRANSFER_IN', 'TRANSFER_OUT', 'RETURN_IN', 'RETURN_OUT',
+  'ADJUSTMENT_IN', 'ADJUSTMENT_OUT', 'OPENING_BALANCE', 'CLOSING_BALANCE', 'STOCK_COUNT',
+  'RESERVATION', 'BLOCKED_STOCK', 'QUALITY_INSPECTION', 'REVERSAL_IN', 'REVERSAL_OUT',
+  'NEUTRAL', 'UNKNOWN',
+];
+
 function MovementCategoriesCard({ movementsDatasetId }: { movementsDatasetId: number }) {
   const [norm, setNorm] = useState<NormalizationDetail | null>(null);
   const [rows, setRows] = useState<CanonicalRow[]>([]);
   const [total, setTotal] = useState(0);
   const [demandOnly, setDemandOnly] = useState(true);
   const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState<number | null>(null);
+  const [overrideError, setOverrideError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = () => {
     setLoading(true);
-    Promise.all([
+    return Promise.all([
       apiGet<NormalizationDetail>(`/api/datasets/${movementsDatasetId}/normalization`),
       apiGet<{ rows: CanonicalRow[]; total: number }>(`/api/datasets/${movementsDatasetId}/canonical?pageSize=500`),
     ])
       .then(([n, c]) => { setNorm(n); setRows(c.rows); setTotal(c.total); })
       .catch(() => { setNorm(null); setRows([]); setTotal(0); })
       .finally(() => setLoading(false));
-  }, [movementsDatasetId]);
+  };
+
+  useEffect(() => { void load(); }, [movementsDatasetId]);
+
+  const overrideCategory = async (row: CanonicalRow, category: string) => {
+    setSavingId(row.id); setOverrideError(null);
+    try {
+      await apiSend('PATCH', `/api/datasets/${movementsDatasetId}/canonical/${row.id}`, { category });
+      await load(); // re-fetch: the dataset-level summary and this row's derived fields both changed
+    } catch (e) {
+      setOverrideError(e instanceof Error ? e.message : 'Failed to update classification');
+    } finally {
+      setSavingId(null);
+    }
+  };
 
   if (loading) return <Card title="Transaction categories"><Spinner label="Loading transaction categories…" /></Card>;
   if (!norm?.summary) return null; // pre-Phase-2 dataset: no canonical data to show
@@ -251,6 +275,10 @@ function MovementCategoriesCard({ movementsDatasetId }: { movementsDatasetId: nu
         </span>
       </div>
 
+      {overrideError && (
+        <p className="mt-2 text-sm text-danger bg-danger-soft border border-danger/30 rounded-lg px-3 py-2">{overrideError}</p>
+      )}
+
       <div className="mt-2">
         <DataTable<CanonicalRow>
           columns={[
@@ -259,7 +287,20 @@ function MovementCategoriesCard({ movementsDatasetId }: { movementsDatasetId: nu
             { key: 'transaction_date', label: 'Date' },
             { key: 'signed_quantity', label: 'Signed qty', numeric: true },
             { key: 'transaction_direction', label: 'Direction' },
-            { key: 'transaction_category', label: 'Category' },
+            {
+              key: 'transaction_category', label: 'Category',
+              render: (r) => (
+                <select
+                  className="border border-line-strong rounded-lg px-2 py-1 bg-surface text-body text-xs disabled:opacity-50"
+                  value={r.transaction_category}
+                  disabled={savingId === r.id}
+                  aria-label={`Category for row ${r.source_row_number + 2}`}
+                  onChange={(e) => void overrideCategory(r, e.target.value)}
+                >
+                  {OVERRIDE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              ),
+            },
             { key: 'warehouse_name', label: 'Warehouse' },
             { key: 'transaction_value', label: 'Value', numeric: true },
           ]}

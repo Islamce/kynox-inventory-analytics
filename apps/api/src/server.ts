@@ -13,6 +13,15 @@ if (configProblems.length > 0) {
   process.exit(1);
 }
 
+if (config.publicDemoMode) {
+  logger.warn(
+    'PUBLIC_DEMO_MODE is ON: unauthenticated requests are served as an anonymous guest identity '
+    + '(upload/view_dataset/edit_mapping/approve_cleansing/run_analysis/view_financials/export only; '
+    + 'admin, audit, user management and AI chat still require real login). Only enable this against '
+    + 'a database you are comfortable exposing a public upload+analyze demo on.',
+  );
+}
+
 const app = createApp();
 const server = app.listen(config.port, () => {
   logger.info({ port: config.port, env: config.env }, 'Kynox Supply Chain Intelligence API started');

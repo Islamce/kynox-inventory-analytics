@@ -142,10 +142,61 @@ export function toIsoDate(v: unknown): string | null {
 }
 
 /**
- * Aggregates movements per material. Issues are recognised by movement type
- * when present, otherwise by negative quantity sign.
+ * Aggregates movements per material for demand/supply analytics
+ * (consumption, ABC/XYZ, excess, shortage, health).
+ *
+ * Prefers the source-neutral `canonical_transactions` model when the dataset
+ * has canonical rows (every dataset imported since the Phase 2 normalization
+ * engine shipped): demand is `DEMAND_CATEGORIES` (`CONSUMPTION` only, per
+ * `@kynox/shared-types`) — `REVERSAL_IN`/`REVERSAL_OUT` are tracked
+ * separately and intentionally NOT netted against consumption, unlike the
+ * legacy SAP heuristic below. Falls back to the legacy `movements` table +
+ * SAP movement-type heuristic for datasets imported before that engine
+ * existed (no canonical rows), so older datasets keep working unchanged.
  */
 export async function loadMovementsByMaterial(datasetId: number, plant?: string): Promise<Map<string, MovementAgg>> {
+  const hasCanonical = await db('canonical_transactions').where({ dataset_id: datasetId }).first('id');
+  if (hasCanonical) return loadCanonicalMovementsByMaterial(datasetId, plant);
+  return loadLegacyMovementsByMaterial(datasetId, plant);
+}
+
+/** Canonical-transactions-based aggregation — see `loadMovementsByMaterial`. */
+async function loadCanonicalMovementsByMaterial(datasetId: number, plant?: string): Promise<Map<string, MovementAgg>> {
+  let q = db('canonical_transactions').where({ dataset_id: datasetId });
+  if (plant) q = q.where({ plant_id: plant });
+  const rows = await q
+    .select('material_id', 'transaction_category', 'transaction_date', 'receipt_quantity', 'consumption_quantity', 'transaction_value')
+    .orderBy('transaction_date');
+  const byMat = new Map<string, MovementAgg>();
+  for (const r of rows) {
+    const posting = toIsoDate(r.transaction_date);
+    if (posting === null) continue;
+    const cur: MovementAgg = byMat.get(r.material_id) ?? {
+      material: r.material_id, issuedQty: 0, receivedQty: 0, issuedValue: 0,
+      lastIssueDate: null, lastMovementDate: null, series: [],
+    };
+    if (r.transaction_category === 'CONSUMPTION') {
+      const q0 = r.consumption_quantity ?? 0;
+      const val = Math.abs(r.transaction_value ?? 0);
+      cur.issuedQty += q0;
+      cur.issuedValue += val;
+      cur.series.push({ date: posting, quantity: q0, value: val });
+      if (!cur.lastIssueDate || posting > cur.lastIssueDate) cur.lastIssueDate = posting;
+    } else if (r.transaction_category === 'RECEIPT') {
+      cur.receivedQty += r.receipt_quantity ?? 0;
+    }
+    if (!cur.lastMovementDate || posting > cur.lastMovementDate) cur.lastMovementDate = posting;
+    byMat.set(r.material_id, cur);
+  }
+  return byMat;
+}
+
+/**
+ * Legacy SAP-movement-type heuristic, retained for datasets imported before
+ * the Phase 2 canonical normalization engine existed. Issues are recognised
+ * by movement type when present, otherwise by negative quantity sign.
+ */
+async function loadLegacyMovementsByMaterial(datasetId: number, plant?: string): Promise<Map<string, MovementAgg>> {
   let q = db('movements').where({ dataset_id: datasetId });
   if (plant) q = q.where({ plant });
   const rows = await q.select('*').orderBy('posting_date');

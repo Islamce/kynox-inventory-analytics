@@ -13,12 +13,15 @@
  *    full transaction history since stock was last a known value (an explicit
  *    OPENING_BALANCE, or truly zero) — otherwise treat the variance as
  *    informational, not a bug report.
- *  - Transfer/reversal "pairing" is NET, not per-document: canonical_transactions
- *    has `transfer_id`/`reversal_of_transaction_id` columns reserved for exact
- *    document-level pairing, but the ingestion pipeline does not populate them
- *    yet, so this reports the NET transfer/reversal effect per material (should
- *    be ~0 if both legs of every transfer fall inside this dataset) rather than
- *    matching individual transfer-out to transfer-in documents.
+ *  - Transfer/reversal pairing is best-effort and IN-DATASET ONLY: the
+ *    ingestion pipeline matches transfer-out to transfer-in (and reversals to
+ *    the original transaction) by material + quantity + closest date, and
+ *    populates `transfer_id`/`reversal_of_transaction_id` when a match is
+ *    found. `unpairedTransferRows`/`unpairedReversalRows` below count rows
+ *    where no match was found in THIS dataset — that is expected, not
+ *    necessarily wrong, when the other leg is in a different file or outside
+ *    the dataset's period. `transferNet` (the coarser net-sum check) still
+ *    works even for datasets imported before this pairing existed.
  */
 import { db } from '../db';
 import { round } from '@kynox/analytics-engine';
@@ -42,6 +45,8 @@ export interface ReconciliationRow {
   variance: number | null;                // computedClosingQty - reportedStockQty
   variancePct: number | null;
   hasTransferImbalance: boolean;
+  unpairedTransferRows: number;
+  unpairedReversalRows: number;
   rowCount: number;
   unknownRowCount: number;
 }
@@ -56,6 +61,8 @@ export interface ReconciliationResult {
     materialsWithReportedClosing: number;
     materialsWithVariance: number;
     materialsWithTransferImbalance: number;
+    materialsWithUnpairedTransfers: number;
+    materialsWithUnpairedReversals: number;
     materialsWithUnknownTransactions: number;
     totalUnknownRows: number;
   } | null;
@@ -83,7 +90,7 @@ export async function reconciliationAnalysis(
   }
 
   const rows = await db('canonical_transactions').where({ dataset_id: movementsDatasetId })
-    .select('material_id', 'transaction_category', 'signed_quantity');
+    .select('material_id', 'transaction_category', 'signed_quantity', 'transfer_id', 'reversal_of_transaction_id');
 
   const byMat = new Map<string, ReconciliationRow>();
   const get = (material: string): ReconciliationRow => {
@@ -93,7 +100,8 @@ export async function reconciliationAnalysis(
         material, openingQty: 0, receiptQty: 0, consumptionQty: 0, transferNet: 0, returnNet: 0,
         adjustmentNet: 0, reversalNet: 0, unknownNet: 0, computedClosingQty: 0,
         reportedClosingQty: null, reportedStockQty: null, variance: null, variancePct: null,
-        hasTransferImbalance: false, rowCount: 0, unknownRowCount: 0,
+        hasTransferImbalance: false, unpairedTransferRows: 0, unpairedReversalRows: 0,
+        rowCount: 0, unknownRowCount: 0,
       };
       byMat.set(material, r);
     }
@@ -116,10 +124,16 @@ export async function reconciliationAnalysis(
       case 'OPENING_BALANCE': r.openingQty += qty; break;
       case 'RECEIPT': r.receiptQty += qty; break;
       case 'CONSUMPTION': r.consumptionQty += qty; break;
-      case 'TRANSFER_IN': case 'TRANSFER_OUT': r.transferNet += qty; break;
+      case 'TRANSFER_IN': case 'TRANSFER_OUT':
+        r.transferNet += qty;
+        if (row.transfer_id == null) r.unpairedTransferRows += 1;
+        break;
       case 'RETURN_IN': case 'RETURN_OUT': r.returnNet += qty; break;
       case 'ADJUSTMENT_IN': case 'ADJUSTMENT_OUT': r.adjustmentNet += qty; break;
-      case 'REVERSAL_IN': case 'REVERSAL_OUT': r.reversalNet += qty; break;
+      case 'REVERSAL_IN': case 'REVERSAL_OUT':
+        r.reversalNet += qty;
+        if (row.reversal_of_transaction_id == null) r.unpairedReversalRows += 1;
+        break;
       case 'UNKNOWN': r.unknownNet += qty; r.unknownRowCount += 1; break;
       default: break; // NEUTRAL / STOCK_COUNT / RESERVATION / BLOCKED_STOCK / QUALITY_INSPECTION
     }
@@ -160,6 +174,8 @@ export async function reconciliationAnalysis(
     materialsWithReportedClosing: results.filter((r) => r.reportedClosingQty !== null).length,
     materialsWithVariance: results.filter((r) => r.variance !== null && Math.abs(r.variance) > VARIANCE_EPSILON).length,
     materialsWithTransferImbalance: results.filter((r) => r.hasTransferImbalance).length,
+    materialsWithUnpairedTransfers: results.filter((r) => r.unpairedTransferRows > 0).length,
+    materialsWithUnpairedReversals: results.filter((r) => r.unpairedReversalRows > 0).length,
     materialsWithUnknownTransactions: results.filter((r) => r.unknownRowCount > 0).length,
     totalUnknownRows: results.reduce((a, r) => a + r.unknownRowCount, 0),
   };

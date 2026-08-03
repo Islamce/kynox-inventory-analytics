@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { db, insertGetId } from '../db';
 import { config } from '../config';
 import { requireAuth, requirePermission } from '../middleware/auth';
+import { guestActionLimiter } from '../middleware/guestScope';
 import { asyncHandler, HttpError } from '../middleware/errors';
 import { audit } from '../services/audit';
 import { parseWorkbook, sanitizeFilename, validateUploadFile } from '../services/files';
@@ -62,7 +63,7 @@ function fileFor(row: { stored_name: string }): string {
 
 // ---- Step 1+2+3: upload, auto-detect, auto-map ------------------------------
 
-uploadsRouter.post('/', requirePermission('upload'), upload.single('file'), asyncHandler(async (req, res) => {
+uploadsRouter.post('/', requirePermission('upload'), guestActionLimiter(20, 3600_000), upload.single('file'), asyncHandler(async (req, res) => {
   if (!req.file) throw new HttpError(400, 'No file provided (field name: file)');
   const sourceSystem = typeof req.body.sourceSystem === 'string' ? req.body.sourceSystem.slice(0, 80) : null;
 

@@ -31,7 +31,7 @@ export function ConsumptionPage() {
       <IntelligenceHeader
         eyebrow="Demand"
         title="Consumption Analytics"
-        description="Issue-based demand over time — trend, variability and intermittency, with SAP issue-reversal semantics already applied."
+        description="Issue-based demand over time — trend, variability and intermittency. Counts consumption transactions only; transfers, returns, adjustments and reversals are tracked separately and never netted in."
       />
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <label htmlFor="cons-gran" className="text-muted">Granularity</label>

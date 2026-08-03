@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth, requirePermission } from '../middleware/auth';
+import { guardGuestDatasetParam, guardGuestDatasetQueryParams } from '../middleware/guestScope';
 import { asyncHandler, HttpError } from '../middleware/errors';
 import { audit } from '../services/audit';
 import * as svc from '../services/analytics';
@@ -7,7 +8,13 @@ import { reconciliationAnalysis } from '../services/reconciliation';
 import type { ExcessMethod, Granularity, AgingDateBasis } from '@kynox/analytics-engine';
 
 export const analyticsRouter = Router();
-analyticsRouter.use(requireAuth, requirePermission('run_analysis'));
+analyticsRouter.use(requireAuth, requirePermission('run_analysis'), guardGuestDatasetQueryParams);
+// Covers every :stockDatasetId/:movementsDatasetId/:datasetId path segment
+// across every route below (e.g. /matrix/:stockDatasetId/:movementsDatasetId)
+// with no per-route wiring.
+analyticsRouter.param('stockDatasetId', guardGuestDatasetParam);
+analyticsRouter.param('movementsDatasetId', guardGuestDatasetParam);
+analyticsRouter.param('datasetId', guardGuestDatasetParam);
 
 const intParam = (v: unknown, name: string): number => {
   const n = Number(v);

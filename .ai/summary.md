@@ -10,7 +10,7 @@ Kynox Inventory Intelligence — a source-neutral inventory diagnostic that inge
 - Modules: 10 declared, 0 discovered only
 - Drift: 0 error, 0 warning, 1 info
 - Generator: `kaaf` v0.7.0
-- Input digest: `7bd9f5ceaa001762…`
+- Input digest: `aea036e862c2a592…`
 
 ## Modules
 
@@ -116,4 +116,4 @@ Full detail, with evidence and recommendations, in `.ai/drift.json`.
 Declarations come from `kaaf.repo.json` and `kaaf.module.json`. Discovery is a static
 read of the source: dynamic imports and runtime wiring are invisible to it, so the
 absence of a drift finding is not proof that none exists.
-<!-- kaaf:bodyDigest=0e6c5cf780b9bc113b5ef9fb207d9163161422dbd656cad4228b4c341d4795a8 -->
+<!-- kaaf:bodyDigest=ee831d777b8209dcc9194569cd51dcf024f78fdd52aeb5715ad750892a948c59 -->

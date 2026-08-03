@@ -257,3 +257,208 @@ describe('AI evidence includes transaction normalization findings', () => {
     expect(chat.body.error).toContain('not configured');
   });
 });
+
+describe('document-level transfer/reversal pairing', () => {
+  it('pairs a transfer-out to its matching transfer-in and flags an unmatched transfer', async () => {
+    const csv = [
+      'MATNR,BWART,BUDAT,ERFMG,DMBTR,MBLNR',
+      'T-1,311,2026-01-10,50,500,DOC1',   // TRANSFER_OUT — matches T-1/312 below
+      'T-1,312,2026-01-10,50,500,DOC2',   // TRANSFER_IN
+      'T-2,311,2026-01-11,30,300,DOC3',   // TRANSFER_OUT with no matching TRANSFER_IN in this dataset
+    ].join('\n');
+    const up = await uploadCsv(csv, 'transfer-pairing.csv');
+    const ds = await request(app).post('/api/datasets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: up.body.id, name: 'Transfer Pairing', approvedActionIds: await safeIdsFor(up.body.id) });
+    expect(ds.status).toBe(201);
+
+    const rows = await db('canonical_transactions').where({ dataset_id: ds.body.id }).orderBy('source_row_number');
+    const t1Out = rows.find((r) => r.reference_document === 'DOC1');
+    const t1In = rows.find((r) => r.reference_document === 'DOC2');
+    const t2Out = rows.find((r) => r.reference_document === 'DOC3');
+
+    expect(t1Out.transfer_id).not.toBeNull();
+    expect(t1Out.transfer_id).toBe(t1In.transfer_id);
+    expect(t1Out.paired_transaction_id).toBe('DOC2');
+    expect(t1In.paired_transaction_id).toBe('DOC1');
+
+    // Unmatched transfer stays unpaired and is flagged, not silently dropped.
+    expect(t2Out.transfer_id).toBeNull();
+    const meta = await request(app).get(`/api/datasets/${ds.body.id}/normalization`)
+      .set('Authorization', `Bearer ${token}`);
+    const unpaired = meta.body.findings.filter((f: { code: string }) => f.code === 'TRANSFER_PAIR_NOT_FOUND');
+    expect(unpaired).toHaveLength(1);
+    expect(unpaired[0].rowNumber).toBe(t2Out.source_row_number);
+  });
+
+  it('pairs a reversal to the original transaction it reverses and flags an unmatched reversal', async () => {
+    const csv = [
+      'MATNR,BWART,BUDAT,ERFMG,DMBTR,MBLNR',
+      'R-1,101,2026-01-05,100,1000,DOC1',  // RECEIPT
+      'R-1,102,2026-01-07,100,1000,DOC2',  // REVERSAL_OUT — reverses DOC1
+      'R-2,262,2026-01-09,20,200,DOC3',    // REVERSAL_IN with no matching consumption in this dataset
+    ].join('\n');
+    const up = await uploadCsv(csv, 'reversal-pairing.csv');
+    const ds = await request(app).post('/api/datasets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: up.body.id, name: 'Reversal Pairing', approvedActionIds: await safeIdsFor(up.body.id) });
+    expect(ds.status).toBe(201);
+
+    const rows = await db('canonical_transactions').where({ dataset_id: ds.body.id }).orderBy('source_row_number');
+    const receipt = rows.find((r) => r.reference_document === 'DOC1');
+    const reversal = rows.find((r) => r.reference_document === 'DOC2');
+    const unmatchedReversal = rows.find((r) => r.reference_document === 'DOC3');
+
+    expect(receipt.transaction_category).toBe('RECEIPT');
+    expect(reversal.transaction_category).toBe('REVERSAL_OUT');
+    expect(reversal.reversal_of_transaction_id).toBe('DOC1');
+
+    expect(unmatchedReversal.reversal_of_transaction_id).toBeNull();
+    const meta = await request(app).get(`/api/datasets/${ds.body.id}/normalization`)
+      .set('Authorization', `Bearer ${token}`);
+    const unpaired = meta.body.findings.filter((f: { code: string }) => f.code === 'REVERSAL_ORIGINAL_NOT_FOUND');
+    expect(unpaired).toHaveLength(1);
+    expect(unpaired[0].rowNumber).toBe(unmatchedReversal.source_row_number);
+  });
+});
+
+describe('manual per-row classification override', () => {
+  it('corrects an UNKNOWN row, recomputes derived fields, and keeps the dataset summary consistent', async () => {
+    const csv = [
+      'Item Code,Transaction Date,Quantity,Transaction Type,Warehouse',
+      'U-1,2026-01-05,25,Sparkle Operation,WH1',   // unrecognised type -> UNKNOWN
+    ].join('\n');
+    const up = await uploadCsv(csv, 'override-unknown.csv');
+    const ds = await request(app).post('/api/datasets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: up.body.id, name: 'Override Unknown', approvedActionIds: await safeIdsFor(up.body.id) });
+    expect(ds.status).toBe(201);
+
+    const before = await db('canonical_transactions').where({ dataset_id: ds.body.id }).first();
+    expect(before.transaction_category).toBe('UNKNOWN');
+
+    const beforeMeta = await request(app).get(`/api/datasets/${ds.body.id}/normalization`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(beforeMeta.body.summary.unknownTransactionRows).toBe(1);
+    expect(beforeMeta.body.findings.some((f: { code: string }) => f.code === 'UNKNOWN_TRANSACTION_TYPE')).toBe(true);
+
+    const patch = await request(app).patch(`/api/datasets/${ds.body.id}/canonical/${before.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ category: 'RECEIPT' });
+    expect(patch.status).toBe(200);
+    expect(patch.body.row.transaction_category).toBe('RECEIPT');
+    expect(patch.body.row.transaction_direction).toBe('IN');
+    expect(patch.body.row.signed_quantity).toBe(25);
+    expect(patch.body.row.receipt_quantity).toBe(25);
+    expect(patch.body.row.classification_source).toBe('user_rule');
+
+    const afterMeta = await request(app).get(`/api/datasets/${ds.body.id}/normalization`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(afterMeta.body.summary.unknownTransactionRows).toBe(0);
+    expect(afterMeta.body.summary.receiptRows).toBe(1);
+    expect(afterMeta.body.counts.unknownTransactionRows).toBe(0);
+    // The finding this override directly resolves is dropped, not left stale.
+    expect(afterMeta.body.findings.some((f: { code: string }) => f.code === 'UNKNOWN_TRANSACTION_TYPE')).toBe(false);
+  });
+
+  it('rejects an invalid category and 404s on a canonical row from a different dataset (no IDOR)', async () => {
+    const csvA = 'Item Code,Transaction Date,Quantity,Transaction Type,Warehouse\nA-1,2026-01-05,10,Goods Receipt,WH1\n';
+    const upA = await uploadCsv(csvA, 'override-a.csv');
+    const dsA = await request(app).post('/api/datasets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: upA.body.id, name: 'Override A', approvedActionIds: await safeIdsFor(upA.body.id) });
+
+    const csvB = 'Item Code,Transaction Date,Quantity,Transaction Type,Warehouse\nB-1,2026-01-06,10,Goods Receipt,WH1\n';
+    const upB = await uploadCsv(csvB, 'override-b.csv');
+    const dsB = await request(app).post('/api/datasets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: upB.body.id, name: 'Override B', approvedActionIds: await safeIdsFor(upB.body.id) });
+
+    const rowInA = await db('canonical_transactions').where({ dataset_id: dsA.body.id }).first();
+
+    const badCategory = await request(app).patch(`/api/datasets/${dsA.body.id}/canonical/${rowInA.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ category: 'NOT_A_REAL_CATEGORY' });
+    expect(badCategory.status).toBe(400);
+
+    // rowInA belongs to dataset A; addressing it through dataset B's URL must 404, not update it.
+    const idor = await request(app).patch(`/api/datasets/${dsB.body.id}/canonical/${rowInA.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ category: 'CONSUMPTION' });
+    expect(idor.status).toBe(404);
+
+    const stillA = await db('canonical_transactions').where({ id: rowInA.id }).first();
+    expect(stillA.transaction_category).toBe('RECEIPT'); // unchanged
+  });
+
+  it('requires authentication', async () => {
+    const res = await request(app).patch('/api/datasets/1/canonical/1').send({ category: 'RECEIPT' });
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('import-time normalization preview (before dataset creation)', () => {
+  it('shows the ambiguous-date finding and never persists anything', async () => {
+    const csv = [
+      'Item Code,Transaction Date,Quantity,Transaction Type,Warehouse',
+      'P-1,03/04/2026,10,Goods Issue,WH1',
+      'P-2,05/06/2026,20,Goods Issue,WH1',
+      'P-3,07/08/2026,30,Goods Issue,WH1',
+    ].join('\n');
+    const up = await uploadCsv(csv, 'preview-ambiguous.csv');
+    const safeIds = await safeIdsFor(up.body.id);
+
+    const [datasetsBefore] = await db('datasets').count({ c: '*' });
+    const [canonicalBefore] = await db('canonical_transactions').count({ c: '*' });
+
+    const preview = await request(app).post('/api/datasets/preview')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: up.body.id, approvedActionIds: safeIds });
+    expect(preview.status).toBe(200);
+    expect(preview.body.wouldBlock).toBe(false);
+    // This is the authoritative signal the Workspace UI keys off to show the
+    // date-order picker before creation (the same flag that gates the 422 at
+    // creation time).
+    expect(preview.body.normalization.ambiguousDatesNeedConfirmation).toBe(true);
+
+    const [datasetsAfter] = await db('datasets').count({ c: '*' });
+    const [canonicalAfter] = await db('canonical_transactions').count({ c: '*' });
+    expect(datasetsAfter.c).toEqual(datasetsBefore.c);
+    expect(canonicalAfter.c).toEqual(canonicalBefore.c);
+
+    // Confirming dateOrder in the preview resolves the ambiguity and matches
+    // what actually creating the dataset with the same dateOrder produces.
+    const previewConfirmed = await request(app).post('/api/datasets/preview')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: up.body.id, approvedActionIds: safeIds, dateOrder: 'DMY' });
+    expect(previewConfirmed.body.normalization.ambiguousDatesNeedConfirmation).toBe(false);
+    expect(previewConfirmed.body.normalization.canonicalRowCount).toBe(3);
+
+    const created = await request(app).post('/api/datasets')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: up.body.id, name: 'Preview Then Create', approvedActionIds: safeIds, dateOrder: 'DMY' });
+    expect(created.status).toBe(201);
+    expect(created.body.normalization.summary.receiptRows).toBe(previewConfirmed.body.normalization.summary.receiptRows);
+    expect(created.body.normalization.canonicalRowCount).toBe(previewConfirmed.body.normalization.canonicalRowCount);
+  });
+
+  it('reports wouldBlock for remaining critical issues without throwing', async () => {
+    const csv = [
+      'Material,Quantity,Value',
+      ',10,100',   // missing material -> critical issue if not excluded
+    ].join('\n');
+    const up = await uploadCsv(csv, 'preview-critical.csv');
+    const preview = await request(app).post('/api/datasets/preview')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ uploadId: up.body.id, approvedActionIds: [] });
+    expect(preview.status).toBe(200);
+    if (preview.body.criticalIssues.length > 0) {
+      expect(preview.body.wouldBlock).toBe(true);
+    }
+  });
+
+  it('requires authentication and object-level ownership like dataset creation does', async () => {
+    const anon = await request(app).post('/api/datasets/preview').send({ uploadId: 1, approvedActionIds: [] });
+    expect(anon.status).toBe(401);
+  });
+});

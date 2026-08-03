@@ -5,6 +5,12 @@ import { Icon, type IconName } from '../design/icons';
 import { useTheme, type ThemeMode } from '../design/theme';
 import { NAV } from './nav';
 import { CommandPalette, type Command } from './CommandPalette';
+import { InsightCallout } from './intelligence';
+import { Button } from './ui';
+
+// Admin, audit and AI chat stay behind real login even in public-demo mode —
+// hidden here so a guest never sees a link that only ever 403s for them.
+const GUEST_HIDDEN_PATHS = new Set(['/ai', '/admin', '/audit']);
 
 interface DatasetOption {
   id: number;
@@ -53,12 +59,14 @@ export function Layout() {
   };
 
   const signOut = () => { clearSession(); navigate('/login'); };
+  const isGuest = user?.role === 'guest';
+  const visibleNav = isGuest ? NAV.filter((n) => !GUEST_HIDDEN_PATHS.has(n.to)) : NAV;
 
   const stockOptions = datasets.filter((d) => d.kind === 'stock');
   const movementOptions = datasets.filter((d) => d.kind === 'movements');
 
   const commands: Command[] = useMemo(() => {
-    const nav: Command[] = NAV.map((n) => ({
+    const nav: Command[] = visibleNav.map((n) => ({
       id: `nav:${n.to}`,
       label: n.label,
       group: 'Navigate',
@@ -102,16 +110,20 @@ export function Layout() {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-3" aria-label="Main navigation">
-          {SECTIONS.map((section) => (
-            <div key={section} className="mb-2">
-              <p className="px-5 pt-2 pb-1 text-[10.5px] font-semibold uppercase tracking-wider" style={{ color: 'var(--kx-sidebar-fg-dim)' }}>
-                {section}
-              </p>
-              {NAV.filter((i) => i.section === section).map((item) => (
-                <SidebarLink key={item.to} to={item.to} label={item.label} icon={item.icon} onNavigate={() => setNavOpen(false)} />
-              ))}
-            </div>
-          ))}
+          {SECTIONS.map((section) => {
+            const items = visibleNav.filter((i) => i.section === section);
+            if (items.length === 0) return null;
+            return (
+              <div key={section} className="mb-2">
+                <p className="px-5 pt-2 pb-1 text-[10.5px] font-semibold uppercase tracking-wider" style={{ color: 'var(--kx-sidebar-fg-dim)' }}>
+                  {section}
+                </p>
+                {items.map((item) => (
+                  <SidebarLink key={item.to} to={item.to} label={item.label} icon={item.icon} onNavigate={() => setNavOpen(false)} />
+                ))}
+              </div>
+            );
+          })}
         </nav>
 
         <div className="px-4 py-3" style={{ borderTop: '1px solid var(--kx-sidebar-line)' }}>
@@ -178,7 +190,17 @@ export function Layout() {
         </div>
 
         <main className="flex-1 p-4 lg:p-6 max-w-[110rem] w-full mx-auto min-w-0 overflow-x-hidden">
-          <div className="kx-animate-fade">
+          <div className="kx-animate-fade space-y-4">
+            {isGuest && (
+              <InsightCallout
+                tone="info"
+                title="You're using the public demo"
+                action={<Button variant="secondary" onClick={() => navigate('/login')}>Staff sign in</Button>}
+              >
+                Upload your own file and explore real analysis results — no account needed. What you upload is only
+                visible to you, isn't shared with anyone else's demo session, and is periodically deleted.
+              </InsightCallout>
+            )}
             <Outlet context={{ ws }} />
           </div>
         </main>
