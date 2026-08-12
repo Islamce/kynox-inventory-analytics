@@ -7,6 +7,9 @@
 // normalization, mapping confidence, normalization issue codes).
 export * from './canonical';
 
+// Additive Logistics Intelligence domain and read-only adapter contracts.
+export * from './logistics';
+
 // ---------------------------------------------------------------------------
 // Canonical field identifiers
 // ---------------------------------------------------------------------------
