@@ -43,17 +43,17 @@ const TABLE_FOR_KIND: Record<string, string> = {
   physical_inventory: 'physical_inventory',
 };
 
-async function recordExport(userId: number, datasetId: number | null, type: string, filename: string, ip?: string) {
-  await db('exports').insert({ user_id: userId, dataset_id: datasetId, export_type: type, filename });
-  await audit({ action: 'export', userId, entityType: 'dataset', entityId: datasetId ?? undefined, newValue: { type, filename }, sourceIp: ip });
+async function recordExport(userId: number, tenantId: string, datasetId: number | null, type: string, filename: string, ip?: string) {
+  await db('exports').insert({ user_id: userId, tenant_id: tenantId, dataset_id: datasetId, export_type: type, filename });
+  await audit({ action: 'export', userId, tenantId, entityType: 'dataset', entityId: datasetId ?? undefined, newValue: { type, filename }, sourceIp: ip });
 }
 
 /** Dataset rows as XLSX or CSV. */
 exportsRouter.get('/dataset/:id', asyncHandler(async (req, res) => {
-  const ds = await db('datasets').where({ id: Number(req.params.id) }).first();
+  const ds = await db('datasets').where({ id: Number(req.params.id), tenant_id: req.user!.tenantId }).first();
   if (!ds) throw new HttpError(404, 'Dataset not found');
   const format = req.query.format === 'csv' ? 'csv' : 'xlsx';
-  const rows = await db(TABLE_FOR_KIND[ds.kind]).where({ dataset_id: ds.id }).select('*');
+  const rows = await db(TABLE_FOR_KIND[ds.kind]).where({ dataset_id: ds.id, tenant_id: req.user!.tenantId }).select('*');
   const cleaned = rows.map(({ id: _id, dataset_id: _d, ...rest }: Record<string, unknown>) => rest);
 
   const ws = XLSX.utils.json_to_sheet(sanitizeRows(cleaned));
@@ -73,7 +73,7 @@ exportsRouter.get('/dataset/:id', asyncHandler(async (req, res) => {
 
   const filename = `dataset-${ds.id}-${ds.name.replace(/[^\w\-]+/g, '_')}.${format}`;
   const buf = XLSX.write(wb, { type: 'buffer', bookType: format === 'csv' ? 'csv' : 'xlsx' }) as Buffer;
-  await recordExport(req.user!.id, ds.id, `dataset_${format}`, filename, req.ip);
+  await recordExport(req.user!.id, req.user!.tenantId, ds.id, `dataset_${format}`, filename, req.ip);
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   res.setHeader('Content-Type', format === 'csv' ? 'text/csv' : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.send(buf);
@@ -117,7 +117,7 @@ exportsRouter.get('/analysis/:stockDatasetId', asyncHandler(async (req, res) => 
 
   const filename = `analysis-${ds.id}.xlsx`;
   const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer;
-  await recordExport(req.user!.id, ds.id, 'analysis_xlsx', filename, req.ip);
+  await recordExport(req.user!.id, req.user!.tenantId, ds.id, 'analysis_xlsx', filename, req.ip);
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.send(buf);
@@ -194,7 +194,7 @@ exportsRouter.get('/report/:stockDatasetId', asyncHandler(async (req, res) => {
     stream.on('error', reject);
   });
 
-  await recordExport(req.user!.id, ds.id, 'management_pdf', filename, req.ip);
+  await recordExport(req.user!.id, req.user!.tenantId, ds.id, 'management_pdf', filename, req.ip);
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   res.setHeader('Content-Type', 'application/pdf');
   fs.createReadStream(filePath).pipe(res);

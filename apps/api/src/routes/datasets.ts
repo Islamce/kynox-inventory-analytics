@@ -3,7 +3,7 @@ import path from 'path';
 import { z } from 'zod';
 import { db, insertGetId } from '../db';
 import { config } from '../config';
-import { requireAuth, requirePermission } from '../middleware/auth';
+import { requireAuth, requirePermission, type AuthUser } from '../middleware/auth';
 import { guardGuestDatasetParam, guardGuestDatasetQueryParams, guestActionLimiter } from '../middleware/guestScope';
 import { asyncHandler, HttpError } from '../middleware/errors';
 import { audit } from '../services/audit';
@@ -162,9 +162,10 @@ const createSchema = z.object({
  * since the preview needs to report those as data, not as a request failure.
  */
 async function prepareImport(
-  uploadId: number, approvedActionIds: string[], dateOrder: 'DMY' | 'MDY' | undefined, user: { id: number; role: string },
+  uploadId: number, approvedActionIds: string[], dateOrder: 'DMY' | 'MDY' | undefined,
+  user: Pick<AuthUser, 'id' | 'role' | 'tenantId'>,
 ) {
-  const uploadRow = await db('uploads').where({ id: uploadId }).first();
+  const uploadRow = await db('uploads').where({ id: uploadId, tenant_id: user.tenantId }).first();
   if (!uploadRow) throw new HttpError(404, 'Upload not found');
   // Object-level access: only the uploader or an admin may prepare/create from this upload.
   if (uploadRow.user_id !== user.id && user.role !== 'system_admin' && user.role !== 'data_admin') {
@@ -271,7 +272,7 @@ datasetsRouter.post('/', requirePermission('approve_cleansing'), guestActionLimi
   }
 
   // Versioning: next version for datasets with the same name.
-  const prev = await db('datasets').where({ name: body.name }).orderBy('version', 'desc').first();
+  const prev = await db('datasets').where({ name: body.name, tenant_id: req.user!.tenantId }).orderBy('version', 'desc').first();
   const version = prev ? prev.version + 1 : 1;
 
   const datasetId = await db.transaction(async (trx) => {
@@ -292,6 +293,7 @@ datasetsRouter.post('/', requirePermission('approve_cleansing'), guestActionLimi
       company: body.company ?? null,
       plant_tag: body.plantTag ?? null,
       created_by: req.user!.id,
+      tenant_id: req.user!.tenantId,
       // Phase 2: dataset-level normalization metadata (additive nullable cols).
       source_system: sourceSystem,
       source_report_type: sourceReportType,
@@ -311,10 +313,11 @@ datasetsRouter.post('/', requirePermission('approve_cleansing'), guestActionLimi
     });
 
     const table = TABLE_FOR_KIND[kind];
-    const tableRows = cleaned.map((r) => toTableRow(kind, id, r))
-      .filter((r) => r.material !== '')
+    const tableRows: Record<string, unknown>[] = cleaned
+      .map((r) => ({ ...toTableRow(kind, id, r), tenant_id: req.user!.tenantId }))
+      .filter((r: Record<string, unknown>) => r.material !== '')
       // movements require a posting date; rows without one cannot join time-based analyses
-      .filter((r) => kind !== 'movements' || r.posting_date !== null);
+      .filter((r: Record<string, unknown>) => kind !== 'movements' || r.posting_date !== null);
     const chunkSize = 200;
     for (let i = 0; i < tableRows.length; i += chunkSize) {
       await trx(table).insert(tableRows.slice(i, i + chunkSize));
@@ -325,7 +328,7 @@ datasetsRouter.post('/', requirePermission('approve_cleansing'), guestActionLimi
     // active dataset. Chunked to stay within driver parameter limits.
     if (normalization.canonicalRows.length > 0) {
       const canonicalRows = normalization.canonicalRows.map((cr) => ({
-        ...cr, dataset_id: id, organization_id: body.company ?? null,
+        ...cr, dataset_id: id, tenant_id: req.user!.tenantId, organization_id: body.company ?? null,
       }));
       for (let i = 0; i < canonicalRows.length; i += chunkSize) {
         await trx('canonical_transactions').insert(canonicalRows.slice(i, i + chunkSize));
@@ -335,12 +338,12 @@ datasetsRouter.post('/', requirePermission('approve_cleansing'), guestActionLimi
   });
 
   await audit({
-    action: 'dataset_created', userId: req.user!.id, entityType: 'dataset', entityId: datasetId,
+    action: 'dataset_created', userId: req.user!.id, tenantId: req.user!.tenantId, entityType: 'dataset', entityId: datasetId,
     newValue: { name: body.name, version, kind, rows: cleaned.length, approvedActions: approved.map((a) => a.id) },
     sourceIp: req.ip,
   });
   await audit({
-    action: 'cleansing_approved', userId: req.user!.id, entityType: 'dataset', entityId: datasetId,
+    action: 'cleansing_approved', userId: req.user!.id, tenantId: req.user!.tenantId, entityType: 'dataset', entityId: datasetId,
     newValue: { log, excludedRowCount: excludedRows.length }, sourceIp: req.ip,
   });
 
@@ -369,6 +372,7 @@ datasetsRouter.get('/', requirePermission('view_dataset'), asyncHandler(async (r
     .leftJoin('users', 'datasets.created_by', 'users.id')
     .select('datasets.*', 'users.name as created_by_name')
     .orderBy('datasets.id', 'desc');
+  query = query.where('datasets.tenant_id', req.user!.tenantId);
   // Every other role shares one org-wide dataset list by design; a guest must
   // only ever see datasets it created itself (see guardGuestDatasetAccess doc).
   if (req.user!.role === 'guest') query = query.where('datasets.created_by', req.user!.id);
@@ -391,7 +395,7 @@ datasetsRouter.get('/', requirePermission('view_dataset'), asyncHandler(async (r
 }));
 
 datasetsRouter.get('/:id', requirePermission('view_dataset'), asyncHandler(async (req, res) => {
-  const r = await db('datasets').where({ id: Number(req.params.id) }).first();
+  const r = await db('datasets').where({ id: Number(req.params.id), tenant_id: req.user!.tenantId }).first();
   if (!r) throw new HttpError(404, 'Dataset not found');
   res.json({
     dataset: {
@@ -415,7 +419,7 @@ datasetsRouter.get('/:id', requirePermission('view_dataset'), asyncHandler(async
 }));
 
 datasetsRouter.get('/:id/rows', requirePermission('view_dataset'), asyncHandler(async (req, res) => {
-  const r = await db('datasets').where({ id: Number(req.params.id) }).first();
+  const r = await db('datasets').where({ id: Number(req.params.id), tenant_id: req.user!.tenantId }).first();
   if (!r) throw new HttpError(404, 'Dataset not found');
   const table = TABLE_FOR_KIND[r.kind];
   const page = Math.max(1, Number(req.query.page) || 1);
@@ -433,7 +437,7 @@ datasetsRouter.get('/:id/rows', requirePermission('view_dataset'), asyncHandler(
 
 /** Dataset-level normalization metadata, summary and findings. */
 datasetsRouter.get('/:id/normalization', requirePermission('view_dataset'), asyncHandler(async (req, res) => {
-  const r = await db('datasets').where({ id: Number(req.params.id) }).first();
+  const r = await db('datasets').where({ id: Number(req.params.id), tenant_id: req.user!.tenantId }).first();
   if (!r) throw new HttpError(404, 'Dataset not found');
   res.json({
     datasetId: r.id,
@@ -462,7 +466,7 @@ datasetsRouter.get('/:id/normalization', requirePermission('view_dataset'), asyn
 
 /** Paginated canonical transactions with optional material/category/direction filters. */
 datasetsRouter.get('/:id/canonical', requirePermission('view_dataset'), asyncHandler(async (req, res) => {
-  const r = await db('datasets').where({ id: Number(req.params.id) }).first();
+  const r = await db('datasets').where({ id: Number(req.params.id), tenant_id: req.user!.tenantId }).first();
   if (!r) throw new HttpError(404, 'Dataset not found');
   const page = Math.max(1, Number(req.query.page) || 1);
   const pageSize = Math.min(500, Math.max(1, Number(req.query.pageSize) || 100));
@@ -470,7 +474,7 @@ datasetsRouter.get('/:id/canonical', requirePermission('view_dataset'), asyncHan
   const category = typeof req.query.category === 'string' ? req.query.category : undefined;
   const direction = typeof req.query.direction === 'string' ? req.query.direction : undefined;
 
-  let query = db('canonical_transactions').where({ dataset_id: r.id });
+  let query = db('canonical_transactions').where({ dataset_id: r.id, tenant_id: req.user!.tenantId });
   if (material) query = query.where('material_id', 'like', `%${material}%`);
   if (category) query = query.where('transaction_category', category);
   if (direction) query = query.where('transaction_direction', direction);
@@ -514,13 +518,13 @@ datasetsRouter.patch('/:id/canonical/:canonicalId', requirePermission('edit_mapp
   const canonicalId = Number(req.params.canonicalId);
   const { category } = overrideSchema.parse(req.body);
 
-  const ds = await db('datasets').where({ id: datasetId }).first();
+  const ds = await db('datasets').where({ id: datasetId, tenant_id: req.user!.tenantId }).first();
   if (!ds) throw new HttpError(404, 'Dataset not found');
   if (ds.kind !== 'movements') throw new HttpError(400, 'Classification override only applies to movements datasets');
 
   // Scoped by dataset_id — a canonical row id belonging to a different
   // dataset must 404 here, never update (no IDOR across datasets).
-  const row = await db('canonical_transactions').where({ id: canonicalId, dataset_id: datasetId }).first();
+  const row = await db('canonical_transactions').where({ id: canonicalId, dataset_id: datasetId, tenant_id: req.user!.tenantId }).first();
   if (!row) throw new HttpError(404, 'Canonical transaction not found in this dataset');
 
   const direction = CATEGORY_DIRECTION[category];
@@ -544,11 +548,11 @@ datasetsRouter.patch('/:id/canonical/:canonicalId', requirePermission('edit_mapp
   };
 
   await db.transaction(async (trx) => {
-    await trx('canonical_transactions').where({ id: canonicalId, dataset_id: datasetId }).update(patch);
+    await trx('canonical_transactions').where({ id: canonicalId, dataset_id: datasetId, tenant_id: req.user!.tenantId }).update(patch);
 
     // Keep the dataset-level summary and findings consistent with the override
     // rather than letting them silently go stale.
-    const allRows = await trx('canonical_transactions').where({ dataset_id: datasetId })
+    const allRows = await trx('canonical_transactions').where({ dataset_id: datasetId, tenant_id: req.user!.tenantId })
       .select('transaction_category', 'transaction_direction', 'receipt_quantity', 'consumption_quantity', 'sign_conflict', 'direction_conflict');
     const existingSummary = ds.normalization_summary ? JSON.parse(ds.normalization_summary) : null;
     const existingFindings: { rowNumber: number | null; code: string }[] =
@@ -563,29 +567,29 @@ datasetsRouter.patch('/:id/canonical/:canonicalId', requirePermission('edit_mapp
       datasetPatch.normalization_summary = JSON.stringify(newSummary);
       datasetPatch.unknown_transaction_rows = newSummary.unknownTransactionRows;
     }
-    await trx('datasets').where({ id: datasetId }).update(datasetPatch);
+    await trx('datasets').where({ id: datasetId, tenant_id: req.user!.tenantId }).update(datasetPatch);
   });
 
   await audit({
-    action: 'canonical_reclassified', userId: req.user!.id, entityType: 'canonical_transaction', entityId: canonicalId,
+    action: 'canonical_reclassified', userId: req.user!.id, tenantId: req.user!.tenantId, entityType: 'canonical_transaction', entityId: canonicalId,
     prevValue: { category: row.transaction_category, direction: row.transaction_direction },
     newValue: { category, direction },
     sourceIp: req.ip,
   });
 
-  const refreshed = await db('canonical_transactions').where({ id: canonicalId }).first();
+  const refreshed = await db('canonical_transactions').where({ id: canonicalId, tenant_id: req.user!.tenantId }).first();
   res.json({ row: refreshed });
 }));
 
 datasetsRouter.delete('/:id', requirePermission('delete_dataset'), asyncHandler(async (req, res) => {
-  const r = await db('datasets').where({ id: Number(req.params.id) }).first();
+  const r = await db('datasets').where({ id: Number(req.params.id), tenant_id: req.user!.tenantId }).first();
   if (!r) throw new HttpError(404, 'Dataset not found');
   await db.transaction(async (trx) => {
-    await trx(TABLE_FOR_KIND[r.kind]).where({ dataset_id: r.id }).delete();
-    await trx('datasets').where({ id: r.id }).delete();
+    await trx(TABLE_FOR_KIND[r.kind]).where({ dataset_id: r.id, tenant_id: req.user!.tenantId }).delete();
+    await trx('datasets').where({ id: r.id, tenant_id: req.user!.tenantId }).delete();
   });
   await audit({
-    action: 'dataset_deleted', userId: req.user!.id, entityType: 'dataset', entityId: r.id,
+    action: 'dataset_deleted', userId: req.user!.id, tenantId: req.user!.tenantId, entityType: 'dataset', entityId: r.id,
     prevValue: { name: r.name, version: r.version, rows: r.row_count }, sourceIp: req.ip,
   });
   res.json({ ok: true });

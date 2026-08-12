@@ -54,6 +54,10 @@ beforeAll(async () => {
     password_hash: bcrypt.hashSync('public-demo-admin-password', 10),
     role: 'system_admin', active: true,
   });
+  const admin = await db('users').where({ email: 'demo-admin@kynox.io' }).first('id');
+  await db('tenant_memberships').insert({
+    tenant_id: 'legacy-default', user_id: admin.id, role: 'system_admin', active: true, is_default: true,
+  });
   const res = await request(app).post('/api/auth/login')
     .send({ email: 'demo-admin@kynox.io', password: 'public-demo-admin-password' });
   adminToken = res.body.token;
@@ -129,9 +133,9 @@ describe('guest data isolation', () => {
     expect(listB.body.datasets.some((d: { id: number }) => d.id === dsA.body.id)).toBe(false);
 
     // Even a real, fully-authenticated org user's list is unaffected — the
-    // shared org-wide view for real roles is untouched by guest scoping.
+    // customer/default tenant must not enumerate isolated demo-tenant data.
     const listAdmin = await request(app).get('/api/datasets').set('Authorization', `Bearer ${adminToken}`);
-    expect(listAdmin.body.datasets.some((d: { id: number }) => d.id === dsA.body.id)).toBe(true);
+    expect(listAdmin.body.datasets.some((d: { id: number }) => d.id === dsA.body.id)).toBe(false);
   });
 
   it('blocks a guest from reading, analyzing or exporting a dataset it does not own (IDOR)', async () => {
@@ -142,13 +146,13 @@ describe('guest data isolation', () => {
     expect(dsA.status).toBe(201);
 
     const getB = await request(app).get(`/api/datasets/${dsA.body.id}`).set('X-Guest-Session', sessionB);
-    expect(getB.status).toBe(403);
+    expect(getB.status).toBe(404);
 
     const analysisB = await request(app).get(`/api/analytics/position/${dsA.body.id}`).set('X-Guest-Session', sessionB);
-    expect(analysisB.status).toBe(403);
+    expect(analysisB.status).toBe(404);
 
     const exportB = await request(app).get(`/api/exports/dataset/${dsA.body.id}`).set('X-Guest-Session', sessionB);
-    expect(exportB.status).toBe(403);
+    expect(exportB.status).toBe(404);
   });
 
   it('blocks a guest from reading another user\'s upload before any dataset exists (IDOR)', async () => {

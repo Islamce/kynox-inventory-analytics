@@ -49,6 +49,10 @@ beforeAll(async () => {
     password_hash: bcrypt.hashSync('reconciliation-test-password', 10),
     role: 'system_admin', active: true,
   });
+  const user = await db('users').where({ email: 'recon@kynox.io' }).first('id');
+  await db('tenant_memberships').insert({
+    tenant_id: 'legacy-default', user_id: user.id, role: 'system_admin', active: true, is_default: true,
+  });
   const res = await request(app).post('/api/auth/login')
     .send({ email: 'recon@kynox.io', password: 'reconciliation-test-password' });
   token = res.body.token;
@@ -63,7 +67,8 @@ describe('reconciliation on a dataset with no canonical data', () => {
   it('reports unavailable rather than pretending to reconcile', async () => {
     // Legacy path: insert a movements dataset directly, bypassing canonical persistence.
     const id = await insertGetId(db, 'datasets', {
-      name: 'Legacy Movements', version: 1, kind: 'movements', status: 'ready', row_count: 0, created_by: 1,
+      name: 'Legacy Movements', version: 1, kind: 'movements', status: 'ready', row_count: 0,
+      created_by: 1, tenant_id: 'legacy-default',
     });
     const res = await request(app).get(`/api/analytics/reconciliation/${id}`)
       .set('Authorization', `Bearer ${token}`);

@@ -50,6 +50,10 @@ beforeAll(async () => {
     password_hash: bcrypt.hashSync('pipeline-test-password', 10),
     role: 'system_admin', active: true,
   });
+  const user = await db('users').where({ email: 'pipe@kynox.io' }).first('id');
+  await db('tenant_memberships').insert({
+    tenant_id: 'legacy-default', user_id: user.id, role: 'system_admin', active: true, is_default: true,
+  });
   const res = await request(app).post('/api/auth/login')
     .send({ email: 'pipe@kynox.io', password: 'pipeline-test-password' });
   token = res.body.token;

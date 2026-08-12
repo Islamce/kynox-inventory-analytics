@@ -9,19 +9,37 @@ const crypto = require('crypto');
 
 /** @param {import('knex').Knex} knex */
 exports.seed = async function seed(knex) {
-  const existing = await knex('users').where({ email: process.env.ADMIN_EMAIL || 'admin@kynox.io' }).first();
-  if (!existing) {
+  let admin = await knex('users').where({ email: process.env.ADMIN_EMAIL || 'admin@kynox.io' }).first();
+  if (!admin) {
     const password = process.env.ADMIN_INITIAL_PASSWORD || crypto.randomBytes(12).toString('base64url');
-    await knex('users').insert({
+    const inserted = await knex('users').insert({
       email: process.env.ADMIN_EMAIL || 'admin@kynox.io',
       name: 'System Administrator',
       password_hash: bcrypt.hashSync(password, 12),
       role: 'system_admin',
       active: true,
     });
+    const first = inserted[0];
+    const adminId = typeof first === 'object' && first !== null ? first.id : first;
+    admin = await knex('users').where({ id: adminId }).first();
     if (!process.env.ADMIN_INITIAL_PASSWORD) {
       // eslint-disable-next-line no-console
       console.log(`\n>>> Generated admin password for ${process.env.ADMIN_EMAIL || 'admin@kynox.io'}: ${password}\n>>> Store it now; it will not be shown again.\n`);
+    }
+  }
+
+  if (admin && await knex.schema.hasTable('tenant_memberships')) {
+    const membership = await knex('tenant_memberships')
+      .where({ tenant_id: 'legacy-default', user_id: admin.id })
+      .first();
+    if (!membership) {
+      await knex('tenant_memberships').insert({
+        tenant_id: 'legacy-default',
+        user_id: admin.id,
+        role: 'system_admin',
+        active: true,
+        is_default: true,
+      });
     }
   }
 

@@ -4,7 +4,8 @@ import { db } from '../db';
 import { asyncHandler, HttpError } from './errors';
 
 /**
- * Object-level access control for the anonymous 'guest' role (PUBLIC_DEMO_MODE).
+ * Tenant object-level access control, with additional per-session ownership
+ * for the anonymous `guest` role.
  *
  * Every other role shares one org-wide view of `datasets` by design (this is
  * an internal enterprise tool, not multi-tenant) — but a guest must only ever
@@ -24,29 +25,29 @@ import { asyncHandler, HttpError } from './errors';
  *    matching, so this one is safe to run as a blanket `.use()`.
  * Neither ever fires for non-guest roles.
  */
-async function checkGuestOwnsDataset(req: Request, id: number): Promise<void> {
-  const row = await db('datasets').where({ id }).first('created_by');
-  if (!row || row.created_by !== req.user!.id) {
-    throw new HttpError(403, 'Guests can only access datasets created in their own demo session');
+export async function checkTenantDatasetAccess(req: Request, id: number): Promise<void> {
+  const user = req.user;
+  if (!user?.tenantId) throw new HttpError(401, 'Tenant context is required');
+  const row = await db('datasets').where({ id, tenant_id: user.tenantId }).first('created_by');
+  if (!row || (user.role === 'guest' && row.created_by !== user.id)) {
+    throw new HttpError(404, 'Dataset not found');
   }
 }
 
 export function guardGuestDatasetParam(req: Request, _res: Response, next: NextFunction, value: string): void {
-  if (req.user?.role !== 'guest') { next(); return; }
   const id = Number(value);
   if (!Number.isInteger(id) || id <= 0) { next(); return; } // malformed id: let the route's own validation reject it
-  checkGuestOwnsDataset(req, id).then(() => next()).catch(next);
+  checkTenantDatasetAccess(req, id).then(() => next()).catch(next);
 }
 
 export const guardGuestDatasetQueryParams = asyncHandler(async (req: Request, _res: Response, next: NextFunction) => {
-  if (req.user?.role !== 'guest') { next(); return; }
   const ids = new Set<number>();
   for (const [key, value] of Object.entries(req.query as Record<string, unknown>)) {
     if (!/datasetid$/i.test(key)) continue;
     const n = Number(value);
     if (Number.isInteger(n) && n > 0) ids.add(n);
   }
-  for (const id of ids) await checkGuestOwnsDataset(req, id);
+  for (const id of ids) await checkTenantDatasetAccess(req, id);
   next();
 });
 

@@ -4,6 +4,7 @@ import { logger } from '../logger';
 
 export interface AuditEntry {
   userId?: number | null;
+  tenantId?: string | null;
   action: string;
   entityType?: string;
   entityId?: string | number;
@@ -22,6 +23,7 @@ export async function audit(entry: AuditEntry): Promise<void> {
   try {
     await db('audit_log').insert({
       user_id: entry.userId ?? null,
+      tenant_id: entry.tenantId ?? null,
       action: entry.action,
       entity_type: entry.entityType ?? null,
       entity_id: entry.entityId != null ? String(entry.entityId) : null,
