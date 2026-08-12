@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "architecture.json",
-    "bodyDigest": "3bcd7b4de382a655e2452cb67d4fad3a6af4b97a6f5b9986bba5707004dd10df",
+    "bodyDigest": "c91e5b5b5c74b053d8a83e9ecc9b1b5537ca722e8bd0082bf4dd959ce2f4e8bb",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "2b8dd9b048f545103b3a0d7cab97294f6ec7e73af83700799808ffd2ff256f56",
+    "inputDigest": "32cc342323e1ded65e8e2f248661854bfd8d1820c401254ce5ab9fc73d48a634",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -145,6 +145,10 @@
       {
         "from": "analytics-engine",
         "to": "analytics-shared-types"
+      },
+      {
+        "from": "analytics-logistics-engine",
+        "to": "analytics-shared-types"
       }
     ],
     "discoveredEdges": [
@@ -231,6 +235,14 @@
         ],
         "from": "analytics-engine",
         "to": "analytics-shared-types"
+      },
+      {
+        "declared": true,
+        "evidence": [
+          "packages/logistics-engine/src/risk.ts"
+        ],
+        "from": "analytics-logistics-engine",
+        "to": "analytics-shared-types"
       }
     ],
     "edges": [
@@ -260,6 +272,10 @@
       },
       {
         "from": "analytics-engine",
+        "to": "analytics-shared-types"
+      },
+      {
+        "from": "analytics-logistics-engine",
         "to": "analytics-shared-types"
       }
     ],
@@ -622,13 +638,15 @@
     },
     {
       "confidence": "verified",
-      "confidenceReason": "Declared and corroborated by 6 discovered code file(s).",
+      "confidenceReason": "Declared and corroborated by 8 discovered code file(s).",
       "declared": true,
       "declaredConfidence": "verified",
       "dependedOnBy": [],
-      "dependsOn": [],
+      "dependsOn": [
+        "analytics-shared-types"
+      ],
       "discovery": {
-        "codeFileCount": 6,
+        "codeFileCount": 8,
         "discovered": true,
         "entryPoints": [],
         "languages": [
@@ -651,7 +669,7 @@
           "totalFreightByCurrency",
           "transitVarianceMinutes"
         ],
-        "sourceFileCount": 9
+        "sourceFileCount": 11
       },
       "id": "analytics-logistics-engine",
       "ownedEntities": [
@@ -659,7 +677,9 @@
         "decomposable-carrier-score",
         "freight-cost-indicator",
         "freight-total-by-currency",
+        "logistics-decision-object",
         "material-availability-risk",
+        "material-shipment-risk",
         "shipment-timeliness-result",
         "transit-variance",
         "transport-spend-analysis"
@@ -716,7 +736,8 @@
         "analytics-ai-engine",
         "analytics-api",
         "analytics-data-quality",
-        "analytics-engine"
+        "analytics-engine",
+        "analytics-logistics-engine"
       ],
       "dependsOn": [],
       "discovery": {

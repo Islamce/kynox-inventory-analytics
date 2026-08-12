@@ -2,7 +2,9 @@
   "apis": [],
   "confidence": "verified",
   "consumes": [],
-  "dependsOn": [],
+  "dependsOn": [
+    "analytics-shared-types"
+  ],
   "externalIntegrations": [],
   "flows": [],
   "id": "analytics-logistics-engine",
@@ -14,7 +16,9 @@
     "transport-spend-analysis",
     "freight-cost-indicator",
     "carrier-performance-metric",
-    "decomposable-carrier-score"
+    "decomposable-carrier-score",
+    "material-shipment-risk",
+    "logistics-decision-object"
   ],
   "owner": "Data",
   "permissions": [],

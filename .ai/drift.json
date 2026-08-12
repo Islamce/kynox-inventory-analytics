@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "drift.json",
-    "bodyDigest": "6c9cab8ecfe4d18a65897ab2831207cae7185a1baa6dd1bf3d4d0332f889feba",
+    "bodyDigest": "fdae6048ae097e17214d32e4818740fa79b3d769b4571409436f9246443b2e13",
     "confidence": "derived",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "2b8dd9b048f545103b3a0d7cab97294f6ec7e73af83700799808ffd2ff256f56",
+    "inputDigest": "32cc342323e1ded65e8e2f248661854bfd8d1820c401254ce5ab9fc73d48a634",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -41,7 +41,7 @@
     },
     "analytics-logistics-engine": {
       "level": "verified",
-      "reason": "Declared and corroborated by 6 discovered code file(s)."
+      "reason": "Declared and corroborated by 8 discovered code file(s)."
     },
     "analytics-runtime-entry": {
       "level": "verified",
@@ -150,6 +150,13 @@
         "packages/analytics-engine/src/xyz.ts"
       ],
       "from": "analytics-engine",
+      "to": "analytics-shared-types"
+    },
+    {
+      "evidence": [
+        "packages/logistics-engine/src/risk.ts"
+      ],
+      "from": "analytics-logistics-engine",
       "to": "analytics-shared-types"
     }
   ],

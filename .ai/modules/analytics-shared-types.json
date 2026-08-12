@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "modules/analytics-shared-types.json",
-    "bodyDigest": "e798603a2c00a6332b7cc0f577d1a4d8175084fb594c1155bcd413c4aa6dd5e3",
+    "bodyDigest": "a5b964bd6b9143c04188dc6f2378f8ca64ceb094db92cdc9ac83d89870663021",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "2b8dd9b048f545103b3a0d7cab97294f6ec7e73af83700799808ffd2ff256f56",
+    "inputDigest": "32cc342323e1ded65e8e2f248661854bfd8d1820c401254ce5ab9fc73d48a634",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -19,7 +19,8 @@
     "analytics-ai-engine",
     "analytics-api",
     "analytics-data-quality",
-    "analytics-engine"
+    "analytics-engine",
+    "analytics-logistics-engine"
   ],
   "dependsOn": [],
   "discovery": {

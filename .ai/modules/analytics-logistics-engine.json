@@ -1,28 +1,32 @@
 {
   "_meta": {
     "artifact": "modules/analytics-logistics-engine.json",
-    "bodyDigest": "7e806599a57a879ef2af3d69d30c112e11d1809cdb24e1756812c49d9b494832",
+    "bodyDigest": "4640288d3245025de54e3dbf1259f8eafb1657d1b17ddd17c7dd466b217a8654",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "2b8dd9b048f545103b3a0d7cab97294f6ec7e73af83700799808ffd2ff256f56",
+    "inputDigest": "32cc342323e1ded65e8e2f248661854bfd8d1820c401254ce5ab9fc73d48a634",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
   "apis": [],
   "confidence": "verified",
-  "confidenceReason": "Declared and corroborated by 6 discovered code file(s).",
+  "confidenceReason": "Declared and corroborated by 8 discovered code file(s).",
   "declared": true,
   "declaredConfidence": "verified",
   "dependedOnBy": [],
-  "dependsOn": [],
+  "dependsOn": [
+    "analytics-shared-types"
+  ],
   "discovery": {
     "codeFiles": [
       "packages/logistics-engine/src/carrier-performance.test.ts",
       "packages/logistics-engine/src/carrier-performance.ts",
       "packages/logistics-engine/src/index.test.ts",
       "packages/logistics-engine/src/index.ts",
+      "packages/logistics-engine/src/risk.test.ts",
+      "packages/logistics-engine/src/risk.ts",
       "packages/logistics-engine/src/spend.test.ts",
       "packages/logistics-engine/src/spend.ts"
     ],
@@ -55,6 +59,8 @@
       "packages/logistics-engine/src/carrier-performance.ts",
       "packages/logistics-engine/src/index.test.ts",
       "packages/logistics-engine/src/index.ts",
+      "packages/logistics-engine/src/risk.test.ts",
+      "packages/logistics-engine/src/risk.ts",
       "packages/logistics-engine/src/spend.test.ts",
       "packages/logistics-engine/src/spend.ts",
       "packages/logistics-engine/tsconfig.json"
@@ -88,7 +94,9 @@
     "decomposable-carrier-score",
     "freight-cost-indicator",
     "freight-total-by-currency",
+    "logistics-decision-object",
     "material-availability-risk",
+    "material-shipment-risk",
     "shipment-timeliness-result",
     "transit-variance",
     "transport-spend-analysis"
