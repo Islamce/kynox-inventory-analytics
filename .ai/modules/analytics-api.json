@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "modules/analytics-api.json",
-    "bodyDigest": "35e0ffdd0de4b9fb36342089a5590e111a4a81e49abea67d72104400e31d74c5",
+    "bodyDigest": "e6c18071d5108840774faa39f54761bce4686695bd061c33853abfb4c0e9e8a9",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "aea036e862c2a592995ef2beaf159b76a4625efdb9992e36eaf09f3b3abdf398",
+    "inputDigest": "f41082c0aa68b5caa9c8046e663dfe84615617a57c85d2d3f24a42e2fd1ab931",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -47,7 +47,7 @@
       "kind": "rest",
       "path": "apps/api/src/routes/auth.ts",
       "requestType": "HTTP /api/auth — login and session establishment",
-      "responseType": "JWT bearer token, non-revocable before its documented expiry",
+      "responseType": "JWT bearer token plus server-resolved active tenant membership context, non-revocable before its documented expiry",
       "stability": "stable",
       "version": "1"
     },
@@ -93,7 +93,7 @@
     }
   ],
   "confidence": "verified",
-  "confidenceReason": "Declared and corroborated by 37 discovered code file(s).",
+  "confidenceReason": "Declared and corroborated by 40 discovered code file(s).",
   "declared": true,
   "declaredConfidence": "verified",
   "dependedOnBy": [],
@@ -113,6 +113,7 @@
       "apps/api/src/db/migrations/20260719000001_initial_schema.js",
       "apps/api/src/db/migrations/20260719000002_ai_usage_columns.js",
       "apps/api/src/db/migrations/20260722000003_canonical_normalization.js",
+      "apps/api/src/db/migrations/20260812000004_tenant_foundation.js",
       "apps/api/src/db/seeds/001_admin_user.js",
       "apps/api/src/logger.ts",
       "apps/api/src/mapping.test.ts",
@@ -141,6 +142,8 @@
       "apps/api/src/services/mapping.ts",
       "apps/api/src/services/normalization.ts",
       "apps/api/src/services/reconciliation.ts",
+      "apps/api/src/tenantIsolation.test.ts",
+      "apps/api/src/tenantMigration.test.ts",
       "apps/api/vitest.config.ts"
     ],
     "discovered": true,
@@ -165,6 +168,7 @@
       "apps/api/src/db/migrations/20260719000001_initial_schema.js",
       "apps/api/src/db/migrations/20260719000002_ai_usage_columns.js",
       "apps/api/src/db/migrations/20260722000003_canonical_normalization.js",
+      "apps/api/src/db/migrations/20260812000004_tenant_foundation.js",
       "apps/api/src/db/seeds/001_admin_user.js",
       "apps/api/src/logger.ts",
       "apps/api/src/mapping.test.ts",
@@ -193,6 +197,8 @@
       "apps/api/src/services/mapping.ts",
       "apps/api/src/services/normalization.ts",
       "apps/api/src/services/reconciliation.ts",
+      "apps/api/src/tenantIsolation.test.ts",
+      "apps/api/src/tenantMigration.test.ts",
       "apps/api/tsconfig.json",
       "apps/api/vitest.config.ts"
     ]
@@ -218,6 +224,8 @@
     "movement",
     "physical_inventory",
     "stock_item",
+    "tenant",
+    "tenant_membership",
     "upload",
     "user"
   ],
@@ -430,7 +438,7 @@
     "apps/api/src/app.ts",
     "apps/api/src/server.ts"
   ],
-  "purpose": "Serve the inventory diagnostic over HTTP: ingest and version customer datasets, normalize them into the canonical transaction model, enforce role-based access, and expose every analytics, reconciliation and export surface.",
+  "purpose": "Serve the inventory diagnostic over HTTP: resolve fail-closed tenant and membership context, ingest and version tenant-owned datasets, normalize them into the canonical transaction model, enforce tenant-scoped role-based access, and expose analytics, reconciliation and export surfaces.",
   "readNext": [
     "apps/api/package.json",
     "apps/api/src/app.ts",

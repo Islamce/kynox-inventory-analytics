@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "modules/analytics-runtime-entry.json",
-    "bodyDigest": "e21b94d9909f9731c288c4c26849128ba04fd93e1f4acd6719d04ddb1b57cc9c",
+    "bodyDigest": "33fd7931a8adff6e1be98fc2b1006049b0b5723994c87f125f095dfbd879a79f",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "aea036e862c2a592995ef2beaf159b76a4625efdb9992e36eaf09f3b3abdf398",
+    "inputDigest": "f41082c0aa68b5caa9c8046e663dfe84615617a57c85d2d3f24a42e2fd1ab931",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -63,6 +63,7 @@
       "docs/STAGING_DEPLOYMENT.md",
       "docs/STAGING_MONITORING.md",
       "docs/STAGING_UAT_PLAN.md",
+      "docs/TENANT_MIGRATION.md",
       "docs/UAT_DATA_PACKAGE.md",
       "docs/UI_ACCESSIBILITY_VALIDATION.md",
       "docs/UI_UX_AUDIT.md",
