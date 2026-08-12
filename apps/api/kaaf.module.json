@@ -26,7 +26,7 @@
       "kind": "rest",
       "path": "apps/api/src/routes/uploads.ts",
       "requestType": "HTTP /api/uploads — file upload, type detection, mapping and preview",
-      "responseType": "Upload records and detected mapping proposals",
+      "responseType": "Upload records, inventory or logistics detection, mapping proposals, and preview-only logistics quality findings",
       "stability": "evolving",
       "version": "1"
     },
@@ -392,6 +392,6 @@
     "apps/api/src/server.ts",
     "apps/api/src/app.ts"
   ],
-  "purpose": "Serve the inventory diagnostic over HTTP: ingest and version customer datasets, normalize them into the canonical transaction model, enforce role-based access, and expose every analytics, reconciliation and export surface.",
+  "purpose": "Serve the inventory diagnostic over HTTP, plus preview-only logistics import mapping and quality checks: ingest and version supported inventory datasets, normalize them into the canonical transaction model, enforce role-based access, and expose every analytics, reconciliation and export surface. Logistics persistence remains gated.",
   "schemaVersion": "1.0.0"
 }

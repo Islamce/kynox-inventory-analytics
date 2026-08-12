@@ -5,6 +5,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { mapColumns } from './services/mapping';
+import { detectReportType, kindForReportType } from './services/detection';
 
 function fieldFor(headers: string[], header: string): string | null {
   const m = mapColumns(headers).find((x) => x.sourceColumn === header);
@@ -28,6 +29,26 @@ describe('generic (non-SAP) column mapping — Scenario A', () => {
     expect(fieldFor(h, 'Received Qty')).toBe('receipt_qty');
     expect(fieldFor(h, 'Issued Qty')).toBe('issue_qty');
     expect(fieldFor(h, 'Direction')).toBe('transaction_direction');
+  });
+});
+
+describe('logistics import mapping', () => {
+  it('maps and detects freight-charge extracts through the shared pipeline', () => {
+    const headers = ['Shipment ID', 'Carrier Code', 'Freight Amount', 'Currency', 'Charge Type', 'Invoice Number'];
+    const mapping = mapColumns(headers);
+    expect(fieldFor(headers, 'Shipment ID')).toBe('shipment_id');
+    expect(fieldFor(headers, 'Freight Amount')).toBe('freight_amount');
+    const detection = detectReportType(mapping, 'Transport Spend');
+    expect(detection.reportType).toBe('FREIGHT_CHARGES');
+    expect(kindForReportType(detection.reportType)).toBe('logistics');
+  });
+
+  it('keeps planned, actual, delivery, and POD timestamps distinct', () => {
+    const headers = ['Shipment ID', 'Planned Pickup', 'Actual Pickup', 'Planned Delivery', 'Actual Delivery', 'POD Date'];
+    expect(headers.map((header) => fieldFor(headers, header))).toEqual([
+      'shipment_id', 'planned_pickup_at', 'actual_pickup_at',
+      'planned_delivery_at', 'actual_delivery_at', 'pod_at',
+    ]);
   });
 });
 

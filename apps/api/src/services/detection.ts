@@ -15,10 +15,22 @@ interface ReportSignature {
   /** Sheet-name fragments that hint at this report. */
   sheetHints: string[];
   /** Canonical dataset kind this report loads into. */
-  kind: 'stock' | 'movements' | 'material_master' | 'physical_inventory';
+  kind: 'stock' | 'movements' | 'material_master' | 'physical_inventory' | 'logistics';
 }
 
 export const SIGNATURES: ReportSignature[] = [
+  {
+    reportType: 'FREIGHT_CHARGES', kind: 'logistics',
+    required: ['shipment_id', 'freight_amount'],
+    supporting: ['currency', 'carrier_code', 'charge_type', 'invoice_number'],
+    sheetHints: ['freight charge', 'freight cost', 'transport spend', 'carrier invoice'],
+  },
+  {
+    reportType: 'SHIPMENTS', kind: 'logistics',
+    required: ['shipment_id'],
+    supporting: ['tracking_number', 'carrier_code', 'origin', 'destination', 'planned_pickup_at', 'actual_pickup_at', 'planned_delivery_at', 'actual_delivery_at', 'pod_at'],
+    sheetHints: ['shipment', 'tracking', 'delivery', 'transport'],
+  },
   {
     reportType: 'MB52', kind: 'stock',
     required: ['material', ['quantity', 'unrestricted_qty']],
@@ -139,7 +151,7 @@ export function detectReportType(
   };
 }
 
-export function kindForReportType(reportType: ReportType): 'stock' | 'movements' | 'material_master' | 'physical_inventory' {
+export function kindForReportType(reportType: ReportType): 'stock' | 'movements' | 'material_master' | 'physical_inventory' | 'logistics' {
   const sig = SIGNATURES.find((s) => s.reportType === reportType);
   return sig?.kind ?? 'stock';
 }

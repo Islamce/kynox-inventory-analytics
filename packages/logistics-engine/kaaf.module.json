@@ -1,0 +1,31 @@
+{
+  "apis": [],
+  "confidence": "verified",
+  "consumes": [],
+  "dependsOn": [
+    "analytics-shared-types"
+  ],
+  "externalIntegrations": [],
+  "flows": [],
+  "id": "analytics-logistics-engine",
+  "ownedEntities": [
+    "shipment-timeliness-result",
+    "transit-variance",
+    "freight-total-by-currency",
+    "material-availability-risk",
+    "transport-spend-analysis",
+    "freight-cost-indicator",
+    "carrier-performance-metric",
+    "decomposable-carrier-score",
+    "material-shipment-risk",
+    "logistics-decision-object"
+  ],
+  "owner": "Data",
+  "permissions": [],
+  "publicEntryPoints": [
+    "packages/logistics-engine/package.json",
+    "packages/logistics-engine/src/index.ts"
+  ],
+  "purpose": "Compute bounded Logistics Intelligence metrics as pure, evidence-oriented functions without owning warehouse execution, project/WBS truth, or transport execution.",
+  "schemaVersion": "1.0.0"
+}

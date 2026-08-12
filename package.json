@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "build": "npm run build:packages && npm run build:api && npm run build:web",
-    "build:packages": "npm run build -w @kynox/shared-types -w @kynox/analytics-engine -w @kynox/data-quality -w @kynox/ai-engine",
+    "build:packages": "npm run build -w @kynox/shared-types -w @kynox/analytics-engine -w @kynox/data-quality -w @kynox/ai-engine -w @kynox/logistics-engine",
     "build:api": "npm run build -w @kynox/api",
     "build:web": "npm run build -w @kynox/web",
     "dev:api": "npm run dev -w @kynox/api",
@@ -23,6 +23,11 @@
   "engines": {
     "node": ">=20 <23",
     "npm": ">=10"
+  },
+  "overrides": {
+    "ip-address": "10.5.0",
+    "nanoid": "3.3.17",
+    "postcss": "8.5.26"
   },
   "devDependencies": {
     "typescript": "^5.8.3",

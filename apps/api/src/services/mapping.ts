@@ -71,6 +71,24 @@ const SYNONYMS: FieldSynonyms[] = [
   { field: 'last_receipt_date', sapTechnical: ['LWEDT'], synonyms: ['last receipt', 'last receipt date', 'last gr date', 'آخر استلام'] },
   { field: 'last_issue_date', sapTechnical: [], synonyms: ['last issue', 'last issue date', 'last gi date', 'آخر صرف'] },
   { field: 'last_movement_date', sapTechnical: [], synonyms: ['last movement', 'last movement date', 'last mvt date', 'آخر حركة'] },
+  // --- Logistics Intelligence (additive; raw source rows remain authoritative) ---
+  { field: 'shipment_id', sapTechnical: [], synonyms: ['shipment id', 'shipment number', 'shipment no', 'consignment id', 'load id'] },
+  { field: 'tracking_number', sapTechnical: [], synonyms: ['tracking number', 'tracking no', 'awb', 'air waybill', 'waybill'] },
+  { field: 'carrier_code', sapTechnical: [], synonyms: ['carrier code', 'carrier', 'transport provider', 'logistics provider'] },
+  { field: 'origin', sapTechnical: [], synonyms: ['origin', 'origin location', 'ship from', 'pickup location'] },
+  { field: 'destination', sapTechnical: [], synonyms: ['destination', 'destination location', 'ship to', 'delivery location'] },
+  { field: 'planned_pickup_at', sapTechnical: [], synonyms: ['planned pickup', 'planned pickup date', 'scheduled pickup', 'pickup plan'] },
+  { field: 'actual_pickup_at', sapTechnical: [], synonyms: ['actual pickup', 'actual pickup date', 'pickup actual'] },
+  { field: 'planned_delivery_at', sapTechnical: [], synonyms: ['planned delivery', 'planned delivery date', 'scheduled delivery', 'delivery plan'] },
+  { field: 'actual_delivery_at', sapTechnical: [], synonyms: ['actual delivery', 'actual delivery date', 'delivered at', 'delivery actual'] },
+  { field: 'pod_at', sapTechnical: [], synonyms: ['pod date', 'proof of delivery date', 'pod at'] },
+  { field: 'weight', sapTechnical: [], synonyms: ['weight', 'gross weight', 'shipment weight'] },
+  { field: 'volume', sapTechnical: [], synonyms: ['volume', 'shipment volume', 'cubic volume'] },
+  { field: 'freight_amount', sapTechnical: [], synonyms: ['freight amount', 'freight cost', 'shipping cost', 'transport cost'] },
+  { field: 'charge_type', sapTechnical: [], synonyms: ['charge type', 'freight charge type', 'cost type'] },
+  { field: 'invoice_number', sapTechnical: [], synonyms: ['invoice number', 'invoice no', 'freight invoice'] },
+  { field: 'project', sapTechnical: [], synonyms: ['project id', 'project number', 'project code'] },
+  { field: 'required_date', sapTechnical: [], synonyms: ['required date', 'need by date', 'material required date'] },
 ];
 
 const normalize = (s: string): string => s.toLowerCase().trim().replace(/[._\-/]+/g, ' ').replace(/\s+/g, ' ');

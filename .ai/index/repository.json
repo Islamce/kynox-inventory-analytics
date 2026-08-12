@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "index/repository.json",
-    "bodyDigest": "1247c53a73c97da8c9b094ee017559c8705a52d945fd44e1fbdd76188dffd670",
+    "bodyDigest": "00cf1a049c84fd3d7462dca8a470df3ac818cfca2697e9eb1826d4e3a7c74799",
     "confidence": "derived",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "aea036e862c2a592995ef2beaf159b76a4625efdb9992e36eaf09f3b3abdf398",
+    "inputDigest": "32cc342323e1ded65e8e2f248661854bfd8d1820c401254ce5ab9fc73d48a634",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -120,15 +120,15 @@
   ],
   "health": {
     "confidenceByLevel": {
-      "verified": 10
+      "verified": 11
     },
     "driftCounts": {
       "error": 0,
-      "info": 1,
+      "info": 2,
       "warning": 0
     },
     "hasDriftErrors": false,
-    "moduleCount": 10,
+    "moduleCount": 11,
     "modulesUndeclared": 0,
     "modulesWithoutOwner": [],
     "note": "No publication timestamp is embedded: it would break byte-identical regeneration. Time-based staleness is computed at aggregation time from publication metadata supplied to the aggregator.",
@@ -183,7 +183,7 @@
       ],
       "owner": "Backend",
       "path": "apps/api",
-      "purpose": "Serve the inventory diagnostic over HTTP: ingest and version customer datasets, normalize them into the canonical transaction model, enforce role-based access, and expose every analytics, reconciliation and export surface.",
+      "purpose": "Serve the inventory diagnostic over HTTP, plus preview-only logistics import mapping and quality checks: ingest and version supported inventory datasets, normalize them into the canonical transaction model, enforce role-based access, and expose every analytics, reconciliation and export surface. Logistics persistence remains gated.",
       "qualifiedId": "Islamce/kynox-inventory-analytics#analytics-api"
     },
     {
@@ -197,6 +197,7 @@
       "ownedEntities": [
         "cleansing-proposal",
         "date-normalization-result",
+        "logistics-quality-rule",
         "normalization-finding",
         "quality-rule",
         "quality-score"
@@ -279,6 +280,31 @@
       "confidence": "verified",
       "consumes": [],
       "declared": true,
+      "dependsOn": [
+        "analytics-shared-types"
+      ],
+      "id": "analytics-logistics-engine",
+      "ownedEntities": [
+        "carrier-performance-metric",
+        "decomposable-carrier-score",
+        "freight-cost-indicator",
+        "freight-total-by-currency",
+        "logistics-decision-object",
+        "material-availability-risk",
+        "material-shipment-risk",
+        "shipment-timeliness-result",
+        "transit-variance",
+        "transport-spend-analysis"
+      ],
+      "owner": "Data",
+      "path": "packages/logistics-engine",
+      "purpose": "Compute bounded Logistics Intelligence metrics as pure, evidence-oriented functions without owning warehouse execution, project/WBS truth, or transport execution.",
+      "qualifiedId": "Islamce/kynox-inventory-analytics#analytics-logistics-engine"
+    },
+    {
+      "confidence": "verified",
+      "consumes": [],
+      "declared": true,
       "dependsOn": [],
       "id": "analytics-runtime-entry",
       "ownedEntities": [
@@ -297,10 +323,14 @@
       "id": "analytics-shared-types",
       "ownedEntities": [
         "canonical-transaction-category",
+        "logistics-contract",
+        "logistics-decision-object",
         "permission",
+        "r4c-requirement-reference",
         "role",
         "role-permission-matrix",
-        "shared-api-dto"
+        "shared-api-dto",
+        "warehouse-read-model"
       ],
       "owner": "Backend",
       "path": "packages/shared-types",

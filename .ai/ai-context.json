@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "ai-context.json",
-    "bodyDigest": "8662befd7da035b6d22bdd8957500bea8971c8ce516e7bb055b859dff33e479d",
+    "bodyDigest": "d1ea36b7809e1cf13890a12650f580fb1bfd3bc7741bddd452623414ffaddad3",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "aea036e862c2a592995ef2beaf159b76a4625efdb9992e36eaf09f3b3abdf398",
+    "inputDigest": "32cc342323e1ded65e8e2f248661854bfd8d1820c401254ce5ab9fc73d48a634",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -24,15 +24,15 @@
   "counts": {
     "apis": 8,
     "externalIntegrations": 4,
-    "modules": 10,
-    "modulesDeclared": 10,
+    "modules": 11,
+    "modulesDeclared": 11,
     "modulesUndeclared": 0,
     "permissions": 11
   },
   "drift": {
     "counts": {
       "error": 0,
-      "info": 1,
+      "info": 2,
       "warning": 0
     },
     "detail": ".ai/drift.json",
@@ -78,7 +78,7 @@
         "apps/api/src/app.ts",
         "apps/api/src/server.ts"
       ],
-      "purpose": "Serve the inventory diagnostic over HTTP: ingest and version customer datasets, normalize them into the canonical transaction model, enforce role-based access, and expose every analytics, reconciliation and export surface."
+      "purpose": "Serve the inventory diagnostic over HTTP, plus preview-only logistics import mapping and quality checks: ingest and version supported inventory datasets, normalize them into the canonical transaction model, enforce role-based access, and expose every analytics, reconciliation and export surface. Logistics persistence remains gated."
     },
     {
       "confidence": "verified",
@@ -168,6 +168,24 @@
       "confidence": "verified",
       "declared": true,
       "declaredConfidence": "verified",
+      "dependsOn": [
+        "analytics-shared-types"
+      ],
+      "detail": "modules/analytics-logistics-engine.json",
+      "hasDiscoveredCode": true,
+      "id": "analytics-logistics-engine",
+      "owner": "Data",
+      "path": "packages/logistics-engine",
+      "publicEntryPoints": [
+        "packages/logistics-engine/package.json",
+        "packages/logistics-engine/src/index.ts"
+      ],
+      "purpose": "Compute bounded Logistics Intelligence metrics as pure, evidence-oriented functions without owning warehouse execution, project/WBS truth, or transport execution."
+    },
+    {
+      "confidence": "verified",
+      "declared": true,
+      "declaredConfidence": "verified",
       "dependsOn": [],
       "detail": "modules/analytics-runtime-entry.json",
       "hasDiscoveredCode": true,
@@ -192,7 +210,8 @@
       "path": "packages/shared-types",
       "publicEntryPoints": [
         "packages/shared-types/package.json",
-        "packages/shared-types/src/index.ts"
+        "packages/shared-types/src/index.ts",
+        "packages/shared-types/src/logistics.ts"
       ],
       "purpose": "Define the types, canonical transaction vocabulary, and the single role-to-permission matrix that every other module in the platform shares."
     },
