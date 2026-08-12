@@ -13,7 +13,8 @@
     "quality-score",
     "cleansing-proposal",
     "normalization-finding",
-    "date-normalization-result"
+    "date-normalization-result",
+    "logistics-quality-rule"
   ],
   "owner": "Data",
   "permissions": [],

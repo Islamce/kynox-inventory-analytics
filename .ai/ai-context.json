@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "ai-context.json",
-    "bodyDigest": "2eb25bc4b7ecc204530fce2dd8e0b0446d36b985420075f6936f3f37f87a06ef",
+    "bodyDigest": "51517ad0afb454f4ee6bb7062545a25e801d6863f8f3e95844a570943deeea4f",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "7be70e49f2965c543536e7ac23fb4c793d82ad186bcf5aa6455f41668684fec0",
+    "inputDigest": "3e47c5a947b1fee494ce104062f8507ff53cb8863f9381e3c82269d127f34e7b",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -78,7 +78,7 @@
         "apps/api/src/app.ts",
         "apps/api/src/server.ts"
       ],
-      "purpose": "Serve the inventory diagnostic over HTTP: ingest and version customer datasets, normalize them into the canonical transaction model, enforce role-based access, and expose every analytics, reconciliation and export surface."
+      "purpose": "Serve the inventory diagnostic over HTTP, plus preview-only logistics import mapping and quality checks: ingest and version supported inventory datasets, normalize them into the canonical transaction model, enforce role-based access, and expose every analytics, reconciliation and export surface. Logistics persistence remains gated."
     },
     {
       "confidence": "verified",

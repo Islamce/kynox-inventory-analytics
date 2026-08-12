@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "modules/analytics-data-quality.json",
-    "bodyDigest": "e46d14515dc57828ee1e5456bd3ed21e36b21c1e22139b582e8b9483aa8c3d19",
+    "bodyDigest": "c3d6ee02254dd6f26a7d4bbf0f7b6a51d89c066f6534452e58527b6321639a94",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "7be70e49f2965c543536e7ac23fb4c793d82ad186bcf5aa6455f41668684fec0",
+    "inputDigest": "3e47c5a947b1fee494ce104062f8507ff53cb8863f9381e3c82269d127f34e7b",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -64,6 +64,7 @@
   "ownedEntities": [
     "cleansing-proposal",
     "date-normalization-result",
+    "logistics-quality-rule",
     "normalization-finding",
     "quality-rule",
     "quality-score"

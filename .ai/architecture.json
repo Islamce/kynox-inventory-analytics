@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "architecture.json",
-    "bodyDigest": "4ca638c1fa4c3a3ab9bebf1cb17519d91f7f6dee4f96fe03365c8da987c4db1b",
+    "bodyDigest": "08eb2035b518a6524d7dfdc4c9c04076a2a2bde240e72c94ba5fe5ef562e4475",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "7be70e49f2965c543536e7ac23fb4c793d82ad186bcf5aa6455f41668684fec0",
+    "inputDigest": "3e47c5a947b1fee494ce104062f8507ff53cb8863f9381e3c82269d127f34e7b",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -110,7 +110,7 @@
       "module": "analytics-api",
       "path": "apps/api/src/routes/uploads.ts",
       "requestType": "HTTP /api/uploads — file upload, type detection, mapping and preview",
-      "responseType": "Upload records and detected mapping proposals",
+      "responseType": "Upload records, inventory or logistics detection, mapping proposals, and preview-only logistics quality findings",
       "sourceManifest": "apps/api/kaaf.module.json",
       "stability": "evolving",
       "version": "1"
@@ -408,7 +408,7 @@
         "apps/api/src/app.ts",
         "apps/api/src/server.ts"
       ],
-      "purpose": "Serve the inventory diagnostic over HTTP: ingest and version customer datasets, normalize them into the canonical transaction model, enforce role-based access, and expose every analytics, reconciliation and export surface.",
+      "purpose": "Serve the inventory diagnostic over HTTP, plus preview-only logistics import mapping and quality checks: ingest and version supported inventory datasets, normalize them into the canonical transaction model, enforce role-based access, and expose every analytics, reconciliation and export surface. Logistics persistence remains gated.",
       "sourceManifest": "apps/api/kaaf.module.json"
     },
     {
@@ -438,6 +438,7 @@
       "ownedEntities": [
         "cleansing-proposal",
         "date-normalization-result",
+        "logistics-quality-rule",
         "normalization-finding",
         "quality-rule",
         "quality-score"
