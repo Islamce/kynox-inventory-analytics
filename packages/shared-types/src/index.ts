@@ -86,7 +86,24 @@ export type CanonicalField =
   | 'part_number'
   | 'item_code'
   | 'transaction_id'
-  | 'reference_document';
+  | 'reference_document'
+  | 'shipment_id'
+  | 'tracking_number'
+  | 'carrier_code'
+  | 'origin'
+  | 'destination'
+  | 'planned_pickup_at'
+  | 'actual_pickup_at'
+  | 'planned_delivery_at'
+  | 'actual_delivery_at'
+  | 'pod_at'
+  | 'weight'
+  | 'volume'
+  | 'freight_amount'
+  | 'charge_type'
+  | 'invoice_number'
+  | 'project'
+  | 'required_date';
 
 /** Known SAP / ERP report types the detector recognises. */
 export type ReportType =
@@ -103,6 +120,8 @@ export type ReportType =
   | 'CONSUMPTION'
   | 'PHYSICAL_INVENTORY'
   | 'GOODS_MOVEMENTS'
+  | 'SHIPMENTS'
+  | 'FREIGHT_CHARGES'
   | 'UNKNOWN';
 
 export interface ReportDetectionResult {
@@ -490,7 +509,7 @@ export interface DatasetSummary {
   name: string;
   version: number;
   status: 'draft' | 'validated' | 'ready';
-  kind: 'stock' | 'movements' | 'material_master' | 'physical_inventory';
+  kind: 'stock' | 'movements' | 'material_master' | 'physical_inventory' | 'logistics';
   periodStart: string | null;
   periodEnd: string | null;
   rowCount: number;

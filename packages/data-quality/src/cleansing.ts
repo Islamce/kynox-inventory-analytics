@@ -110,10 +110,12 @@ const NUMERIC_FIELDS: CanonicalField[] = [
   'quality_qty', 'in_transit_qty', 'reserved_qty', 'safety_stock', 'reorder_point',
   'min_stock', 'max_stock', 'lead_time_days', 'standard_price', 'moving_avg_price',
   'book_qty', 'counted_qty', 'count_difference', 'consumption_qty', 'demand_qty', 'forecast_qty',
+  'weight', 'volume', 'freight_amount',
 ];
 
 const DATE_FIELDS: CanonicalField[] = [
   'posting_date', 'document_date', 'last_receipt_date', 'last_issue_date', 'last_movement_date',
+  'planned_pickup_at', 'actual_pickup_at', 'planned_delivery_at', 'actual_delivery_at', 'pod_at', 'required_date',
 ];
 
 const ISSUE_MOVEMENT_TYPES = new Set(['201', '221', '261', '281', '291', '301', '311', '601']);

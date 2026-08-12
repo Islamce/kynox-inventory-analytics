@@ -176,8 +176,9 @@ async function prepareImport(
   const mapping: ColumnMapping[] = JSON.parse(uploadRow.mapping ?? '[]');
   const kind = kindForReportType(uploadRow.detected_type ?? 'UNKNOWN');
 
-  if (!mapping.some((m) => m.canonicalField === 'material')) {
-    throw new HttpError(400, 'The mapping must include a material column before a dataset can be created.');
+  const requiredIdentity = kind === 'logistics' ? 'shipment_id' : 'material';
+  if (!mapping.some((m) => m.canonicalField === requiredIdentity)) {
+    throw new HttpError(400, `The mapping must include a ${requiredIdentity} column before the import can be prepared.`);
   }
 
   const mapped = applyMapping(sheet.rows, mapping) as MappedRow[];
@@ -254,6 +255,11 @@ datasetsRouter.post('/', requirePermission('approve_cleansing'), guestActionLimi
     uploadRow, mapping, kind, cleaned, log, excludedRows, approved,
     postIssues, remainingCritical, scores, sourceSystem, sourceReportType, normalization,
   } = await prepareImport(body.uploadId, body.approvedActionIds, body.dateOrder, req.user!);
+
+  if (kind === 'logistics') {
+    throw new HttpError(409,
+      'Logistics imports are preview-only until tenant-scoped logistics persistence is reviewed and merged.');
+  }
 
   // Critical issues block finalisation unless the cleansing excluded the affected rows.
   if (remainingCritical.length > 0) {
