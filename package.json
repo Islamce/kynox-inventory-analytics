@@ -24,6 +24,11 @@
     "node": ">=20 <23",
     "npm": ">=10"
   },
+  "overrides": {
+    "ip-address": "10.5.0",
+    "nanoid": "3.3.17",
+    "postcss": "8.5.26"
+  },
   "devDependencies": {
     "typescript": "^5.8.3",
     "vitest": "^3.2.7"
