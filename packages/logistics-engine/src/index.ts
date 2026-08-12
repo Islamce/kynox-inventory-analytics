@@ -75,9 +75,10 @@ export function totalFreightByCurrency(charges: FreightCharge[]): Record<string,
 
 export interface MaterialAvailabilityRiskInput {
   requiredDate: Timestamp;
-  expectedAvailabilityDate: Timestamp;
   requiredQuantity: number;
-  availableOnTimeQuantity: number;
+  availableQuantity: number;
+  confirmedInboundQuantity: number;
+  inboundEta?: Timestamp | null;
 }
 
 export interface MaterialAvailabilityRisk {
@@ -87,11 +88,22 @@ export interface MaterialAvailabilityRisk {
 }
 
 export function evaluateMaterialAvailabilityRisk(input: MaterialAvailabilityRiskInput): MaterialAvailabilityRisk {
-  const scheduleGapDays = Math.ceil((toMillis(input.expectedAvailabilityDate) - toMillis(input.requiredDate)) / 86400000);
-  const quantityGap = Math.max(0, input.requiredQuantity - input.availableOnTimeQuantity);
+  const quantities = [input.requiredQuantity, input.availableQuantity, input.confirmedInboundQuantity];
+  if (quantities.some((quantity) => !Number.isFinite(quantity) || quantity < 0)) {
+    throw new Error('Material availability quantities must be finite and non-negative');
+  }
+
+  const quantityGap = Math.max(
+    0,
+    input.requiredQuantity - input.availableQuantity - input.confirmedInboundQuantity,
+  );
+  const inboundNeeded = input.availableQuantity < input.requiredQuantity && input.confirmedInboundQuantity > 0;
+  const scheduleGapDays = inboundNeeded && input.inboundEta
+    ? Math.max(0, Math.ceil((toMillis(input.inboundEta) - toMillis(input.requiredDate)) / 86400000))
+    : 0;
   return {
     scheduleGapDays,
     quantityGap,
-    atRisk: scheduleGapDays > 0 && quantityGap > 0,
+    atRisk: scheduleGapDays > 0 || quantityGap > 0,
   };
 }
