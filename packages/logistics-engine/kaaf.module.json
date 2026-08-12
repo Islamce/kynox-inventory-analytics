@@ -12,7 +12,9 @@
     "freight-total-by-currency",
     "material-availability-risk",
     "transport-spend-analysis",
-    "freight-cost-indicator"
+    "freight-cost-indicator",
+    "carrier-performance-metric",
+    "decomposable-carrier-score"
   ],
   "owner": "Data",
   "permissions": [],
