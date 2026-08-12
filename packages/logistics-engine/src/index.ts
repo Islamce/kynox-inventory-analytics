@@ -1,7 +1,5 @@
 export type Timestamp = string;
 
-export * from './spend';
-
 export interface ShipmentTiming {
   plannedPickupAt?: Timestamp | null;
   actualPickupAt?: Timestamp | null;
@@ -109,3 +107,6 @@ export function evaluateMaterialAvailabilityRisk(input: MaterialAvailabilityRisk
     atRisk: scheduleGapDays > 0 || quantityGap > 0,
   };
 }
+
+export * from './spend';
+export * from './carrier-performance';
