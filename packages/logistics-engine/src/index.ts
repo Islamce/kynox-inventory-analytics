@@ -1,5 +1,7 @@
 export type Timestamp = string;
 
+export * from './spend';
+
 export interface ShipmentTiming {
   plannedPickupAt?: Timestamp | null;
   actualPickupAt?: Timestamp | null;
