@@ -6,7 +6,8 @@ import crypto from 'crypto';
 import { z } from 'zod';
 import { db, insertGetId } from '../db';
 import { config } from '../config';
-import { requireAuth, requirePermission } from '../middleware/auth';
+import { requireAuth, requirePermission, type AuthUser } from '../middleware/auth';
+import { guestActionLimiter } from '../middleware/guestScope';
 import { asyncHandler, HttpError } from '../middleware/errors';
 import { audit } from '../services/audit';
 import { parseWorkbook, sanitizeFilename, validateUploadFile } from '../services/files';
@@ -47,8 +48,8 @@ uploadsRouter.use(requireAuth);
  * system administrator may read or modify an upload (IDOR protection —
  * permission checks alone would let any mapper touch other users' files).
  */
-async function getUpload(id: number, user: { id: number; role: string }) {
-  const row = await db('uploads').where({ id }).first();
+async function getUpload(id: number, user: Pick<AuthUser, 'id' | 'role' | 'tenantId'>) {
+  const row = await db('uploads').where({ id, tenant_id: user.tenantId }).first();
   if (!row) throw new HttpError(404, 'Upload not found');
   if (row.user_id !== user.id && user.role !== 'system_admin' && user.role !== 'data_admin') {
     throw new HttpError(403, 'You can only access uploads you created');
@@ -62,7 +63,7 @@ function fileFor(row: { stored_name: string }): string {
 
 // ---- Step 1+2+3: upload, auto-detect, auto-map ------------------------------
 
-uploadsRouter.post('/', requirePermission('upload'), upload.single('file'), asyncHandler(async (req, res) => {
+uploadsRouter.post('/', requirePermission('upload'), guestActionLimiter(20, 3600_000), upload.single('file'), asyncHandler(async (req, res) => {
   if (!req.file) throw new HttpError(400, 'No file provided (field name: file)');
   const sourceSystem = typeof req.body.sourceSystem === 'string' ? req.body.sourceSystem.slice(0, 80) : null;
 
@@ -74,6 +75,7 @@ uploadsRouter.post('/', requirePermission('upload'), upload.single('file'), asyn
 
   const id = await insertGetId(db, 'uploads', {
     user_id: req.user!.id,
+    tenant_id: req.user!.tenantId,
     stored_name: req.file.filename,
     original_name: sanitizeFilename(req.file.originalname),
     size_bytes: req.file.size,
@@ -89,7 +91,7 @@ uploadsRouter.post('/', requirePermission('upload'), upload.single('file'), asyn
   });
 
   await audit({
-    action: 'file_uploaded', userId: req.user!.id, entityType: 'upload', entityId: id,
+    action: 'file_uploaded', userId: req.user!.id, tenantId: req.user!.tenantId, entityType: 'upload', entityId: id,
     newValue: { name: req.file.originalname, size: req.file.size, detected: detection.reportType },
     sourceIp: req.ip,
   });
@@ -108,7 +110,7 @@ uploadsRouter.post('/', requirePermission('upload'), upload.single('file'), asyn
 }));
 
 uploadsRouter.get('/', asyncHandler(async (req, res) => {
-  const rows = await db('uploads').where({ user_id: req.user!.id }).orderBy('id', 'desc').limit(50);
+  const rows = await db('uploads').where({ user_id: req.user!.id, tenant_id: req.user!.tenantId }).orderBy('id', 'desc').limit(50);
   res.json({
     uploads: rows.map((r) => ({
       id: r.id, originalName: r.original_name, sizeBytes: r.size_bytes,
@@ -130,7 +132,7 @@ uploadsRouter.put('/:id/sheet', requirePermission('edit_mapping'), asyncHandler(
   if (!target) throw new HttpError(404, `Sheet '${sheet}' not found in this file`);
   const mapping = mapColumns(target.headers);
   const detection = detectReportType(mapping, target.name, row.original_name);
-  await db('uploads').where({ id: row.id }).update({
+  await db('uploads').where({ id: row.id, tenant_id: req.user!.tenantId }).update({
     sheet: target.name,
     headers: JSON.stringify(target.headers),
     mapping: JSON.stringify(mapping),
@@ -153,24 +155,30 @@ const mappingSchema = z.object({
 uploadsRouter.put('/:id/mapping', requirePermission('edit_mapping'), asyncHandler(async (req, res) => {
   const row = await getUpload(Number(req.params.id), req.user!);
   const body = mappingSchema.parse(req.body);
-  const prev = JSON.parse(row.mapping ?? '[]');
-  const mapping: ColumnMapping[] = body.mapping.map((m) => ({
-    sourceColumn: m.sourceColumn,
-    canonicalField: (m.canonicalField as ColumnMapping['canonicalField']) ?? null,
-    confidence: m.canonicalField ? 1 : 0,
-    method: 'user',
-  }));
+  const prev: ColumnMapping[] = JSON.parse(row.mapping ?? '[]');
+  const prevByColumn = new Map(prev.map((m) => [m.sourceColumn, m]));
+  // The client always resubmits the full mapping when confirming (even columns
+  // it never touched). Only columns whose canonical field actually changed are
+  // "user" mappings — everything else keeps its original detection provenance
+  // (sap_technical/exact/synonym/fuzzy), which downstream logic (e.g. source
+  // system classification) relies on.
+  const mapping: ColumnMapping[] = body.mapping.map((m) => {
+    const before = prevByColumn.get(m.sourceColumn);
+    const field = (m.canonicalField as ColumnMapping['canonicalField']) ?? null;
+    if (before && before.canonicalField === field) return before;
+    return { sourceColumn: m.sourceColumn, canonicalField: field, confidence: field ? 1 : 0, method: 'user' };
+  });
   const detection = body.reportType
     ? { ...JSON.parse(row.detection ?? '{}'), reportType: body.reportType, confidence: 1, reasons: ['Manually selected by user'] }
     : detectReportType(mapping, row.sheet ?? '', row.original_name);
-  await db('uploads').where({ id: row.id }).update({
+  await db('uploads').where({ id: row.id, tenant_id: req.user!.tenantId }).update({
     mapping: JSON.stringify(mapping),
     detection: JSON.stringify(detection),
     detected_type: detection.reportType,
     status: 'mapped',
   });
   await audit({
-    action: 'mapping_changed', userId: req.user!.id, entityType: 'upload', entityId: row.id,
+    action: 'mapping_changed', userId: req.user!.id, tenantId: req.user!.tenantId, entityType: 'upload', entityId: row.id,
     prevValue: prev, newValue: mapping, sourceIp: req.ip,
   });
   res.json({ mapping, detection });

@@ -1,0 +1,117 @@
+{
+  "_meta": {
+    "artifact": "modules/analytics-logistics-engine.json",
+    "bodyDigest": "4640288d3245025de54e3dbf1259f8eafb1657d1b17ddd17c7dd466b217a8654",
+    "confidence": "verified",
+    "doNotEdit": true,
+    "generator": "kaaf",
+    "generatorVersion": "0.7.0",
+    "inputDigest": "302055f675593b1cc146684e082823b587d0f3bc39c922ffd71df42abd4bcff1",
+    "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
+    "schemaVersion": "1.0.0"
+  },
+  "apis": [],
+  "confidence": "verified",
+  "confidenceReason": "Declared and corroborated by 8 discovered code file(s).",
+  "declared": true,
+  "declaredConfidence": "verified",
+  "dependedOnBy": [],
+  "dependsOn": [
+    "analytics-shared-types"
+  ],
+  "discovery": {
+    "codeFiles": [
+      "packages/logistics-engine/src/carrier-performance.test.ts",
+      "packages/logistics-engine/src/carrier-performance.ts",
+      "packages/logistics-engine/src/index.test.ts",
+      "packages/logistics-engine/src/index.ts",
+      "packages/logistics-engine/src/risk.test.ts",
+      "packages/logistics-engine/src/risk.ts",
+      "packages/logistics-engine/src/spend.test.ts",
+      "packages/logistics-engine/src/spend.ts"
+    ],
+    "discovered": true,
+    "entryPoints": [],
+    "languages": [
+      "json",
+      "typescript"
+    ],
+    "parseErrors": [],
+    "publicSymbols": [
+      "FreightCharge",
+      "MaterialAvailabilityRisk",
+      "MaterialAvailabilityRiskInput",
+      "ShipmentTiming",
+      "TimelinessResult",
+      "Timestamp",
+      "actualTransitMinutes",
+      "evaluateDeliveryTimeliness",
+      "evaluateMaterialAvailabilityRisk",
+      "evaluatePickupTimeliness",
+      "plannedTransitMinutes",
+      "totalFreightByCurrency",
+      "transitVarianceMinutes"
+    ],
+    "sourceFiles": [
+      "packages/logistics-engine/kaaf.module.json",
+      "packages/logistics-engine/package.json",
+      "packages/logistics-engine/src/carrier-performance.test.ts",
+      "packages/logistics-engine/src/carrier-performance.ts",
+      "packages/logistics-engine/src/index.test.ts",
+      "packages/logistics-engine/src/index.ts",
+      "packages/logistics-engine/src/risk.test.ts",
+      "packages/logistics-engine/src/risk.ts",
+      "packages/logistics-engine/src/spend.test.ts",
+      "packages/logistics-engine/src/spend.ts",
+      "packages/logistics-engine/tsconfig.json"
+    ]
+  },
+  "driftFindings": [
+    {
+      "evidence": [
+        "FreightCharge",
+        "MaterialAvailabilityRisk",
+        "MaterialAvailabilityRiskInput",
+        "ShipmentTiming",
+        "TimelinessResult",
+        "Timestamp",
+        "actualTransitMinutes",
+        "evaluateDeliveryTimeliness",
+        "evaluateMaterialAvailabilityRisk",
+        "evaluatePickupTimeliness"
+      ],
+      "module": "analytics-logistics-engine",
+      "recommendation": "Consider whether this module is really two (docs/kaaf/STANDARDS.md §1).",
+      "severity": "info",
+      "summary": "13 public symbols at the entry points (guideline is 10).",
+      "type": "large-public-surface"
+    }
+  ],
+  "externalIntegrations": [],
+  "id": "analytics-logistics-engine",
+  "ownedEntities": [
+    "carrier-performance-metric",
+    "decomposable-carrier-score",
+    "freight-cost-indicator",
+    "freight-total-by-currency",
+    "logistics-decision-object",
+    "material-availability-risk",
+    "material-shipment-risk",
+    "shipment-timeliness-result",
+    "transit-variance",
+    "transport-spend-analysis"
+  ],
+  "owner": "Data",
+  "path": "packages/logistics-engine",
+  "permissions": [],
+  "publicEntryPoints": [
+    "packages/logistics-engine/package.json",
+    "packages/logistics-engine/src/index.ts"
+  ],
+  "purpose": "Compute bounded Logistics Intelligence metrics as pure, evidence-oriented functions without owning warehouse execution, project/WBS truth, or transport execution.",
+  "readNext": [
+    "packages/logistics-engine/package.json",
+    "packages/logistics-engine/src/index.ts"
+  ],
+  "sourceManifest": "packages/logistics-engine/kaaf.module.json"
+}

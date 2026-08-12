@@ -117,6 +117,35 @@ describe('quality scoring', () => {
   });
 });
 
+describe('logistics data quality', () => {
+  it('blocks every approved critical ambiguity without mutating raw evidence', () => {
+    const rows: MappedRow[] = [
+      { shipment_id: '', carrier_code: '', planned_pickup_at: 'not-a-date', freight_amount: -1, currency: '' },
+      { shipment_id: 'S1', carrier_code: 'C1', actual_pickup_at: '2026-08-12', actual_delivery_at: '2026-08-11', invoice_number: 'I1', charge_type: 'linehaul', freight_amount: 100, currency: 'SAR' },
+      { shipment_id: 'S1', carrier_code: 'C1', actual_delivery_at: '2026-08-13', invoice_number: 'I1', charge_type: 'linehaul', freight_amount: 100, currency: 'SAR' },
+      { shipment_id: '', carrier_code: 'C1', material: 'MAT-1', quantity: 5 },
+    ];
+    const before = JSON.stringify(rows);
+    const ids = runQualityRules('logistics', rows).map((issue) => issue.ruleId);
+
+    expect(ids).toEqual(expect.arrayContaining([
+      'missing_shipment_id', 'invalid_logistics_dates', 'delivery_before_pickup',
+      'duplicate_freight_charges', 'missing_freight_currency', 'invalid_freight_amount',
+      'missing_carrier', 'orphan_shipment_material', 'conflicting_milestones',
+    ]));
+    expect(JSON.stringify(rows)).toBe(before);
+  });
+
+  it('passes clean shipment and freight evidence', () => {
+    const rows: MappedRow[] = [{
+      shipment_id: 'S1', carrier_code: 'C1', actual_pickup_at: '2026-08-11',
+      actual_delivery_at: '2026-08-12', invoice_number: 'I1', charge_type: 'linehaul',
+      freight_amount: 100, currency: 'SAR', material: 'MAT-1', quantity: 5,
+    }];
+    expect(runQualityRules('logistics', rows)).toEqual([]);
+  });
+});
+
 describe('cleansing', () => {
   it('proposes actions and applies only approved ones without mutating input', () => {
     const rows: MappedRow[] = [

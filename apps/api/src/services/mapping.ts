@@ -14,8 +14,8 @@ interface FieldSynonyms {
 }
 
 const SYNONYMS: FieldSynonyms[] = [
-  { field: 'material', sapTechnical: ['MATNR'], synonyms: ['material', 'material number', 'material code', 'material no', 'item', 'item code', 'item number', 'part number', 'sku', 'رقم المادة', 'المادة', 'الصنف', 'رقم الصنف', 'كود المادة'] },
-  { field: 'material_description', sapTechnical: ['MAKTX'], synonyms: ['material description', 'description', 'item description', 'short text', 'material text', 'وصف المادة', 'الوصف', 'اسم الصنف', 'اسم المادة'] },
+  { field: 'material', sapTechnical: ['MATNR'], synonyms: ['material', 'material number', 'material code', 'material no', 'item', 'item code', 'item number', 'item id', 'sku', 'product code', 'product id', 'part number', 'part no', 'stock code', 'inventory item', 'رقم المادة', 'المادة', 'الصنف', 'رقم الصنف', 'كود المادة'] },
+  { field: 'material_description', sapTechnical: ['MAKTX'], synonyms: ['material description', 'description', 'item description', 'item name', 'product description', 'product name', 'short text', 'material text', 'وصف المادة', 'الوصف', 'اسم الصنف', 'اسم المادة'] },
   { field: 'material_type', sapTechnical: ['MTART'], synonyms: ['material type', 'mat type', 'type', 'نوع المادة'] },
   { field: 'material_group', sapTechnical: ['MATKL'], synonyms: ['material group', 'mat group', 'group', 'commodity', 'مجموعة المواد', 'المجموعة'] },
   { field: 'base_unit', sapTechnical: ['MEINS'], synonyms: ['base unit', 'base unit of measure', 'uom', 'unit', 'unit of measure', 'bun', 'وحدة القياس', 'الوحدة'] },
@@ -41,11 +41,16 @@ const SYNONYMS: FieldSynonyms[] = [
   { field: 'min_stock', sapTechnical: [], synonyms: ['minimum stock', 'min stock', 'min', 'الحد الأدنى'] },
   { field: 'max_stock', sapTechnical: ['MABST'], synonyms: ['maximum stock', 'max stock', 'max', 'الحد الأقصى'] },
   { field: 'lead_time_days', sapTechnical: ['PLIFZ'], synonyms: ['lead time', 'planned delivery time', 'delivery time', 'plnd delivery time', 'مدة التوريد'] },
-  { field: 'movement_type', sapTechnical: ['BWART'], synonyms: ['movement type', 'mvt', 'mvt type', 'mov type', 'نوع الحركة'] },
-  { field: 'movement_qty', sapTechnical: ['MENGE'], synonyms: ['movement quantity', 'qty in unit of entry', 'quantity', 'كمية الحركة'] },
+  { field: 'movement_type', sapTechnical: ['BWART'], synonyms: ['movement type', 'mvt', 'mvt type', 'mov type', 'movement code', 'movement description', 'transaction type', 'transaction category', 'activity', 'operation', 'issue type', 'receipt type', 'نوع الحركة'] },
+  { field: 'movement_qty', sapTechnical: ['MENGE', 'ERFMG'], synonyms: ['movement quantity', 'qty in unit of entry', 'quantity', 'transaction quantity', 'posted quantity', 'كمية الحركة'] },
   { field: 'movement_value', sapTechnical: ['DMBTR'], synonyms: ['amount in local currency', 'movement value', 'amount', 'قيمة الحركة'] },
-  { field: 'posting_date', sapTechnical: ['BUDAT'], synonyms: ['posting date', 'pstng date', 'post date', 'تاريخ الترحيل', 'تاريخ القيد'] },
+  { field: 'posting_date', sapTechnical: ['BUDAT'], synonyms: ['posting date', 'pstng date', 'post date', 'posting time', 'transaction date', 'movement date', 'entry date', 'created date', 'receipt date', 'issue date', 'تاريخ الترحيل', 'تاريخ القيد', 'تاريخ الحركة'] },
   { field: 'document_date', sapTechnical: ['BLDAT'], synonyms: ['document date', 'doc date', 'تاريخ المستند'] },
+  // --- Generic, source-independent signals (used by the classification engine) ---
+  { field: 'transaction_direction', sapTechnical: ['SHKZG'], synonyms: ['direction', 'transaction direction', 'debit credit indicator', 'debit/credit', 'dr cr', 'in out', 'in/out'] },
+  { field: 'receipt_qty', sapTechnical: [], synonyms: ['receipt qty', 'receipt quantity', 'received qty', 'received quantity', 'in quantity', 'in qty', 'qty in'] },
+  { field: 'issue_qty', sapTechnical: [], synonyms: ['issue qty', 'issue quantity', 'issued qty', 'issued quantity', 'out quantity', 'out qty', 'qty out'] },
+  { field: 'unit_cost', sapTechnical: [], synonyms: ['unit cost', 'price', 'extended cost', 'total cost'] },
   { field: 'document_number', sapTechnical: ['MBLNR', 'BELNR'], synonyms: ['material document', 'document number', 'material doc', 'doc number', 'doc no', 'رقم المستند'] },
   { field: 'reservation', sapTechnical: ['RSNUM'], synonyms: ['reservation', 'reservation number', 'رقم الحجز'] },
   { field: 'purchase_order', sapTechnical: ['EBELN'], synonyms: ['purchase order', 'po', 'po number', 'purchasing document', 'أمر الشراء'] },
@@ -66,6 +71,24 @@ const SYNONYMS: FieldSynonyms[] = [
   { field: 'last_receipt_date', sapTechnical: ['LWEDT'], synonyms: ['last receipt', 'last receipt date', 'last gr date', 'آخر استلام'] },
   { field: 'last_issue_date', sapTechnical: [], synonyms: ['last issue', 'last issue date', 'last gi date', 'آخر صرف'] },
   { field: 'last_movement_date', sapTechnical: [], synonyms: ['last movement', 'last movement date', 'last mvt date', 'آخر حركة'] },
+  // --- Logistics Intelligence (additive; raw source rows remain authoritative) ---
+  { field: 'shipment_id', sapTechnical: [], synonyms: ['shipment id', 'shipment number', 'shipment no', 'consignment id', 'load id'] },
+  { field: 'tracking_number', sapTechnical: [], synonyms: ['tracking number', 'tracking no', 'awb', 'air waybill', 'waybill'] },
+  { field: 'carrier_code', sapTechnical: [], synonyms: ['carrier code', 'carrier', 'transport provider', 'logistics provider'] },
+  { field: 'origin', sapTechnical: [], synonyms: ['origin', 'origin location', 'ship from', 'pickup location'] },
+  { field: 'destination', sapTechnical: [], synonyms: ['destination', 'destination location', 'ship to', 'delivery location'] },
+  { field: 'planned_pickup_at', sapTechnical: [], synonyms: ['planned pickup', 'planned pickup date', 'scheduled pickup', 'pickup plan'] },
+  { field: 'actual_pickup_at', sapTechnical: [], synonyms: ['actual pickup', 'actual pickup date', 'pickup actual'] },
+  { field: 'planned_delivery_at', sapTechnical: [], synonyms: ['planned delivery', 'planned delivery date', 'scheduled delivery', 'delivery plan'] },
+  { field: 'actual_delivery_at', sapTechnical: [], synonyms: ['actual delivery', 'actual delivery date', 'delivered at', 'delivery actual'] },
+  { field: 'pod_at', sapTechnical: [], synonyms: ['pod date', 'proof of delivery date', 'pod at'] },
+  { field: 'weight', sapTechnical: [], synonyms: ['weight', 'gross weight', 'shipment weight'] },
+  { field: 'volume', sapTechnical: [], synonyms: ['volume', 'shipment volume', 'cubic volume'] },
+  { field: 'freight_amount', sapTechnical: [], synonyms: ['freight amount', 'freight cost', 'shipping cost', 'transport cost'] },
+  { field: 'charge_type', sapTechnical: [], synonyms: ['charge type', 'freight charge type', 'cost type'] },
+  { field: 'invoice_number', sapTechnical: [], synonyms: ['invoice number', 'invoice no', 'freight invoice'] },
+  { field: 'project', sapTechnical: [], synonyms: ['project id', 'project number', 'project code'] },
+  { field: 'required_date', sapTechnical: [], synonyms: ['required date', 'need by date', 'material required date'] },
 ];
 
 const normalize = (s: string): string => s.toLowerCase().trim().replace(/[._\-/]+/g, ' ').replace(/\s+/g, ' ');

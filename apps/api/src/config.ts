@@ -47,6 +47,16 @@ export const config = {
   enableInProcessCleanup: (process.env.ENABLE_INPROCESS_CLEANUP || 'true') !== 'false',
   /** Shared secret for the external maintenance endpoint; disabled when unset. */
   maintenanceToken: process.env.MAINTENANCE_TOKEN || '',
+  /**
+   * When true, requests with no Authorization header are treated as an
+   * anonymous 'guest' identity instead of getting a 401 (see
+   * middleware/auth.ts). Intended for a public marketing/demo deployment.
+   * Off by default — never enable this against a database containing real
+   * business data without also reviewing docs/PUBLIC_DEMO_MODE.md.
+   */
+  publicDemoMode: (process.env.PUBLIC_DEMO_MODE || 'false') === 'true',
+  /** Guest-created datasets/uploads older than this are purged by the retention cleanup job. */
+  guestDataRetentionHours: Number(process.env.GUEST_DATA_RETENTION_HOURS || 48),
 };
 
 /**

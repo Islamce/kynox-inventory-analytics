@@ -1,0 +1,223 @@
+{
+  "_meta": {
+    "artifact": "drift.json",
+    "bodyDigest": "75be82578f9c1ce883166f098eb3bae7cf64988c2b373df268b78b86fc3e6154",
+    "confidence": "derived",
+    "doNotEdit": true,
+    "generator": "kaaf",
+    "generatorVersion": "0.7.0",
+    "inputDigest": "302055f675593b1cc146684e082823b587d0f3bc39c922ffd71df42abd4bcff1",
+    "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
+    "schemaVersion": "1.0.0"
+  },
+  "confidenceByModule": {
+    "analytics-ai-engine": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 5 discovered code file(s)."
+    },
+    "analytics-api": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 40 discovered code file(s)."
+    },
+    "analytics-data-quality": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 10 discovered code file(s)."
+    },
+    "analytics-deployment": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 7 discovered code file(s)."
+    },
+    "analytics-engine": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 13 discovered code file(s)."
+    },
+    "analytics-fixtures": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 1 discovered code file(s)."
+    },
+    "analytics-kaaf-tooling": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 31 discovered code file(s)."
+    },
+    "analytics-logistics-engine": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 8 discovered code file(s)."
+    },
+    "analytics-runtime-entry": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 2 discovered code file(s)."
+    },
+    "analytics-shared-types": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 4 discovered code file(s)."
+    },
+    "analytics-web": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 29 discovered code file(s)."
+    }
+  },
+  "counts": {
+    "error": 0,
+    "info": 2,
+    "warning": 0
+  },
+  "declaredModules": [
+    "analytics-ai-engine",
+    "analytics-api",
+    "analytics-data-quality",
+    "analytics-deployment",
+    "analytics-engine",
+    "analytics-fixtures",
+    "analytics-kaaf-tooling",
+    "analytics-logistics-engine",
+    "analytics-runtime-entry",
+    "analytics-shared-types",
+    "analytics-web"
+  ],
+  "discoveredImportEdges": [
+    {
+      "evidence": [
+        "packages/ai-engine/src/agents.ts",
+        "packages/ai-engine/src/ai.test.ts",
+        "packages/ai-engine/src/orchestrator.ts"
+      ],
+      "from": "analytics-ai-engine",
+      "to": "analytics-shared-types"
+    },
+    {
+      "evidence": [
+        "apps/api/src/middleware/errors.ts",
+        "apps/api/src/routes/ai.ts"
+      ],
+      "from": "analytics-api",
+      "to": "analytics-ai-engine"
+    },
+    {
+      "evidence": [
+        "apps/api/src/routes/datasets.ts",
+        "apps/api/src/routes/uploads.ts",
+        "apps/api/src/services/mapping.ts",
+        "apps/api/src/services/normalization.ts"
+      ],
+      "from": "analytics-api",
+      "to": "analytics-data-quality"
+    },
+    {
+      "evidence": [
+        "apps/api/src/routes/analytics.ts",
+        "apps/api/src/services/analytics.ts",
+        "apps/api/src/services/reconciliation.ts"
+      ],
+      "from": "analytics-api",
+      "to": "analytics-engine"
+    },
+    {
+      "evidence": [
+        "apps/api/src/middleware/auth.ts",
+        "apps/api/src/routes/admin.ts",
+        "apps/api/src/routes/ai.ts",
+        "apps/api/src/routes/datasets.ts",
+        "apps/api/src/routes/uploads.ts",
+        "apps/api/src/services/analytics.ts",
+        "apps/api/src/services/detection.ts",
+        "apps/api/src/services/mapping.ts",
+        "apps/api/src/services/normalization.ts"
+      ],
+      "from": "analytics-api",
+      "to": "analytics-shared-types"
+    },
+    {
+      "evidence": [
+        "packages/data-quality/src/cleansing.ts",
+        "packages/data-quality/src/date-normalization.ts",
+        "packages/data-quality/src/normalization-rules.ts",
+        "packages/data-quality/src/rules.ts",
+        "packages/data-quality/src/scoring.ts",
+        "packages/data-quality/src/transaction-classification.ts"
+      ],
+      "from": "analytics-data-quality",
+      "to": "analytics-shared-types"
+    },
+    {
+      "evidence": [
+        "packages/analytics-engine/src/abc.ts",
+        "packages/analytics-engine/src/aging.ts",
+        "packages/analytics-engine/src/excess-shortage.ts",
+        "packages/analytics-engine/src/forecasting.ts",
+        "packages/analytics-engine/src/health.ts",
+        "packages/analytics-engine/src/movement-category.ts",
+        "packages/analytics-engine/src/xyz.ts"
+      ],
+      "from": "analytics-engine",
+      "to": "analytics-shared-types"
+    },
+    {
+      "evidence": [
+        "packages/logistics-engine/src/risk.ts"
+      ],
+      "from": "analytics-logistics-engine",
+      "to": "analytics-shared-types"
+    }
+  ],
+  "discoveredModules": [
+    "analytics-ai-engine",
+    "analytics-api",
+    "analytics-data-quality",
+    "analytics-deployment",
+    "analytics-engine",
+    "analytics-fixtures",
+    "analytics-kaaf-tooling",
+    "analytics-logistics-engine",
+    "analytics-runtime-entry",
+    "analytics-shared-types",
+    "analytics-web"
+  ],
+  "findings": [
+    {
+      "evidence": [
+        "FreightCharge",
+        "MaterialAvailabilityRisk",
+        "MaterialAvailabilityRiskInput",
+        "ShipmentTiming",
+        "TimelinessResult",
+        "Timestamp",
+        "actualTransitMinutes",
+        "evaluateDeliveryTimeliness",
+        "evaluateMaterialAvailabilityRisk",
+        "evaluatePickupTimeliness"
+      ],
+      "module": "analytics-logistics-engine",
+      "recommendation": "Consider whether this module is really two (docs/kaaf/STANDARDS.md §1).",
+      "severity": "info",
+      "summary": "13 public symbols at the entry points (guideline is 10).",
+      "type": "large-public-surface"
+    },
+    {
+      "evidence": [
+        "ALL_ROLES",
+        "AbcClass",
+        "AbcResult",
+        "AgingBucket",
+        "AgingResult",
+        "AiChatResponse",
+        "AiEvidence",
+        "AiInsight",
+        "AvailabilitySnapshot",
+        "CanonicalField"
+      ],
+      "module": "analytics-shared-types",
+      "recommendation": "Consider whether this module is really two (docs/kaaf/STANDARDS.md §1).",
+      "severity": "info",
+      "summary": "52 public symbols at the entry points (guideline is 10).",
+      "type": "large-public-surface"
+    }
+  ],
+  "hasErrors": false,
+  "howToRead": [
+    "error: the declaration and the code disagree in a way that must be fixed; CI fails.",
+    "warning: real drift that does not block, most often code with no manifest.",
+    "info: expected divergence, such as a documentation-only dependency.",
+    "Everything here is derived from a static read of the source: dynamic imports and runtime wiring are invisible to it, so absence of a finding is not proof of absence."
+  ],
+  "undeclaredCode": []
+}

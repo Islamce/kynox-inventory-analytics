@@ -1,0 +1,29 @@
+{
+  "apis": [],
+  "confidence": "verified",
+  "consumes": [],
+  "dependsOn": [],
+  "externalIntegrations": [],
+  "flows": [],
+  "id": "analytics-shared-types",
+  "ownedEntities": [
+    "role",
+    "permission",
+    "role-permission-matrix",
+    "canonical-transaction-category",
+    "shared-api-dto",
+    "logistics-contract",
+    "logistics-decision-object",
+    "warehouse-read-model",
+    "r4c-requirement-reference"
+  ],
+  "owner": "Backend",
+  "permissions": [],
+  "publicEntryPoints": [
+    "packages/shared-types/package.json",
+    "packages/shared-types/src/index.ts",
+    "packages/shared-types/src/logistics.ts"
+  ],
+  "purpose": "Define the types, canonical transaction vocabulary, and the single role-to-permission matrix that every other module in the platform shares.",
+  "schemaVersion": "1.0.0"
+}

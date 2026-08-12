@@ -3,10 +3,9 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import rateLimit from 'express-rate-limit';
 import { db } from '../db';
-import { signToken, requireAuth, type AuthUser } from '../middleware/auth';
+import { signToken, requireAuth, resolveUserAuth } from '../middleware/auth';
 import { asyncHandler, HttpError } from '../middleware/errors';
 import { audit } from '../services/audit';
-import type { Role } from '@kynox/shared-types';
 
 const loginSchema = z.object({
   email: z.string().email().max(255),
@@ -55,14 +54,18 @@ authRouter.post('/login', loginLimiter, asyncHandler(async (req, res) => {
   }
 
   await db('users').where({ id: user.id }).update({ failed_logins: 0, locked_until: null });
-  const authUser: AuthUser = { id: user.id, email: user.email, name: user.name, role: user.role as Role };
+  const authUser = await resolveUserAuth({ id: user.id, email: user.email, name: user.name });
+  if (!authUser) {
+    await fail('No active tenant membership');
+    return;
+  }
   const token = signToken(authUser);
-  await audit({ action: 'login', userId: user.id, sourceIp: req.ip });
+  await audit({ action: 'login', userId: user.id, tenantId: authUser.tenantId, sourceIp: req.ip });
   res.json({ token, user: authUser });
 }));
 
 authRouter.post('/logout', requireAuth, asyncHandler(async (req, res) => {
-  await audit({ action: 'logout', userId: req.user!.id, sourceIp: req.ip });
+  await audit({ action: 'logout', userId: req.user!.id, tenantId: req.user!.tenantId, sourceIp: req.ip });
   res.json({ ok: true });
 }));
 

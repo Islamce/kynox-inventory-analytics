@@ -1,0 +1,20 @@
+{
+  "apis": [],
+  "confidence": "verified",
+  "consumes": [],
+  "dependsOn": [],
+  "externalIntegrations": [],
+  "flows": [],
+  "id": "analytics-kaaf-tooling",
+  "ownedEntities": [
+    "generated-architecture-context"
+  ],
+  "owner": "DevOps",
+  "permissions": [],
+  "publicEntryPoints": [
+    "scripts/architecture/generate.sh",
+    "scripts/architecture/generate.py"
+  ],
+  "purpose": "Generate and validate this repository's KAAF architecture context. Vendored from Islamce/KAAF; see VENDORED.md before changing anything here.",
+  "schemaVersion": "1.0.0"
+}

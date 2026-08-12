@@ -50,6 +50,10 @@ beforeAll(async () => {
     password_hash: bcrypt.hashSync('pipeline-test-password', 10),
     role: 'system_admin', active: true,
   });
+  const user = await db('users').where({ email: 'pipe@kynox.io' }).first('id');
+  await db('tenant_memberships').insert({
+    tenant_id: 'legacy-default', user_id: user.id, role: 'system_admin', active: true, is_default: true,
+  });
   const res = await request(app).post('/api/auth/login')
     .send({ email: 'pipe@kynox.io', password: 'pipeline-test-password' });
   token = res.body.token;
@@ -242,12 +246,21 @@ describe('physical inventory pipeline', () => {
 });
 
 describe('reversals and duplicates in consumption', () => {
-  it('reversals subtract from consumption and duplicate removal prevents inflation', async () => {
+  it('consumption analytics count CONSUMPTION only; reversals are tracked separately, not netted', async () => {
+    // Consumption/ABC/XYZ/shortage/excess/health analytics are computed from
+    // the canonical `TransactionCategory` model (`DEMAND_CATEGORIES` =
+    // ['CONSUMPTION'] only, per @kynox/shared-types): REVERSAL_IN/OUT is a
+    // distinct category from CONSUMPTION by design, so a reversed issue is
+    // visible in the reversal count/reconciliation view rather than silently
+    // reducing demand. This replaced an earlier increment's legacy SAP
+    // heuristic (`movements` table + hardcoded movement-type sets) that
+    // subtracted issue reversals straight out of consumption — an explicit,
+    // user-approved architectural decision, not an accidental regression.
     const csv = [
       'Material,Movement Type,Posting Date,Qty in unit of entry,Amount in Local Currency,Material Document',
       'R-1,261,2026-01-10,-100,-1000,DOC1',
       'R-1,261,2026-01-10,-100,-1000,DOC1',    // exact duplicate -> removed by cleansing
-      'R-1,262,2026-01-12,60,600,DOC2',        // reversal -> subtracts
+      'R-1,262,2026-01-12,60,600,DOC2',        // reversal -> own category, not netted
       'R-1,261,2026-02-10,-40,-400,DOC3',
       'R-1,311,2026-02-15,-500,-5000,DOC4',    // transfer -> not consumption
     ].join('\n');
@@ -261,11 +274,14 @@ describe('reversals and duplicates in consumption', () => {
     expect(ds.status).toBe(201);
     expect(ds.body.rowCount).toBe(4); // duplicate removed
 
+    const canonical = await db('canonical_transactions').where({ dataset_id: ds.body.id }).orderBy('source_row_number');
+    expect(canonical.map((r) => r.transaction_category)).toEqual(['CONSUMPTION', 'REVERSAL_IN', 'CONSUMPTION', 'TRANSFER_OUT']);
+
     const consumption = await request(app)
       .get(`/api/analytics/consumption/${ds.body.id}?material=R-1&granularity=month`)
       .set('Authorization', `Bearer ${token}`);
     expect(consumption.status).toBe(200);
-    // Net consumption: 100 − 60 + 40 = 80 (transfer 500 excluded, duplicate removed).
-    expect(consumption.body.stats.totalQuantity).toBe(80);
+    // 100 + 40 = 140 (transfer excluded, duplicate removed, reversal NOT subtracted).
+    expect(consumption.body.stats.totalQuantity).toBe(140);
   });
 });

@@ -5,6 +5,7 @@ import type { AiEvidence } from '@kynox/shared-types';
 import { db } from '../db';
 import { config } from '../config';
 import { requireAuth, requirePermission } from '../middleware/auth';
+import { checkTenantDatasetAccess } from '../middleware/guestScope';
 import { asyncHandler, HttpError } from '../middleware/errors';
 import { audit } from '../services/audit';
 import * as svc from '../services/analytics';
@@ -22,26 +23,26 @@ const chatSchema = z.object({
  * Daily usage limits (requests per user, requests + tokens per organisation).
  * Counted from ai_logs, so limits survive restarts and are auditable.
  */
-async function enforceDailyLimits(userId: number): Promise<void> {
+async function enforceDailyLimits(userId: number, tenantId: string): Promise<void> {
   const dayStart = new Date();
   dayStart.setUTCHours(0, 0, 0, 0);
 
   const [{ userCount }] = await db('ai_logs')
-    .where({ user_id: userId }).where('created_at', '>=', dayStart)
+    .where({ user_id: userId, tenant_id: tenantId }).where('created_at', '>=', dayStart)
     .count({ userCount: '*' });
   if (Number(userCount) >= config.ai.userDailyLimit) {
     throw new HttpError(429, `Daily AI request limit reached (${config.ai.userDailyLimit} per user). Try again tomorrow or ask an administrator to raise AI_USER_DAILY_LIMIT.`);
   }
 
   const [{ orgCount }] = await db('ai_logs')
-    .where('created_at', '>=', dayStart)
+    .where({ tenant_id: tenantId }).where('created_at', '>=', dayStart)
     .count({ orgCount: '*' });
   if (Number(orgCount) >= config.ai.orgDailyLimit) {
     throw new HttpError(429, 'Organisation-wide daily AI request limit reached.');
   }
 
   const [{ tokens }] = await db('ai_logs')
-    .where('created_at', '>=', dayStart)
+    .where({ tenant_id: tenantId }).where('created_at', '>=', dayStart)
     .sum({ tokens: db.raw('coalesce(input_tokens,0) + coalesce(output_tokens,0)') });
   if (Number(tokens ?? 0) >= config.ai.orgDailyTokenLimit) {
     throw new HttpError(429, 'Organisation-wide daily AI token budget exhausted.');
@@ -58,11 +59,14 @@ aiRouter.post('/chat', asyncHandler(async (req, res) => {
   const enabled = await svc.getConfig('ai_feature_enabled', true);
   if (!enabled) throw new HttpError(503, 'AI features are disabled by the administrator.');
   const body = chatSchema.parse(req.body);
+  for (const datasetId of [body.stockDatasetId, body.movementsDatasetId]) {
+    if (datasetId) await checkTenantDatasetAccess(req, datasetId);
+  }
   if (body.question.length > config.ai.maxPromptChars) {
     throw new HttpError(400, `Question exceeds the configured maximum of ${config.ai.maxPromptChars} characters.`);
   }
   const provider = createProvider(config.ai);
-  if (provider) await enforceDailyLimits(req.user!.id);
+  if (provider) await enforceDailyLimits(req.user!.id, req.user!.tenantId);
 
   const metrics: AiEvidence[] = [];
   const findings: Record<string, unknown> = {};
@@ -126,6 +130,38 @@ aiRouter.post('/chat', asyncHandler(async (req, res) => {
       anomalies: consumption.anomalies,
       topConsumers: consumption.topConsumers?.slice(0, 10),
     };
+
+    // Phase 2: canonical normalization evidence — lets the AI explain *why* a
+    // transaction was excluded from demand/receipt figures (unknown type,
+    // transfer, reversal, …) or flag sign/direction conflicts, instead of
+    // only ever seeing the already-aggregated consumption numbers above.
+    // Only present for datasets created after the normalization engine was
+    // wired in; older datasets simply have no normalization row to read.
+    const normRow = await db('datasets').where({ id: body.movementsDatasetId, tenant_id: req.user!.tenantId }).first();
+    if (normRow?.normalization_summary) {
+      const normSummary = JSON.parse(normRow.normalization_summary);
+      metrics.push(
+        { metric: 'unknown_transaction_rows', value: normSummary.unknownTransactionRows ?? 0, source: 'transaction-normalization' },
+        { metric: 'sign_conflicts', value: normSummary.signConflicts ?? 0, source: 'transaction-normalization' },
+        { metric: 'direction_conflicts', value: normSummary.directionConflicts ?? 0, source: 'transaction-normalization' },
+      );
+      findings.transactionNormalization = {
+        sourceSystem: normRow.source_system ?? 'unknown',
+        sourceReportType: normRow.source_report_type ?? 'unknown',
+        // Category counts explain exclusions: transfers/returns/adjustments/
+        // reversals/unknown are never part of receipt or consumption totals.
+        categoryBreakdown: {
+          receipt: normSummary.receiptRows, consumption: normSummary.consumptionRows,
+          transfers: normSummary.transferRows, returns: normSummary.returnRows,
+          adjustments: normSummary.adjustmentRows, reversals: normSummary.reversalRows,
+          neutral: normSummary.neutralRows, unknown: normSummary.unknownTransactionRows,
+        },
+        exclusionNote: 'Transfers, returns, adjustments, reversals, neutral and unknown-type transactions are never counted as receipts or consumption; they are tracked separately.',
+        topFindings: (JSON.parse(normRow.normalization_findings ?? '[]') as { severity: string }[])
+          .filter((f) => f.severity === 'critical' || f.severity === 'high')
+          .slice(0, 10),
+      };
+    }
   }
 
   const pkg: EvidencePackage = {
@@ -147,6 +183,7 @@ aiRouter.post('/chat', asyncHandler(async (req, res) => {
 
   await db('ai_logs').insert({
     user_id: req.user!.id,
+    tenant_id: req.user!.tenantId,
     dataset_id: pkg.datasetId,
     question: body.question,
     provider: response.provider,
@@ -157,7 +194,7 @@ aiRouter.post('/chat', asyncHandler(async (req, res) => {
     output_tokens: response.usage.outputTokens,
   });
   await audit({
-    action: 'ai_query', userId: req.user!.id, entityType: 'dataset', entityId: pkg.datasetId ?? undefined,
+    action: 'ai_query', userId: req.user!.id, tenantId: req.user!.tenantId, entityType: 'dataset', entityId: pkg.datasetId ?? undefined,
     newValue: { questionLength: body.question.length, governancePassed: response.governance.passed },
     sourceIp: req.ip,
   });
@@ -177,6 +214,6 @@ aiRouter.get('/status', asyncHandler(async (_req, res) => {
 }));
 
 aiRouter.get('/history', asyncHandler(async (req, res) => {
-  const rows = await db('ai_logs').where({ user_id: req.user!.id }).orderBy('id', 'desc').limit(50);
+  const rows = await db('ai_logs').where({ user_id: req.user!.id, tenant_id: req.user!.tenantId }).orderBy('id', 'desc').limit(50);
   res.json({ history: rows });
 }));
