@@ -4,7 +4,7 @@ import { parseDate, parseNumber, normalizeText } from './parsers';
 /** A mapped row: canonical field -> raw value from the source file. */
 export type MappedRow = Partial<Record<CanonicalField, unknown>>;
 
-export type DatasetKind = 'stock' | 'movements' | 'material_master' | 'physical_inventory';
+export type DatasetKind = 'stock' | 'movements' | 'material_master' | 'physical_inventory' | 'logistics';
 
 const MAX_SAMPLES = 20;
 
@@ -396,12 +396,77 @@ export const ALL_RULES: Rule[] = [
 ];
 
 export function runQualityRules(kind: DatasetKind, rows: MappedRow[], today?: string): QualityIssue[] {
+  if (kind === 'logistics') return runLogisticsQualityRules(rows);
   const ctx: RuleContext = { kind, rows, today: today ?? new Date().toISOString().slice(0, 10) };
   const issues: QualityIssue[] = [];
   for (const rule of ALL_RULES) {
     const issue = rule(ctx);
     if (issue) issues.push(issue);
   }
+  const order: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
+  return issues.sort((a, b) => order[a.severity] - order[b.severity] || b.affectedRows - a.affectedRows);
+}
+
+function runLogisticsQualityRules(rows: MappedRow[]): QualityIssue[] {
+  const issues: QualityIssue[] = [];
+  const add = (issue: QualityIssue | null) => { if (issue) issues.push(issue); };
+  const missing = (field: CanonicalField) => collect(rows, field, (v) => normalizeText(v) === '');
+
+  let hits = missing('shipment_id');
+  add(makeIssue('missing_shipment_id', 'critical', 'Missing shipment ID', 'Every logistics row must be attributable to a shipment.', 'Provide a shipment ID or exclude the row.', false, 'Spend and service evidence cannot be joined safely.', hits, hits.length));
+
+  hits = missing('carrier_code');
+  add(makeIssue('missing_carrier', 'high', 'Missing carrier', 'Carrier attribution is required for carrier performance.', 'Provide the carrier code before carrier-level analysis.', false, 'Carrier KPIs would be understated.', hits, hits.length));
+
+  const logisticsDates: CanonicalField[] = ['planned_pickup_at', 'actual_pickup_at', 'planned_delivery_at', 'actual_delivery_at', 'pod_at', 'required_date'];
+  hits = [];
+  rows.forEach((row, i) => logisticsDates.forEach((field) => {
+    const value = row[field];
+    if (value !== undefined && value !== null && value !== '' && parseDate(value).value === null) hits.push({ row: i, column: field, value });
+  }));
+  add(makeIssue('invalid_logistics_dates', 'critical', 'Invalid logistics dates', 'One or more logistics timestamps cannot be parsed.', 'Correct the source date; do not infer an ambiguous timestamp.', false, 'Timeliness and transit metrics would be invalid.', hits, hits.length));
+
+  hits = [];
+  rows.forEach((row, i) => {
+    const pickup = parseDate(row.actual_pickup_at ?? row.planned_pickup_at).value;
+    const delivery = parseDate(row.actual_delivery_at ?? row.planned_delivery_at).value;
+    if (pickup && delivery && delivery < pickup) hits.push({ row: i, column: 'actual_delivery_at', value: row.actual_delivery_at ?? row.planned_delivery_at });
+  });
+  add(makeIssue('delivery_before_pickup', 'critical', 'Delivery before pickup', 'Delivery precedes the corresponding pickup.', 'Correct the milestone evidence before analysis.', false, 'Transit duration would be negative.', hits, hits.length));
+
+  hits = [];
+  const seenCharges = new Set<string>();
+  rows.forEach((row, i) => {
+    if (row.freight_amount === undefined && row.invoice_number === undefined) return;
+    const key = JSON.stringify([row.shipment_id, row.invoice_number, row.charge_type, parseNumber(row.freight_amount).value, normalizeText(row.currency).toUpperCase()]);
+    if (seenCharges.has(key)) hits.push({ row: i, column: 'freight_amount', value: row.freight_amount }); else seenCharges.add(key);
+  });
+  add(makeIssue('duplicate_freight_charges', 'critical', 'Duplicate freight charges', 'The same shipment/invoice/charge/value/currency combination occurs more than once.', 'Confirm and remove extraction duplicates before spend analysis.', false, 'Transport spend would be overstated.', hits, hits.length));
+
+  hits = collect(rows, 'currency', (v, row) => row.freight_amount !== undefined && normalizeText(v) === '');
+  add(makeIssue('missing_freight_currency', 'critical', 'Missing freight currency', 'A freight amount has no currency.', 'Provide the transaction currency; never assume one.', false, 'Freight totals cannot be interpreted safely.', hits, hits.length));
+
+  hits = collect(rows, 'freight_amount', (v) => v !== undefined && v !== null && v !== '' && (parseNumber(v).value === null || parseNumber(v).value! < 0));
+  add(makeIssue('invalid_freight_amount', 'critical', 'Negative or invalid freight amount', 'Freight values must be finite and non-negative.', 'Correct the amount or classify credits explicitly before import.', false, 'Spend totals would be wrong.', hits, hits.length));
+
+  const shipmentIds = new Set(rows.map((row) => normalizeText(row.shipment_id)).filter(Boolean));
+  hits = collect(rows, 'material', (v, row) => normalizeText(v) !== '' && !shipmentIds.has(normalizeText(row.shipment_id)));
+  add(makeIssue('orphan_shipment_material', 'critical', 'Orphan shipment-material reference', 'A material row references no known shipment.', 'Provide a valid shipment ID for the material row.', false, 'Material risk evidence cannot be traced to transport.', hits, hits.length));
+
+  const milestones = new Map<string, Set<string>>();
+  rows.forEach((row) => {
+    for (const field of logisticsDates) {
+      const value = normalizeText(row[field]);
+      const shipment = normalizeText(row.shipment_id);
+      if (!shipment || !value) continue;
+      const key = `${shipment}|${field}`;
+      if (!milestones.has(key)) milestones.set(key, new Set());
+      milestones.get(key)!.add(value);
+    }
+  });
+  hits = [...milestones.entries()].filter(([, values]) => values.size > 1).map(([key, values]) => ({ row: -1, column: key.split('|')[1], value: [...values].join(' | ') }));
+  add(makeIssue('conflicting_milestones', 'critical', 'Conflicting milestones', 'A shipment has multiple source values for the same milestone.', 'Reconcile the source evidence before selecting an actual timestamp.', false, 'Service metrics would depend on an arbitrary value.', hits, hits.length));
+
   const order: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
   return issues.sort((a, b) => order[a.severity] - order[b.severity] || b.affectedRows - a.affectedRows);
 }

@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "modules/analytics-api.json",
-    "bodyDigest": "e6c18071d5108840774faa39f54761bce4686695bd061c33853abfb4c0e9e8a9",
+    "bodyDigest": "0421ab738392ace6a8c2712eed1e430f1882e4a388b8d81df05ebe66ae356024",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "f41082c0aa68b5caa9c8046e663dfe84615617a57c85d2d3f24a42e2fd1ab931",
+    "inputDigest": "302055f675593b1cc146684e082823b587d0f3bc39c922ffd71df42abd4bcff1",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -87,7 +87,7 @@
       "kind": "rest",
       "path": "apps/api/src/routes/uploads.ts",
       "requestType": "HTTP /api/uploads — file upload, type detection, mapping and preview",
-      "responseType": "Upload records and detected mapping proposals",
+      "responseType": "Upload records, inventory or logistics detection, mapping proposals, and preview-only logistics quality findings",
       "stability": "evolving",
       "version": "1"
     }
@@ -438,7 +438,7 @@
     "apps/api/src/app.ts",
     "apps/api/src/server.ts"
   ],
-  "purpose": "Serve the inventory diagnostic over HTTP: resolve fail-closed tenant and membership context, ingest and version tenant-owned datasets, normalize them into the canonical transaction model, enforce tenant-scoped role-based access, and expose analytics, reconciliation and export surfaces.",
+  "purpose": "Serve the inventory diagnostic over HTTP: resolve fail-closed tenant and membership context, ingest and version tenant-owned datasets, normalize them into the canonical transaction model, enforce tenant-scoped role-based access, and expose analytics, reconciliation, export, and preview-only logistics import mapping and quality surfaces. Logistics persistence remains gated.",
   "readNext": [
     "apps/api/package.json",
     "apps/api/src/app.ts",

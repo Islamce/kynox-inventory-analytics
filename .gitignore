@@ -13,6 +13,7 @@ exports/*
 *.log
 coverage/
 .DS_Store
+__pycache__/
 
 # Playwright
 apps/web/playwright-report/

@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "ai-context.json",
-    "bodyDigest": "c219364efe053fb8d6df2782c718157143cb3a297b91e2e2136580d28e296ffa",
+    "bodyDigest": "acac7cdb9ab865c3ab5291af47534db441cf5f29c0e919051e1b0aa395c0baf4",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "f41082c0aa68b5caa9c8046e663dfe84615617a57c85d2d3f24a42e2fd1ab931",
+    "inputDigest": "302055f675593b1cc146684e082823b587d0f3bc39c922ffd71df42abd4bcff1",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -24,15 +24,15 @@
   "counts": {
     "apis": 8,
     "externalIntegrations": 4,
-    "modules": 10,
-    "modulesDeclared": 10,
+    "modules": 11,
+    "modulesDeclared": 11,
     "modulesUndeclared": 0,
     "permissions": 11
   },
   "drift": {
     "counts": {
       "error": 0,
-      "info": 1,
+      "info": 2,
       "warning": 0
     },
     "detail": ".ai/drift.json",
@@ -78,7 +78,7 @@
         "apps/api/src/app.ts",
         "apps/api/src/server.ts"
       ],
-      "purpose": "Serve the inventory diagnostic over HTTP: resolve fail-closed tenant and membership context, ingest and version tenant-owned datasets, normalize them into the canonical transaction model, enforce tenant-scoped role-based access, and expose analytics, reconciliation and export surfaces."
+      "purpose": "Serve the inventory diagnostic over HTTP: resolve fail-closed tenant and membership context, ingest and version tenant-owned datasets, normalize them into the canonical transaction model, enforce tenant-scoped role-based access, and expose analytics, reconciliation, export, and preview-only logistics import mapping and quality surfaces. Logistics persistence remains gated."
     },
     {
       "confidence": "verified",
@@ -168,6 +168,24 @@
       "confidence": "verified",
       "declared": true,
       "declaredConfidence": "verified",
+      "dependsOn": [
+        "analytics-shared-types"
+      ],
+      "detail": "modules/analytics-logistics-engine.json",
+      "hasDiscoveredCode": true,
+      "id": "analytics-logistics-engine",
+      "owner": "Data",
+      "path": "packages/logistics-engine",
+      "publicEntryPoints": [
+        "packages/logistics-engine/package.json",
+        "packages/logistics-engine/src/index.ts"
+      ],
+      "purpose": "Compute bounded Logistics Intelligence metrics as pure, evidence-oriented functions without owning warehouse execution, project/WBS truth, or transport execution."
+    },
+    {
+      "confidence": "verified",
+      "declared": true,
+      "declaredConfidence": "verified",
       "dependsOn": [],
       "detail": "modules/analytics-runtime-entry.json",
       "hasDiscoveredCode": true,
@@ -192,7 +210,8 @@
       "path": "packages/shared-types",
       "publicEntryPoints": [
         "packages/shared-types/package.json",
-        "packages/shared-types/src/index.ts"
+        "packages/shared-types/src/index.ts",
+        "packages/shared-types/src/logistics.ts"
       ],
       "purpose": "Define the types, canonical transaction vocabulary, and the single role-to-permission matrix that every other module in the platform shares."
     },

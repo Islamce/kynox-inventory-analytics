@@ -9,6 +9,7 @@ const REQUIRED_FIELDS: Record<DatasetKind, CanonicalField[]> = {
   movements: ['material', 'movement_qty', 'posting_date'],
   material_master: ['material'],
   physical_inventory: ['material', 'book_qty', 'counted_qty'],
+  logistics: ['shipment_id', 'carrier_code'],
 };
 
 const VALUE_FIELDS: Record<DatasetKind, CanonicalField[]> = {
@@ -16,6 +17,7 @@ const VALUE_FIELDS: Record<DatasetKind, CanonicalField[]> = {
   movements: ['movement_qty', 'movement_value'],
   material_master: ['standard_price', 'moving_avg_price', 'lead_time_days'],
   physical_inventory: ['book_qty', 'counted_qty'],
+  logistics: ['quantity', 'weight', 'volume', 'freight_amount'],
 };
 
 /**

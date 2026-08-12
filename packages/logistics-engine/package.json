@@ -1,0 +1,19 @@
+{
+  "name": "@kynox/logistics-engine",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p .",
+    "typecheck": "tsc -p . --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@kynox/shared-types": "1.0.0"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.7"
+  }
+}

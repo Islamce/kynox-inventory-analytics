@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "architecture.json",
-    "bodyDigest": "3fe2933f485fa2cab730fb672289ca41b993735c1055406dcec9a5436abf2ec6",
+    "bodyDigest": "6a10d3f615d833448a5595ce60c379233471c56730cf845d5fa970822b4c366c",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "f41082c0aa68b5caa9c8046e663dfe84615617a57c85d2d3f24a42e2fd1ab931",
+    "inputDigest": "302055f675593b1cc146684e082823b587d0f3bc39c922ffd71df42abd4bcff1",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -110,7 +110,7 @@
       "module": "analytics-api",
       "path": "apps/api/src/routes/uploads.ts",
       "requestType": "HTTP /api/uploads — file upload, type detection, mapping and preview",
-      "responseType": "Upload records and detected mapping proposals",
+      "responseType": "Upload records, inventory or logistics detection, mapping proposals, and preview-only logistics quality findings",
       "sourceManifest": "apps/api/kaaf.module.json",
       "stability": "evolving",
       "version": "1"
@@ -144,6 +144,10 @@
       },
       {
         "from": "analytics-engine",
+        "to": "analytics-shared-types"
+      },
+      {
+        "from": "analytics-logistics-engine",
         "to": "analytics-shared-types"
       }
     ],
@@ -230,6 +234,14 @@
         ],
         "from": "analytics-engine",
         "to": "analytics-shared-types"
+      },
+      {
+        "declared": true,
+        "evidence": [
+          "packages/logistics-engine/src/risk.ts"
+        ],
+        "from": "analytics-logistics-engine",
+        "to": "analytics-shared-types"
       }
     ],
     "edges": [
@@ -260,6 +272,10 @@
       {
         "from": "analytics-engine",
         "to": "analytics-shared-types"
+      },
+      {
+        "from": "analytics-logistics-engine",
+        "to": "analytics-shared-types"
       }
     ],
     "hasCycles": false,
@@ -274,7 +290,7 @@
   "drift": {
     "counts": {
       "error": 0,
-      "info": 1,
+      "info": 2,
       "warning": 0
     },
     "detail": ".ai/drift.json",
@@ -409,7 +425,7 @@
         "apps/api/src/app.ts",
         "apps/api/src/server.ts"
       ],
-      "purpose": "Serve the inventory diagnostic over HTTP: resolve fail-closed tenant and membership context, ingest and version tenant-owned datasets, normalize them into the canonical transaction model, enforce tenant-scoped role-based access, and expose analytics, reconciliation and export surfaces.",
+      "purpose": "Serve the inventory diagnostic over HTTP: resolve fail-closed tenant and membership context, ingest and version tenant-owned datasets, normalize them into the canonical transaction model, enforce tenant-scoped role-based access, and expose analytics, reconciliation, export, and preview-only logistics import mapping and quality surfaces. Logistics persistence remains gated.",
       "sourceManifest": "apps/api/kaaf.module.json"
     },
     {
@@ -439,6 +455,7 @@
       "ownedEntities": [
         "cleansing-proposal",
         "date-normalization-result",
+        "logistics-quality-rule",
         "normalization-finding",
         "quality-rule",
         "quality-score"
@@ -622,6 +639,63 @@
     },
     {
       "confidence": "verified",
+      "confidenceReason": "Declared and corroborated by 8 discovered code file(s).",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependedOnBy": [],
+      "dependsOn": [
+        "analytics-shared-types"
+      ],
+      "discovery": {
+        "codeFileCount": 8,
+        "discovered": true,
+        "entryPoints": [],
+        "languages": [
+          "json",
+          "typescript"
+        ],
+        "parseErrors": [],
+        "publicSymbols": [
+          "FreightCharge",
+          "MaterialAvailabilityRisk",
+          "MaterialAvailabilityRiskInput",
+          "ShipmentTiming",
+          "TimelinessResult",
+          "Timestamp",
+          "actualTransitMinutes",
+          "evaluateDeliveryTimeliness",
+          "evaluateMaterialAvailabilityRisk",
+          "evaluatePickupTimeliness",
+          "plannedTransitMinutes",
+          "totalFreightByCurrency",
+          "transitVarianceMinutes"
+        ],
+        "sourceFileCount": 11
+      },
+      "id": "analytics-logistics-engine",
+      "ownedEntities": [
+        "carrier-performance-metric",
+        "decomposable-carrier-score",
+        "freight-cost-indicator",
+        "freight-total-by-currency",
+        "logistics-decision-object",
+        "material-availability-risk",
+        "material-shipment-risk",
+        "shipment-timeliness-result",
+        "transit-variance",
+        "transport-spend-analysis"
+      ],
+      "owner": "Data",
+      "path": "packages/logistics-engine",
+      "publicEntryPoints": [
+        "packages/logistics-engine/package.json",
+        "packages/logistics-engine/src/index.ts"
+      ],
+      "purpose": "Compute bounded Logistics Intelligence metrics as pure, evidence-oriented functions without owning warehouse execution, project/WBS truth, or transport execution.",
+      "sourceManifest": "packages/logistics-engine/kaaf.module.json"
+    },
+    {
+      "confidence": "verified",
       "confidenceReason": "Declared and corroborated by 2 discovered code file(s).",
       "declared": true,
       "declaredConfidence": "verified",
@@ -656,18 +730,19 @@
     },
     {
       "confidence": "verified",
-      "confidenceReason": "Declared and corroborated by 2 discovered code file(s).",
+      "confidenceReason": "Declared and corroborated by 4 discovered code file(s).",
       "declared": true,
       "declaredConfidence": "verified",
       "dependedOnBy": [
         "analytics-ai-engine",
         "analytics-api",
         "analytics-data-quality",
-        "analytics-engine"
+        "analytics-engine",
+        "analytics-logistics-engine"
       ],
       "dependsOn": [],
       "discovery": {
-        "codeFileCount": 2,
+        "codeFileCount": 4,
         "discovered": true,
         "entryPoints": [],
         "languages": [
@@ -684,48 +759,71 @@
           "AiChatResponse",
           "AiEvidence",
           "AiInsight",
+          "AvailabilitySnapshot",
           "CanonicalField",
+          "CarrierRef",
           "CleansingAction",
           "ColumnMapping",
           "DatasetSummary",
+          "DecisionEvidenceRef",
+          "DecisionObject",
           "ExcessResult",
           "ForecastAccuracy",
           "ForecastComparison",
           "ForecastResult",
+          "FreightCharge",
           "HealthWeights",
           "IssueSeverity",
           "KpiValue",
+          "LogisticsDate",
+          "LogisticsId",
+          "LogisticsMilestone",
+          "LogisticsTimestamp",
           "MaterialMasterRow",
+          "MaterialRequirementRef",
           "MovementCategory",
           "MovementRow",
           "Permission",
           "PhysicalInventoryRow",
           "QualityIssue",
           "QualityScores",
+          "R4CRequirementRef",
           "ROLE_PERMISSIONS",
           "ReportDetectionResult",
           "ReportType",
+          "ReservationRef",
           "Role",
+          "Shipment",
+          "ShipmentLeg",
+          "ShipmentMaterial",
           "ShortageResult",
+          "SourceReference",
           "StockRow",
+          "WarehouseMovementEvidence",
+          "WarehouseRef",
           "XyzClass",
           "XyzResult"
         ],
-        "sourceFileCount": 5
+        "sourceFileCount": 7
       },
       "id": "analytics-shared-types",
       "ownedEntities": [
         "canonical-transaction-category",
+        "logistics-contract",
+        "logistics-decision-object",
         "permission",
+        "r4c-requirement-reference",
         "role",
         "role-permission-matrix",
-        "shared-api-dto"
+        "shared-api-dto",
+        "warehouse-read-model"
       ],
       "owner": "Backend",
       "path": "packages/shared-types",
       "publicEntryPoints": [
         "packages/shared-types/package.json",
-        "packages/shared-types/src/index.ts"
+        "packages/shared-types/src/index.ts",
+        "packages/shared-types/src/logistics.ts"
       ],
       "purpose": "Define the types, canonical transaction vocabulary, and the single role-to-permission matrix that every other module in the platform shares.",
       "sourceManifest": "packages/shared-types/kaaf.module.json"

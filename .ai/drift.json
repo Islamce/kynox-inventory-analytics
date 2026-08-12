@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "drift.json",
-    "bodyDigest": "a3cf746ddafba8e491c1474305e6519574051daab8a79a860593da873dac3838",
+    "bodyDigest": "75be82578f9c1ce883166f098eb3bae7cf64988c2b373df268b78b86fc3e6154",
     "confidence": "derived",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "f41082c0aa68b5caa9c8046e663dfe84615617a57c85d2d3f24a42e2fd1ab931",
+    "inputDigest": "302055f675593b1cc146684e082823b587d0f3bc39c922ffd71df42abd4bcff1",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -39,13 +39,17 @@
       "level": "verified",
       "reason": "Declared and corroborated by 31 discovered code file(s)."
     },
+    "analytics-logistics-engine": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 8 discovered code file(s)."
+    },
     "analytics-runtime-entry": {
       "level": "verified",
       "reason": "Declared and corroborated by 2 discovered code file(s)."
     },
     "analytics-shared-types": {
       "level": "verified",
-      "reason": "Declared and corroborated by 2 discovered code file(s)."
+      "reason": "Declared and corroborated by 4 discovered code file(s)."
     },
     "analytics-web": {
       "level": "verified",
@@ -54,7 +58,7 @@
   },
   "counts": {
     "error": 0,
-    "info": 1,
+    "info": 2,
     "warning": 0
   },
   "declaredModules": [
@@ -65,6 +69,7 @@
     "analytics-engine",
     "analytics-fixtures",
     "analytics-kaaf-tooling",
+    "analytics-logistics-engine",
     "analytics-runtime-entry",
     "analytics-shared-types",
     "analytics-web"
@@ -145,6 +150,13 @@
       ],
       "from": "analytics-engine",
       "to": "analytics-shared-types"
+    },
+    {
+      "evidence": [
+        "packages/logistics-engine/src/risk.ts"
+      ],
+      "from": "analytics-logistics-engine",
+      "to": "analytics-shared-types"
     }
   ],
   "discoveredModules": [
@@ -155,11 +167,31 @@
     "analytics-engine",
     "analytics-fixtures",
     "analytics-kaaf-tooling",
+    "analytics-logistics-engine",
     "analytics-runtime-entry",
     "analytics-shared-types",
     "analytics-web"
   ],
   "findings": [
+    {
+      "evidence": [
+        "FreightCharge",
+        "MaterialAvailabilityRisk",
+        "MaterialAvailabilityRiskInput",
+        "ShipmentTiming",
+        "TimelinessResult",
+        "Timestamp",
+        "actualTransitMinutes",
+        "evaluateDeliveryTimeliness",
+        "evaluateMaterialAvailabilityRisk",
+        "evaluatePickupTimeliness"
+      ],
+      "module": "analytics-logistics-engine",
+      "recommendation": "Consider whether this module is really two (docs/kaaf/STANDARDS.md §1).",
+      "severity": "info",
+      "summary": "13 public symbols at the entry points (guideline is 10).",
+      "type": "large-public-surface"
+    },
     {
       "evidence": [
         "ALL_ROLES",
@@ -170,13 +202,13 @@
         "AiChatResponse",
         "AiEvidence",
         "AiInsight",
-        "CanonicalField",
-        "CleansingAction"
+        "AvailabilitySnapshot",
+        "CanonicalField"
       ],
       "module": "analytics-shared-types",
       "recommendation": "Consider whether this module is really two (docs/kaaf/STANDARDS.md §1).",
       "severity": "info",
-      "summary": "34 public symbols at the entry points (guideline is 10).",
+      "summary": "52 public symbols at the entry points (guideline is 10).",
       "type": "large-public-surface"
     }
   ],
