@@ -110,3 +110,4 @@ export function evaluateMaterialAvailabilityRisk(input: MaterialAvailabilityRisk
 
 export * from './spend';
 export * from './carrier-performance';
+export * from './risk';
