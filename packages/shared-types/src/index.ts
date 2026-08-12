@@ -3,6 +3,10 @@
  * Kynox Supply Chain & Materials Intelligence Platform.
  */
 
+// Source-independent canonical model (transactions, material master, date
+// normalization, mapping confidence, normalization issue codes).
+export * from './canonical';
+
 // ---------------------------------------------------------------------------
 // Canonical field identifiers
 // ---------------------------------------------------------------------------
@@ -60,7 +64,26 @@ export type CanonicalField =
   | 'count_difference'
   | 'last_receipt_date'
   | 'last_issue_date'
-  | 'last_movement_date';
+  | 'last_movement_date'
+  // --- Generic / source-independent fields (added for non-SAP sources) ---
+  | 'transaction_date'
+  | 'transaction_direction'
+  | 'debit_credit_indicator'
+  | 'receipt_qty'
+  | 'issue_qty'
+  | 'location'
+  | 'site'
+  | 'business_unit'
+  | 'opening_qty'
+  | 'closing_qty'
+  | 'unit_cost'
+  | 'transaction_value'
+  | 'stock_status'
+  | 'sku'
+  | 'part_number'
+  | 'item_code'
+  | 'transaction_id'
+  | 'reference_document';
 
 /** Known SAP / ERP report types the detector recognises. */
 export type ReportType =
@@ -381,7 +404,15 @@ export type Role =
   | 'data_analyst'
   | 'auditor'
   | 'executive_viewer'
-  | 'read_only';
+  | 'read_only'
+  /**
+   * Anonymous public-demo identity (PUBLIC_DEMO_MODE only — see
+   * apps/api/src/middleware/auth.ts). Never created via signup or the admin
+   * user-management UI; synthesized per browser session so an anonymous
+   * marketing-site visitor can upload a file and see real analysis results
+   * without an account, scoped to only the data they themselves uploaded.
+   */
+  | 'guest';
 
 export type Permission =
   | 'upload'
@@ -435,6 +466,14 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
   auditor: ['view_dataset', 'view_audit', 'export'],
   executive_viewer: ['view_dataset', 'run_analysis', 'view_financials', 'use_ai'],
   read_only: ['view_dataset'],
+  // Core upload -> analyze -> export workflow only. Deliberately excludes
+  // use_ai (cost-bearing), manage_users, delete_dataset, view_audit and
+  // change_config — admin/governance/AI stay behind real login even when
+  // PUBLIC_DEMO_MODE is on.
+  guest: [
+    'upload', 'view_dataset', 'edit_mapping', 'approve_cleansing', 'run_analysis',
+    'view_financials', 'export',
+  ],
 };
 
 export const ALL_ROLES = Object.keys(ROLE_PERMISSIONS) as Role[];

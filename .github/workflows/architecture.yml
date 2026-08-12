@@ -1,0 +1,178 @@
+name: KAAF Architecture
+
+# Keeps this repository's generated architecture context honest.
+#
+# The context lives in .ai/ and is generated from the kaaf.module.json manifests
+# plus the real source tree. These gates reject it when it is stale, hand-edited,
+# or disagrees with the code.
+#
+# The tooling in scripts/architecture/ is vendored from Islamce/KAAF — see
+# scripts/architecture/VENDORED.md. Fix defects upstream, not here.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kaaf-architecture-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  verify-generated-context:
+    name: Verify generated AI context
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # Regenerate-and-diff: the committed .ai/ must be exactly what the current
+      # manifests and source produce. Fails on stale output and hand-edits alike.
+      - name: Check generated context is current
+        run: python3 ./scripts/architecture/generate.py --check
+
+      # Independent of the above: provenance markers, confidence levels and the
+      # digests recorded in each artifact.
+      - name: Validate generated context provenance
+        run: python3 ./scripts/architecture/validators/validate_generated.py
+
+      - name: Validate the published index against its schema
+        run: python3 ./scripts/architecture/validators/validate_index.py
+
+      - name: Confirm the working tree is unchanged
+        run: |
+          set -eu
+          if ! git diff --exit-code; then
+            echo "::error::Verification modified tracked files; .ai/ is not current."
+            echo "Run ./scripts/architecture/generate.sh and commit the result."
+            exit 1
+          fi
+          echo "Working tree clean: verification wrote nothing."
+
+      - name: Publish architecture diagrams
+        if: always()
+        run: |
+          {
+            echo "## Architecture"
+            echo
+            for diagram in .ai/diagrams/context.md .ai/diagrams/container*.md; do
+              [ -e "$diagram" ] || continue
+              sed -e '/^<!-- KAAF-GENERATED/d' -e '/^<!-- kaaf:bodyDigest/d' "$diagram"
+              echo
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  report-drift:
+    name: Report declared-versus-discovered drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # Fails only on error-severity drift: an undeclared cross-module import, a
+      # real import cycle, or source that will not parse. Code that has outrun its
+      # manifest is reported without blocking.
+      - name: Report drift
+        run: python3 ./scripts/architecture/validators/validate_drift.py | tee drift-report.txt
+
+      - name: Publish the drift report
+        if: always()
+        run: |
+          {
+            echo "## Declared versus discovered"
+            echo
+            echo '```'
+            cat drift-report.txt 2>/dev/null || echo "report unavailable"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  check-contracts:
+    name: Check contract compatibility
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # The baseline is the index committed on the base branch — no artifact
+      # download and no dependency on another repository's CI being available.
+      - name: Extract the baseline index
+        id: baseline
+        run: |
+          set -eu
+          base="origin/${{ github.base_ref }}"
+          if git show "$base:.ai/index/repository.json" > baseline-index.json 2>/dev/null; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "No index on $base yet — nothing to compare against."
+          fi
+
+      - name: Compare the published contract surface
+        if: steps.baseline.outputs.found == 'true'
+        run: |
+          python3 ./scripts/architecture/compat.py \
+            --baseline baseline-index.json \
+            --current .ai/index/repository.json \
+            --fail-on-breaking | tee contract-report.txt
+
+      - name: Publish the contract report
+        if: always() && steps.baseline.outputs.found == 'true'
+        run: |
+          {
+            echo "## Contract compatibility"
+            echo
+            echo '```'
+            cat contract-report.txt 2>/dev/null || echo "report unavailable"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  announce-index:
+    name: Announce the published index
+    runs-on: ubuntu-latest
+    needs: [verify-generated-context]
+    if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      # Publication is the commit: .ai/index/repository.json is committed and
+      # verified above, so this merge is the published version — permanently
+      # addressable by SHA, with no storage quota and nothing to expire.
+      - name: Announce
+        run: |
+          set -eu
+          repository="${{ github.repository }}"
+          sha="${{ github.sha }}"
+          path=".ai/index/repository.json"
+          schema=$(python3 -c "import json;print(json.load(open('$path'))['indexSchemaVersion'])")
+          {
+            echo "## Enterprise index published"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Repository | \`$repository\` |"
+            echo "| Commit | \`$sha\` |"
+            echo "| Index schema | \`$schema\` |"
+            echo
+            echo '```bash'
+            echo "gh api repos/$repository/contents/$path?ref=$sha \\"
+            echo "  --jq '.content' | base64 -d > analytics-index.json"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

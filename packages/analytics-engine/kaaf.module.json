@@ -1,0 +1,30 @@
+{
+  "apis": [],
+  "confidence": "verified",
+  "consumes": [],
+  "dependsOn": [
+    "analytics-shared-types"
+  ],
+  "externalIntegrations": [],
+  "flows": [],
+  "id": "analytics-engine",
+  "ownedEntities": [
+    "abc-classification",
+    "xyz-classification",
+    "aging-bucket",
+    "consumption-profile",
+    "excess-result",
+    "shortage-result",
+    "health-score",
+    "forecast",
+    "planning-recommendation"
+  ],
+  "owner": "Data",
+  "permissions": [],
+  "publicEntryPoints": [
+    "packages/analytics-engine/package.json",
+    "packages/analytics-engine/src/index.ts"
+  ],
+  "purpose": "Compute the inventory analytics the product sells — ABC, XYZ, aging, consumption, excess, shortage, health, forecasting and planning — as pure functions over canonical transactions.",
+  "schemaVersion": "1.0.0"
+}

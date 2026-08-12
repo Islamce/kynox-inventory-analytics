@@ -46,8 +46,12 @@ export const AGENTS: Record<AgentId, AgentDefinition> = {
   data_quality: {
     id: 'data_quality',
     name: 'Data Quality Agent',
-    intents: ['quality', 'error', 'duplicate', 'missing', 'invalid', 'cleansing', 'clean'],
-    systemPrompt: `You are the Data Quality Agent. You interpret validation findings: rank severity, explain which analyses each issue affects, and recommend cleansing steps. Never recommend an automatic fix that could alter business meaning.${SHARED_GUARDRAILS}`,
+    intents: [
+      'quality', 'error', 'duplicate', 'missing', 'invalid', 'cleansing', 'clean',
+      'unknown transaction', 'unknown type', 'exclude', 'excluded', 'normalization', 'normalisation',
+      'classification', 'classified', 'sign conflict', 'direction conflict', 'ambiguous date',
+    ],
+    systemPrompt: `You are the Data Quality Agent. You interpret validation findings AND transaction-normalization findings (from the source-independent canonical engine: date parsing, quantity-sign resolution, and transaction category/direction classification). When asked why a transaction is "unknown" or excluded from receipt/consumption totals, explain it from the categoryBreakdown and exclusionNote evidence — transfers, returns, adjustments, reversals, neutral and unknown-type transactions are never counted as receipts or consumption. Rank severity, explain which analyses each issue affects, and recommend cleansing or reclassification steps. Never recommend an automatic fix that could alter business meaning.${SHARED_GUARDRAILS}`,
   },
   inventory_analyst: {
     id: 'inventory_analyst',

@@ -14,8 +14,8 @@ interface FieldSynonyms {
 }
 
 const SYNONYMS: FieldSynonyms[] = [
-  { field: 'material', sapTechnical: ['MATNR'], synonyms: ['material', 'material number', 'material code', 'material no', 'item', 'item code', 'item number', 'part number', 'sku', 'رقم المادة', 'المادة', 'الصنف', 'رقم الصنف', 'كود المادة'] },
-  { field: 'material_description', sapTechnical: ['MAKTX'], synonyms: ['material description', 'description', 'item description', 'short text', 'material text', 'وصف المادة', 'الوصف', 'اسم الصنف', 'اسم المادة'] },
+  { field: 'material', sapTechnical: ['MATNR'], synonyms: ['material', 'material number', 'material code', 'material no', 'item', 'item code', 'item number', 'item id', 'sku', 'product code', 'product id', 'part number', 'part no', 'stock code', 'inventory item', 'رقم المادة', 'المادة', 'الصنف', 'رقم الصنف', 'كود المادة'] },
+  { field: 'material_description', sapTechnical: ['MAKTX'], synonyms: ['material description', 'description', 'item description', 'item name', 'product description', 'product name', 'short text', 'material text', 'وصف المادة', 'الوصف', 'اسم الصنف', 'اسم المادة'] },
   { field: 'material_type', sapTechnical: ['MTART'], synonyms: ['material type', 'mat type', 'type', 'نوع المادة'] },
   { field: 'material_group', sapTechnical: ['MATKL'], synonyms: ['material group', 'mat group', 'group', 'commodity', 'مجموعة المواد', 'المجموعة'] },
   { field: 'base_unit', sapTechnical: ['MEINS'], synonyms: ['base unit', 'base unit of measure', 'uom', 'unit', 'unit of measure', 'bun', 'وحدة القياس', 'الوحدة'] },
@@ -41,11 +41,16 @@ const SYNONYMS: FieldSynonyms[] = [
   { field: 'min_stock', sapTechnical: [], synonyms: ['minimum stock', 'min stock', 'min', 'الحد الأدنى'] },
   { field: 'max_stock', sapTechnical: ['MABST'], synonyms: ['maximum stock', 'max stock', 'max', 'الحد الأقصى'] },
   { field: 'lead_time_days', sapTechnical: ['PLIFZ'], synonyms: ['lead time', 'planned delivery time', 'delivery time', 'plnd delivery time', 'مدة التوريد'] },
-  { field: 'movement_type', sapTechnical: ['BWART'], synonyms: ['movement type', 'mvt', 'mvt type', 'mov type', 'نوع الحركة'] },
-  { field: 'movement_qty', sapTechnical: ['MENGE'], synonyms: ['movement quantity', 'qty in unit of entry', 'quantity', 'كمية الحركة'] },
+  { field: 'movement_type', sapTechnical: ['BWART'], synonyms: ['movement type', 'mvt', 'mvt type', 'mov type', 'movement code', 'movement description', 'transaction type', 'transaction category', 'activity', 'operation', 'issue type', 'receipt type', 'نوع الحركة'] },
+  { field: 'movement_qty', sapTechnical: ['MENGE', 'ERFMG'], synonyms: ['movement quantity', 'qty in unit of entry', 'quantity', 'transaction quantity', 'posted quantity', 'كمية الحركة'] },
   { field: 'movement_value', sapTechnical: ['DMBTR'], synonyms: ['amount in local currency', 'movement value', 'amount', 'قيمة الحركة'] },
-  { field: 'posting_date', sapTechnical: ['BUDAT'], synonyms: ['posting date', 'pstng date', 'post date', 'تاريخ الترحيل', 'تاريخ القيد'] },
+  { field: 'posting_date', sapTechnical: ['BUDAT'], synonyms: ['posting date', 'pstng date', 'post date', 'posting time', 'transaction date', 'movement date', 'entry date', 'created date', 'receipt date', 'issue date', 'تاريخ الترحيل', 'تاريخ القيد', 'تاريخ الحركة'] },
   { field: 'document_date', sapTechnical: ['BLDAT'], synonyms: ['document date', 'doc date', 'تاريخ المستند'] },
+  // --- Generic, source-independent signals (used by the classification engine) ---
+  { field: 'transaction_direction', sapTechnical: ['SHKZG'], synonyms: ['direction', 'transaction direction', 'debit credit indicator', 'debit/credit', 'dr cr', 'in out', 'in/out'] },
+  { field: 'receipt_qty', sapTechnical: [], synonyms: ['receipt qty', 'receipt quantity', 'received qty', 'received quantity', 'in quantity', 'in qty', 'qty in'] },
+  { field: 'issue_qty', sapTechnical: [], synonyms: ['issue qty', 'issue quantity', 'issued qty', 'issued quantity', 'out quantity', 'out qty', 'qty out'] },
+  { field: 'unit_cost', sapTechnical: [], synonyms: ['unit cost', 'price', 'extended cost', 'total cost'] },
   { field: 'document_number', sapTechnical: ['MBLNR', 'BELNR'], synonyms: ['material document', 'document number', 'material doc', 'doc number', 'doc no', 'رقم المستند'] },
   { field: 'reservation', sapTechnical: ['RSNUM'], synonyms: ['reservation', 'reservation number', 'رقم الحجز'] },
   { field: 'purchase_order', sapTechnical: ['EBELN'], synonyms: ['purchase order', 'po', 'po number', 'purchasing document', 'أمر الشراء'] },

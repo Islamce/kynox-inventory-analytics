@@ -57,6 +57,11 @@ export function createApp(): express.Express {
       res.status(503).json({ status: 'not-ready' });
     }
   });
+  // Unauthenticated by design — the frontend needs this before it knows
+  // whether a login is required at all.
+  app.get('/api/config/public', (_req, res) => {
+    res.json({ publicDemoMode: config.publicDemoMode });
+  });
 
   app.use('/api/auth', authRouter);
   app.use('/api/admin', adminRouter);

@@ -1,12 +1,20 @@
 import { Router } from 'express';
 import { requireAuth, requirePermission } from '../middleware/auth';
+import { guardGuestDatasetParam, guardGuestDatasetQueryParams } from '../middleware/guestScope';
 import { asyncHandler, HttpError } from '../middleware/errors';
 import { audit } from '../services/audit';
 import * as svc from '../services/analytics';
+import { reconciliationAnalysis } from '../services/reconciliation';
 import type { ExcessMethod, Granularity, AgingDateBasis } from '@kynox/analytics-engine';
 
 export const analyticsRouter = Router();
-analyticsRouter.use(requireAuth, requirePermission('run_analysis'));
+analyticsRouter.use(requireAuth, requirePermission('run_analysis'), guardGuestDatasetQueryParams);
+// Covers every :stockDatasetId/:movementsDatasetId/:datasetId path segment
+// across every route below (e.g. /matrix/:stockDatasetId/:movementsDatasetId)
+// with no per-route wiring.
+analyticsRouter.param('stockDatasetId', guardGuestDatasetParam);
+analyticsRouter.param('movementsDatasetId', guardGuestDatasetParam);
+analyticsRouter.param('datasetId', guardGuestDatasetParam);
 
 const intParam = (v: unknown, name: string): number => {
   const n = Number(v);
@@ -94,7 +102,7 @@ analyticsRouter.get('/forecast/:movementsDatasetId', asyncHandler(async (req, re
   const material = String(req.query.material ?? '');
   if (!material) throw new HttpError(400, 'material query parameter is required');
   const result = await svc.forecastAnalysis(id, material, granularity(req.query.granularity));
-  await audit({ action: 'analysis_run', userId: req.user!.id, entityType: 'forecast', entityId: material, sourceIp: req.ip });
+  await audit({ action: 'analysis_run', userId: req.user!.id, tenantId: req.user!.tenantId, entityType: 'forecast', entityId: material, sourceIp: req.ip });
   res.json(result);
 }));
 
@@ -106,6 +114,12 @@ analyticsRouter.get('/planning/:stockDatasetId/:movementsDatasetId', asyncHandle
     intParam(req.params.movementsDatasetId, 'movements dataset id'),
     material,
   ));
+}));
+
+// Phase 2: opening + movements = closing reconciliation, from canonical_transactions.
+analyticsRouter.get('/reconciliation/:movementsDatasetId', asyncHandler(async (req, res) => {
+  const id = intParam(req.params.movementsDatasetId, 'movements dataset id');
+  res.json(await reconciliationAnalysis(id, optInt(req.query.stockDatasetId)));
 }));
 
 analyticsRouter.get('/physical/:datasetId', asyncHandler(async (req, res) => {

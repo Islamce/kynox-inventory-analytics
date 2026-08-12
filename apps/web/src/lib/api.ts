@@ -2,6 +2,7 @@
 
 const TOKEN_KEY = 'kynox.token';
 const USER_KEY = 'kynox.user';
+const GUEST_SESSION_KEY = 'kynox.guestSession';
 
 export interface SessionUser {
   id: number;
@@ -25,9 +26,36 @@ export function setSession(token: string, user: SessionUser): void {
   localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
+/** Records the resolved anonymous-guest identity for display/nav purposes only — never a token. */
+export function setGuestUser(user: SessionUser): void {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
 export function clearSession(): void {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+}
+
+/** Stable per-browser id for an anonymous public-demo session (PUBLIC_DEMO_MODE only). */
+function getOrCreateGuestSessionId(): string {
+  let id = localStorage.getItem(GUEST_SESSION_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(GUEST_SESSION_KEY, id);
+  }
+  return id;
+}
+
+let publicConfigPromise: Promise<{ publicDemoMode: boolean }> | null = null;
+
+/** Cached for the life of the tab — whether the backend allows anonymous access at all. */
+export function getPublicConfig(): Promise<{ publicDemoMode: boolean }> {
+  if (!publicConfigPromise) {
+    publicConfigPromise = fetch('/api/config/public')
+      .then((r) => (r.ok ? r.json() : { publicDemoMode: false }))
+      .catch(() => ({ publicDemoMode: false }));
+  }
+  return publicConfigPromise;
 }
 
 export class ApiError extends Error {
@@ -53,7 +81,11 @@ async function handle(res: Response): Promise<unknown> {
 
 function authHeaders(): Record<string, string> {
   const token = getToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  if (token) return { Authorization: `Bearer ${token}` };
+  // No-op against a normal (non-demo) deployment — the backend only honours
+  // this header when PUBLIC_DEMO_MODE is on; otherwise it's ignored and the
+  // request 401s exactly as before.
+  return { 'X-Guest-Session': getOrCreateGuestSessionId() };
 }
 
 export async function apiGet<T>(path: string): Promise<T> {
