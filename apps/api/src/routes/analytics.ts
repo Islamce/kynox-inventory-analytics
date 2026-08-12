@@ -102,7 +102,7 @@ analyticsRouter.get('/forecast/:movementsDatasetId', asyncHandler(async (req, re
   const material = String(req.query.material ?? '');
   if (!material) throw new HttpError(400, 'material query parameter is required');
   const result = await svc.forecastAnalysis(id, material, granularity(req.query.granularity));
-  await audit({ action: 'analysis_run', userId: req.user!.id, entityType: 'forecast', entityId: material, sourceIp: req.ip });
+  await audit({ action: 'analysis_run', userId: req.user!.id, tenantId: req.user!.tenantId, entityType: 'forecast', entityId: material, sourceIp: req.ip });
   res.json(result);
 }));
 

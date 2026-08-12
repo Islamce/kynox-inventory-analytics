@@ -12,8 +12,12 @@ adminRouter.use(requireAuth);
 
 // ---- Users -----------------------------------------------------------------
 
-adminRouter.get('/users', requirePermission('manage_users'), asyncHandler(async (_req, res) => {
-  const users = await db('users').select('id', 'email', 'name', 'role', 'active', 'created_at').orderBy('id');
+adminRouter.get('/users', requirePermission('manage_users'), asyncHandler(async (req, res) => {
+  const users = await db('tenant_memberships')
+    .join('users', 'tenant_memberships.user_id', 'users.id')
+    .where('tenant_memberships.tenant_id', req.user!.tenantId)
+    .select('users.id', 'users.email', 'users.name', 'tenant_memberships.role', 'tenant_memberships.active', 'users.created_at')
+    .orderBy('users.id');
   res.json({ users });
 }));
 
@@ -28,15 +32,25 @@ adminRouter.post('/users', requirePermission('manage_users'), asyncHandler(async
   const body = createUserSchema.parse(req.body);
   const exists = await db('users').where({ email: body.email }).first();
   if (exists) throw new HttpError(409, 'A user with this email already exists');
-  const id = await insertGetId(db, 'users', {
-    email: body.email,
-    name: body.name,
-    password_hash: bcrypt.hashSync(body.password, 12),
-    role: body.role,
-    active: true,
+  const id = await db.transaction(async (trx) => {
+    const userId = await insertGetId(trx, 'users', {
+      email: body.email,
+      name: body.name,
+      password_hash: bcrypt.hashSync(body.password, 12),
+      role: body.role,
+      active: true,
+    });
+    await trx('tenant_memberships').insert({
+      tenant_id: req.user!.tenantId,
+      user_id: userId,
+      role: body.role,
+      active: true,
+      is_default: true,
+    });
+    return userId;
   });
   await audit({
-    action: 'user_created', userId: req.user!.id, entityType: 'user', entityId: id,
+    action: 'user_created', userId: req.user!.id, tenantId: req.user!.tenantId, entityType: 'user', entityId: id,
     newValue: { email: body.email, role: body.role }, sourceIp: req.ip,
   });
   res.status(201).json({ id });
@@ -52,23 +66,37 @@ const updateUserSchema = z.object({
 adminRouter.patch('/users/:id', requirePermission('manage_users'), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   const body = updateUserSchema.parse(req.body);
-  const user = await db('users').where({ id }).first();
+  const user = await db('tenant_memberships')
+    .join('users', 'tenant_memberships.user_id', 'users.id')
+    .where({ 'tenant_memberships.tenant_id': req.user!.tenantId, 'users.id': id })
+    .select('users.*', 'tenant_memberships.role as membership_role', 'tenant_memberships.active as membership_active')
+    .first();
   if (!user) throw new HttpError(404, 'User not found');
   if (user.id === req.user!.id && body.active === false) {
     throw new HttpError(400, 'You cannot deactivate your own account');
   }
   const update: Record<string, unknown> = {};
   if (body.name) update.name = body.name;
-  if (body.role) update.role = body.role;
-  if (body.active !== undefined) update.active = body.active;
   if (body.password) update.password_hash = bcrypt.hashSync(body.password, 12);
-  if (Object.keys(update).length === 0) throw new HttpError(400, 'Nothing to update');
-  await db('users').where({ id }).update(update);
+  if (Object.keys(update).length === 0 && body.role === undefined && body.active === undefined) {
+    throw new HttpError(400, 'Nothing to update');
+  }
+  await db.transaction(async (trx) => {
+    if (Object.keys(update).length > 0) await trx('users').where({ id }).update(update);
+    if (body.role !== undefined || body.active !== undefined) {
+      const membershipUpdate: Record<string, unknown> = {};
+      if (body.role !== undefined) membershipUpdate.role = body.role;
+      if (body.active !== undefined) membershipUpdate.active = body.active;
+      await trx('tenant_memberships')
+        .where({ tenant_id: req.user!.tenantId, user_id: id })
+        .update(membershipUpdate);
+    }
+  });
   await audit({
-    action: body.role && body.role !== user.role ? 'role_changed' : 'user_updated',
-    userId: req.user!.id, entityType: 'user', entityId: id,
-    prevValue: { role: user.role, active: !!user.active },
-    newValue: { role: body.role ?? user.role, active: body.active ?? !!user.active },
+    action: body.role && body.role !== user.membership_role ? 'role_changed' : 'user_updated',
+    userId: req.user!.id, tenantId: req.user!.tenantId, entityType: 'user', entityId: id,
+    prevValue: { role: user.membership_role, active: !!user.membership_active },
+    newValue: { role: body.role ?? user.membership_role, active: body.active ?? !!user.membership_active },
     sourceIp: req.ip,
   });
   res.json({ ok: true });
@@ -107,7 +135,7 @@ adminRouter.put('/config/:key', requirePermission('change_config'), asyncHandler
     await db('config').insert({ key, value: serialized, updated_by: req.user!.id });
   }
   await audit({
-    action: 'config_changed', userId: req.user!.id, entityType: 'config', entityId: key,
+    action: 'config_changed', userId: req.user!.id, tenantId: req.user!.tenantId, entityType: 'config', entityId: key,
     prevValue: prev ? JSON.parse(prev.value) : null, newValue: value, sourceIp: req.ip,
   });
   res.json({ ok: true });
@@ -124,9 +152,10 @@ adminRouter.get('/audit', requirePermission('view_audit'), asyncHandler(async (r
     .leftJoin('users', 'audit_log.user_id', 'users.id')
     .select('audit_log.*', 'users.email as user_email')
     .orderBy('audit_log.id', 'desc');
+  query = query.where('audit_log.tenant_id', req.user!.tenantId);
   if (action) query = query.where('audit_log.action', action);
 
   const rows = await query.limit(pageSize).offset((page - 1) * pageSize);
-  const [{ count }] = await db('audit_log').count({ count: '*' });
+  const [{ count }] = await db('audit_log').where({ tenant_id: req.user!.tenantId }).count({ count: '*' });
   res.json({ entries: rows, page, pageSize, total: Number(count) });
 }));

@@ -46,7 +46,7 @@
       "kind": "rest",
       "path": "apps/api/src/routes/auth.ts",
       "requestType": "HTTP /api/auth — login and session establishment",
-      "responseType": "JWT bearer token, non-revocable before its documented expiry",
+      "responseType": "JWT bearer token plus server-resolved active tenant membership context, non-revocable before its documented expiry",
       "stability": "stable",
       "version": "1"
     },
@@ -172,6 +172,8 @@
   "id": "analytics-api",
   "ownedEntities": [
     "user",
+    "tenant",
+    "tenant_membership",
     "dataset",
     "upload",
     "canonical_transaction",
@@ -392,6 +394,6 @@
     "apps/api/src/server.ts",
     "apps/api/src/app.ts"
   ],
-  "purpose": "Serve the inventory diagnostic over HTTP: ingest and version customer datasets, normalize them into the canonical transaction model, enforce role-based access, and expose every analytics, reconciliation and export surface.",
+  "purpose": "Serve the inventory diagnostic over HTTP: resolve fail-closed tenant and membership context, ingest and version tenant-owned datasets, normalize them into the canonical transaction model, enforce tenant-scoped role-based access, and expose analytics, reconciliation and export surfaces.",
   "schemaVersion": "1.0.0"
 }

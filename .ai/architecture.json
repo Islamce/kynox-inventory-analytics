@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "architecture.json",
-    "bodyDigest": "00d3ebdace3e3d02fabcaa0dce640ff7729ca42ec5e61fbb8fb9fc795d7bf3eb",
+    "bodyDigest": "3fe2933f485fa2cab730fb672289ca41b993735c1055406dcec9a5436abf2ec6",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "aea036e862c2a592995ef2beaf159b76a4625efdb9992e36eaf09f3b3abdf398",
+    "inputDigest": "f41082c0aa68b5caa9c8046e663dfe84615617a57c85d2d3f24a42e2fd1ab931",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -58,7 +58,7 @@
       "module": "analytics-api",
       "path": "apps/api/src/routes/auth.ts",
       "requestType": "HTTP /api/auth — login and session establishment",
-      "responseType": "JWT bearer token, non-revocable before its documented expiry",
+      "responseType": "JWT bearer token plus server-resolved active tenant membership context, non-revocable before its documented expiry",
       "sourceManifest": "apps/api/kaaf.module.json",
       "stability": "stable",
       "version": "1"
@@ -194,7 +194,6 @@
           "apps/api/src/middleware/auth.ts",
           "apps/api/src/routes/admin.ts",
           "apps/api/src/routes/ai.ts",
-          "apps/api/src/routes/auth.ts",
           "apps/api/src/routes/datasets.ts",
           "apps/api/src/routes/uploads.ts",
           "apps/api/src/services/analytics.ts",
@@ -361,7 +360,7 @@
     },
     {
       "confidence": "verified",
-      "confidenceReason": "Declared and corroborated by 37 discovered code file(s).",
+      "confidenceReason": "Declared and corroborated by 40 discovered code file(s).",
       "declared": true,
       "declaredConfidence": "verified",
       "dependedOnBy": [],
@@ -372,7 +371,7 @@
         "analytics-shared-types"
       ],
       "discovery": {
-        "codeFileCount": 37,
+        "codeFileCount": 40,
         "discovered": true,
         "entryPoints": [],
         "languages": [
@@ -384,7 +383,7 @@
         "publicSymbols": [
           "createApp"
         ],
-        "sourceFileCount": 40
+        "sourceFileCount": 43
       },
       "id": "analytics-api",
       "ownedEntities": [
@@ -398,6 +397,8 @@
         "movement",
         "physical_inventory",
         "stock_item",
+        "tenant",
+        "tenant_membership",
         "upload",
         "user"
       ],
@@ -408,7 +409,7 @@
         "apps/api/src/app.ts",
         "apps/api/src/server.ts"
       ],
-      "purpose": "Serve the inventory diagnostic over HTTP: ingest and version customer datasets, normalize them into the canonical transaction model, enforce role-based access, and expose every analytics, reconciliation and export surface.",
+      "purpose": "Serve the inventory diagnostic over HTTP: resolve fail-closed tenant and membership context, ingest and version tenant-owned datasets, normalize them into the canonical transaction model, enforce tenant-scoped role-based access, and expose analytics, reconciliation and export surfaces.",
       "sourceManifest": "apps/api/kaaf.module.json"
     },
     {
@@ -638,7 +639,7 @@
         ],
         "parseErrors": [],
         "publicSymbols": [],
-        "sourceFileCount": 42
+        "sourceFileCount": 43
       },
       "id": "analytics-runtime-entry",
       "ownedEntities": [

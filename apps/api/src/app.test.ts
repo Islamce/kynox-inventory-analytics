@@ -66,12 +66,20 @@ beforeAll(async () => {
     role: 'system_admin',
     active: true,
   });
+  const admin = await db('users').where({ email: 'test-admin@kynox.io' }).first('id');
+  await db('tenant_memberships').insert({
+    tenant_id: 'legacy-default', user_id: admin.id, role: 'system_admin', active: true, is_default: true,
+  });
   await db('users').insert({
     email: 'viewer@kynox.io',
     name: 'Read Only',
     password_hash: bcrypt.hashSync('viewer-test-password', 10),
     role: 'read_only',
     active: true,
+  });
+  const viewer = await db('users').where({ email: 'viewer@kynox.io' }).first('id');
+  await db('tenant_memberships').insert({
+    tenant_id: 'legacy-default', user_id: viewer.id, role: 'read_only', active: true, is_default: true,
   });
   // Default config used by analytics
   for (const [key, value] of Object.entries({

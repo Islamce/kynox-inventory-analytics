@@ -6,7 +6,7 @@ import crypto from 'crypto';
 import { z } from 'zod';
 import { db, insertGetId } from '../db';
 import { config } from '../config';
-import { requireAuth, requirePermission } from '../middleware/auth';
+import { requireAuth, requirePermission, type AuthUser } from '../middleware/auth';
 import { guestActionLimiter } from '../middleware/guestScope';
 import { asyncHandler, HttpError } from '../middleware/errors';
 import { audit } from '../services/audit';
@@ -48,8 +48,8 @@ uploadsRouter.use(requireAuth);
  * system administrator may read or modify an upload (IDOR protection —
  * permission checks alone would let any mapper touch other users' files).
  */
-async function getUpload(id: number, user: { id: number; role: string }) {
-  const row = await db('uploads').where({ id }).first();
+async function getUpload(id: number, user: Pick<AuthUser, 'id' | 'role' | 'tenantId'>) {
+  const row = await db('uploads').where({ id, tenant_id: user.tenantId }).first();
   if (!row) throw new HttpError(404, 'Upload not found');
   if (row.user_id !== user.id && user.role !== 'system_admin' && user.role !== 'data_admin') {
     throw new HttpError(403, 'You can only access uploads you created');
@@ -75,6 +75,7 @@ uploadsRouter.post('/', requirePermission('upload'), guestActionLimiter(20, 3600
 
   const id = await insertGetId(db, 'uploads', {
     user_id: req.user!.id,
+    tenant_id: req.user!.tenantId,
     stored_name: req.file.filename,
     original_name: sanitizeFilename(req.file.originalname),
     size_bytes: req.file.size,
@@ -90,7 +91,7 @@ uploadsRouter.post('/', requirePermission('upload'), guestActionLimiter(20, 3600
   });
 
   await audit({
-    action: 'file_uploaded', userId: req.user!.id, entityType: 'upload', entityId: id,
+    action: 'file_uploaded', userId: req.user!.id, tenantId: req.user!.tenantId, entityType: 'upload', entityId: id,
     newValue: { name: req.file.originalname, size: req.file.size, detected: detection.reportType },
     sourceIp: req.ip,
   });
@@ -109,7 +110,7 @@ uploadsRouter.post('/', requirePermission('upload'), guestActionLimiter(20, 3600
 }));
 
 uploadsRouter.get('/', asyncHandler(async (req, res) => {
-  const rows = await db('uploads').where({ user_id: req.user!.id }).orderBy('id', 'desc').limit(50);
+  const rows = await db('uploads').where({ user_id: req.user!.id, tenant_id: req.user!.tenantId }).orderBy('id', 'desc').limit(50);
   res.json({
     uploads: rows.map((r) => ({
       id: r.id, originalName: r.original_name, sizeBytes: r.size_bytes,
@@ -131,7 +132,7 @@ uploadsRouter.put('/:id/sheet', requirePermission('edit_mapping'), asyncHandler(
   if (!target) throw new HttpError(404, `Sheet '${sheet}' not found in this file`);
   const mapping = mapColumns(target.headers);
   const detection = detectReportType(mapping, target.name, row.original_name);
-  await db('uploads').where({ id: row.id }).update({
+  await db('uploads').where({ id: row.id, tenant_id: req.user!.tenantId }).update({
     sheet: target.name,
     headers: JSON.stringify(target.headers),
     mapping: JSON.stringify(mapping),
@@ -170,14 +171,14 @@ uploadsRouter.put('/:id/mapping', requirePermission('edit_mapping'), asyncHandle
   const detection = body.reportType
     ? { ...JSON.parse(row.detection ?? '{}'), reportType: body.reportType, confidence: 1, reasons: ['Manually selected by user'] }
     : detectReportType(mapping, row.sheet ?? '', row.original_name);
-  await db('uploads').where({ id: row.id }).update({
+  await db('uploads').where({ id: row.id, tenant_id: req.user!.tenantId }).update({
     mapping: JSON.stringify(mapping),
     detection: JSON.stringify(detection),
     detected_type: detection.reportType,
     status: 'mapped',
   });
   await audit({
-    action: 'mapping_changed', userId: req.user!.id, entityType: 'upload', entityId: row.id,
+    action: 'mapping_changed', userId: req.user!.id, tenantId: req.user!.tenantId, entityType: 'upload', entityId: row.id,
     prevValue: prev, newValue: mapping, sourceIp: req.ip,
   });
   res.json({ mapping, detection });

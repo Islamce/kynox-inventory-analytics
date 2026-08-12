@@ -10,7 +10,7 @@ Kynox Inventory Intelligence — a source-neutral inventory diagnostic that inge
 - Modules: 10 declared, 0 discovered only
 - Drift: 0 error, 0 warning, 1 info
 - Generator: `kaaf` v0.7.0
-- Input digest: `aea036e862c2a592…`
+- Input digest: `f41082c0aa68b5ca…`
 
 ## Modules
 
@@ -21,7 +21,7 @@ check against, `derived` = discovered with no declaration.
 | Module | Path | Owner | Purpose | Confidence |
 |---|---|---|---|---|
 | `analytics-ai-engine` | `packages/ai-engine` | AI Engineering | Run the documented analytics agents over evidence packages built from verified data, behind a provider abstraction so no single vendor is load-bearing. | `verified` |
-| `analytics-api` | `apps/api` | Backend | Serve the inventory diagnostic over HTTP: ingest and version customer datasets, normalize them into the canonical transaction model, enforce role-based access, and expose every analytics, reconciliation and export surface. | `verified` |
+| `analytics-api` | `apps/api` | Backend | Serve the inventory diagnostic over HTTP: resolve fail-closed tenant and membership context, ingest and version tenant-owned datasets, normalize them into the canonical transaction model, enforce tenant-scoped role-based access, and expose analytics, reconciliation and export surfaces. | `verified` |
 | `analytics-data-quality` | `packages/data-quality` | Data | Score incoming customer data, propose and apply cleansing, and normalize ambiguous values such as dates so downstream analytics receive evidence-tagged input. | `verified` |
 | `analytics-deployment` | `scripts/deployment` | DevOps | Carry out staged deployment and its safety operations — preflight checks, database backup and restore, rollback, and post-deploy smoke tests. Executing any of these against a real environment is a protected action requiring approval. | `verified` |
 | `analytics-engine` | `packages/analytics-engine` | Data | Compute the inventory analytics the product sells — ABC, XYZ, aging, consumption, excess, shortage, health, forecasting and planning — as pure functions over canonical transactions. | `verified` |
@@ -116,4 +116,4 @@ Full detail, with evidence and recommendations, in `.ai/drift.json`.
 Declarations come from `kaaf.repo.json` and `kaaf.module.json`. Discovery is a static
 read of the source: dynamic imports and runtime wiring are invisible to it, so the
 absence of a drift finding is not proof that none exists.
-<!-- kaaf:bodyDigest=ee831d777b8209dcc9194569cd51dcf024f78fdd52aeb5715ad750892a948c59 -->
+<!-- kaaf:bodyDigest=5f430b6cf029232b34d60a960e3ca623c05a6dba786de6e14539208289836053 -->

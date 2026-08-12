@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "ai-context.json",
-    "bodyDigest": "8662befd7da035b6d22bdd8957500bea8971c8ce516e7bb055b859dff33e479d",
+    "bodyDigest": "c219364efe053fb8d6df2782c718157143cb3a297b91e2e2136580d28e296ffa",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "aea036e862c2a592995ef2beaf159b76a4625efdb9992e36eaf09f3b3abdf398",
+    "inputDigest": "f41082c0aa68b5caa9c8046e663dfe84615617a57c85d2d3f24a42e2fd1ab931",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -78,7 +78,7 @@
         "apps/api/src/app.ts",
         "apps/api/src/server.ts"
       ],
-      "purpose": "Serve the inventory diagnostic over HTTP: ingest and version customer datasets, normalize them into the canonical transaction model, enforce role-based access, and expose every analytics, reconciliation and export surface."
+      "purpose": "Serve the inventory diagnostic over HTTP: resolve fail-closed tenant and membership context, ingest and version tenant-owned datasets, normalize them into the canonical transaction model, enforce tenant-scoped role-based access, and expose analytics, reconciliation and export surfaces."
     },
     {
       "confidence": "verified",
