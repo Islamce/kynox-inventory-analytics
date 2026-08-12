@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "drift.json",
-    "bodyDigest": "d879a2483e2e21f73eed92edeb5c6083b03fdce9836d306da9964558e723282f",
+    "bodyDigest": "33946d3dafec17d03bd9a6a975e1380492a8ff79ee4dd0761e68746b22439d73",
     "confidence": "derived",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "c93df42b992dfc5d25848a0ac47b1d360ee506e2c444308181a035bbf7dc8a56",
+    "inputDigest": "7be70e49f2965c543536e7ac23fb4c793d82ad186bcf5aa6455f41668684fec0",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -49,7 +49,7 @@
     },
     "analytics-shared-types": {
       "level": "verified",
-      "reason": "Declared and corroborated by 2 discovered code file(s)."
+      "reason": "Declared and corroborated by 4 discovered code file(s)."
     },
     "analytics-web": {
       "level": "verified",
@@ -196,13 +196,13 @@
         "AiChatResponse",
         "AiEvidence",
         "AiInsight",
-        "CanonicalField",
-        "CleansingAction"
+        "AvailabilitySnapshot",
+        "CanonicalField"
       ],
       "module": "analytics-shared-types",
       "recommendation": "Consider whether this module is really two (docs/kaaf/STANDARDS.md §1).",
       "severity": "info",
-      "summary": "34 public symbols at the entry points (guideline is 10).",
+      "summary": "52 public symbols at the entry points (guideline is 10).",
       "type": "large-public-surface"
     }
   ],

@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "index/repository.json",
-    "bodyDigest": "eebd902c548e0d8aa1071affd6239c246b6405c6861c3ae6815cffa0faebd3b6",
+    "bodyDigest": "57ff3d57038dd8d369fd26e5e1095adcc6bb003b40ac58645c2ca7fbdaa00426",
     "confidence": "derived",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "c93df42b992dfc5d25848a0ac47b1d360ee506e2c444308181a035bbf7dc8a56",
+    "inputDigest": "7be70e49f2965c543536e7ac23fb4c793d82ad186bcf5aa6455f41668684fec0",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -314,10 +314,14 @@
       "id": "analytics-shared-types",
       "ownedEntities": [
         "canonical-transaction-category",
+        "logistics-contract",
+        "logistics-decision-object",
         "permission",
+        "r4c-requirement-reference",
         "role",
         "role-permission-matrix",
-        "shared-api-dto"
+        "shared-api-dto",
+        "warehouse-read-model"
       ],
       "owner": "Backend",
       "path": "packages/shared-types",

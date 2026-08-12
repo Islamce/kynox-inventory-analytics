@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "architecture.json",
-    "bodyDigest": "8faff56f025c8d64ba62d489180fe7300254d4545cc7cec14a57f2b1ebf2ce17",
+    "bodyDigest": "4ca638c1fa4c3a3ab9bebf1cb17519d91f7f6dee4f96fe03365c8da987c4db1b",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "c93df42b992dfc5d25848a0ac47b1d360ee506e2c444308181a035bbf7dc8a56",
+    "inputDigest": "7be70e49f2965c543536e7ac23fb4c793d82ad186bcf5aa6455f41668684fec0",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -704,7 +704,7 @@
     },
     {
       "confidence": "verified",
-      "confidenceReason": "Declared and corroborated by 2 discovered code file(s).",
+      "confidenceReason": "Declared and corroborated by 4 discovered code file(s).",
       "declared": true,
       "declaredConfidence": "verified",
       "dependedOnBy": [
@@ -715,7 +715,7 @@
       ],
       "dependsOn": [],
       "discovery": {
-        "codeFileCount": 2,
+        "codeFileCount": 4,
         "discovered": true,
         "entryPoints": [],
         "languages": [
@@ -732,48 +732,71 @@
           "AiChatResponse",
           "AiEvidence",
           "AiInsight",
+          "AvailabilitySnapshot",
           "CanonicalField",
+          "CarrierRef",
           "CleansingAction",
           "ColumnMapping",
           "DatasetSummary",
+          "DecisionEvidenceRef",
+          "DecisionObject",
           "ExcessResult",
           "ForecastAccuracy",
           "ForecastComparison",
           "ForecastResult",
+          "FreightCharge",
           "HealthWeights",
           "IssueSeverity",
           "KpiValue",
+          "LogisticsDate",
+          "LogisticsId",
+          "LogisticsMilestone",
+          "LogisticsTimestamp",
           "MaterialMasterRow",
+          "MaterialRequirementRef",
           "MovementCategory",
           "MovementRow",
           "Permission",
           "PhysicalInventoryRow",
           "QualityIssue",
           "QualityScores",
+          "R4CRequirementRef",
           "ROLE_PERMISSIONS",
           "ReportDetectionResult",
           "ReportType",
+          "ReservationRef",
           "Role",
+          "Shipment",
+          "ShipmentLeg",
+          "ShipmentMaterial",
           "ShortageResult",
+          "SourceReference",
           "StockRow",
+          "WarehouseMovementEvidence",
+          "WarehouseRef",
           "XyzClass",
           "XyzResult"
         ],
-        "sourceFileCount": 5
+        "sourceFileCount": 7
       },
       "id": "analytics-shared-types",
       "ownedEntities": [
         "canonical-transaction-category",
+        "logistics-contract",
+        "logistics-decision-object",
         "permission",
+        "r4c-requirement-reference",
         "role",
         "role-permission-matrix",
-        "shared-api-dto"
+        "shared-api-dto",
+        "warehouse-read-model"
       ],
       "owner": "Backend",
       "path": "packages/shared-types",
       "publicEntryPoints": [
         "packages/shared-types/package.json",
-        "packages/shared-types/src/index.ts"
+        "packages/shared-types/src/index.ts",
+        "packages/shared-types/src/logistics.ts"
       ],
       "purpose": "Define the types, canonical transaction vocabulary, and the single role-to-permission matrix that every other module in the platform shares.",
       "sourceManifest": "packages/shared-types/kaaf.module.json"

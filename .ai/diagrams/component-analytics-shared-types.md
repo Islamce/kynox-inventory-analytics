@@ -2,13 +2,14 @@
 
 # Component — analytics-shared-types (C4 L3)
 
-`analytics-shared-types` at `packages/shared-types` — confidence `verified`. 2 declared public entry point(s), 0 dependency(ies), 4 dependent(s).
+`analytics-shared-types` at `packages/shared-types` — confidence `verified`. 3 declared public entry point(s), 0 dependency(ies), 4 dependent(s).
 
 ```mermaid
 graph TB
   subgraph analytics_shared_types_box["analytics-shared-types"]
     ep_packages_shared_types_package_json["packages/shared-types/package.json"]
     ep_packages_shared_types_src_index_ts["packages/shared-types/src/index.ts"]
+    ep_packages_shared_types_src_logistics_ts["packages/shared-types/src/logistics.ts"]
   end
   analytics_ai_engine["analytics-ai-engine<br/>packages/ai-engine<br/>verified"]
   analytics_ai_engine --> analytics_shared_types_box
@@ -25,4 +26,4 @@ graph TB
 - Solid arrow: a dependency declared in a `kaaf.module.json` manifest.
 - Dotted arrow: a real import discovered in the source that no manifest declares — see `.ai/drift.json`.
 - Node outline reflects confidence: solid = `verified`, dashed = `documented` or `derived`.
-<!-- kaaf:bodyDigest=572a65378a3056d7d222e5176c307ea5be80c12c1c46155835ed0c3ce3d291ca -->
+<!-- kaaf:bodyDigest=4ebc62b89df86094ce99b9d48fad9b4cf518914c3b267df7bc31200000ec5456 -->

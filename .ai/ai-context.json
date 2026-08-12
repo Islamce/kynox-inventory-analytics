@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "ai-context.json",
-    "bodyDigest": "c486c7b76e23f339f0116fe8b1787a95cd08f9da46438651b449ea72566775dd",
+    "bodyDigest": "2eb25bc4b7ecc204530fce2dd8e0b0446d36b985420075f6936f3f37f87a06ef",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "c93df42b992dfc5d25848a0ac47b1d360ee506e2c444308181a035bbf7dc8a56",
+    "inputDigest": "7be70e49f2965c543536e7ac23fb4c793d82ad186bcf5aa6455f41668684fec0",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -208,7 +208,8 @@
       "path": "packages/shared-types",
       "publicEntryPoints": [
         "packages/shared-types/package.json",
-        "packages/shared-types/src/index.ts"
+        "packages/shared-types/src/index.ts",
+        "packages/shared-types/src/logistics.ts"
       ],
       "purpose": "Define the types, canonical transaction vocabulary, and the single role-to-permission matrix that every other module in the platform shares."
     },
