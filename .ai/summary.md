@@ -7,10 +7,10 @@ Kynox Inventory Intelligence — a source-neutral inventory diagnostic that inge
 - Repository: `Islamce/kynox-inventory-analytics`
 - Default branch: `main`
 - KAAF phase: 7
-- Modules: 10 declared, 0 discovered only
-- Drift: 0 error, 0 warning, 1 info
+- Modules: 11 declared, 0 discovered only
+- Drift: 0 error, 0 warning, 2 info
 - Generator: `kaaf` v0.7.0
-- Input digest: `aea036e862c2a592…`
+- Input digest: `c93df42b992dfc5d…`
 
 ## Modules
 
@@ -27,6 +27,7 @@ check against, `derived` = discovered with no declaration.
 | `analytics-engine` | `packages/analytics-engine` | Data | Compute the inventory analytics the product sells — ABC, XYZ, aging, consumption, excess, shortage, health, forecasting and planning — as pure functions over canonical transactions. | `verified` |
 | `analytics-fixtures` | `scripts` | Data | Generate synthetic UAT and demonstration datasets so the platform can be exercised without customer data. | `verified` |
 | `analytics-kaaf-tooling` | `scripts/architecture` | DevOps | Generate and validate this repository's KAAF architecture context. Vendored from Islamce/KAAF; see VENDORED.md before changing anything here. | `verified` |
+| `analytics-logistics-engine` | `packages/logistics-engine` | Data | Compute bounded Logistics Intelligence metrics as pure, evidence-oriented functions without owning warehouse execution, project/WBS truth, or transport execution. | `verified` |
 | `analytics-runtime-entry` | `.` | DevOps | Start the production process: boot the API, which also serves the built web SPA, under the PM2 configuration used on the managed host. | `verified` |
 | `analytics-shared-types` | `packages/shared-types` | Backend | Define the types, canonical transaction vocabulary, and the single role-to-permission matrix that every other module in the platform shares. | `verified` |
 | `analytics-web` | `apps/web` | Frontend | Present the inventory, data-quality, reconciliation, analytics, planning, AI, reports, administration and audit workspaces to users as a React SPA served by the API in production. | `verified` |
@@ -42,6 +43,7 @@ graph LR
   analytics_engine["analytics-engine"]
   analytics_fixtures["analytics-fixtures"]
   analytics_kaaf_tooling["analytics-kaaf-tooling"]
+  analytics_logistics_engine["analytics-logistics-engine"]
   analytics_runtime_entry["analytics-runtime-entry"]
   analytics_shared_types["analytics-shared-types"]
   analytics_web["analytics-web"]
@@ -97,10 +99,11 @@ imports but are not declared — see the drift section below.
 
 ## Drift — declared versus discovered
 
-0 error, 0 warning, 1 info. Errors block CI; warnings and information do not.
+0 error, 0 warning, 2 info. Errors block CI; warnings and information do not.
 
 | Severity | Type | Module | Finding |
 |---|---|---|---|
+| `info` | `large-public-surface` | `analytics-logistics-engine` | 13 public symbols at the entry points (guideline is 10). |
 | `info` | `large-public-surface` | `analytics-shared-types` | 34 public symbols at the entry points (guideline is 10). |
 
 Full detail, with evidence and recommendations, in `.ai/drift.json`.
@@ -116,4 +119,4 @@ Full detail, with evidence and recommendations, in `.ai/drift.json`.
 Declarations come from `kaaf.repo.json` and `kaaf.module.json`. Discovery is a static
 read of the source: dynamic imports and runtime wiring are invisible to it, so the
 absence of a drift finding is not proof that none exists.
-<!-- kaaf:bodyDigest=ee831d777b8209dcc9194569cd51dcf024f78fdd52aeb5715ad750892a948c59 -->
+<!-- kaaf:bodyDigest=55a88dbf4041409ce5091da96b24805748509d15a90029c600ce762993a12b01 -->

@@ -1,0 +1,97 @@
+{
+  "_meta": {
+    "artifact": "modules/analytics-logistics-engine.json",
+    "bodyDigest": "adf81fbf09f9ce5e76fcceab1c3b20cb268e1e2413442fa98bdee4c76e1f33de",
+    "confidence": "verified",
+    "doNotEdit": true,
+    "generator": "kaaf",
+    "generatorVersion": "0.7.0",
+    "inputDigest": "c93df42b992dfc5d25848a0ac47b1d360ee506e2c444308181a035bbf7dc8a56",
+    "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
+    "schemaVersion": "1.0.0"
+  },
+  "apis": [],
+  "confidence": "verified",
+  "confidenceReason": "Declared and corroborated by 2 discovered code file(s).",
+  "declared": true,
+  "declaredConfidence": "verified",
+  "dependedOnBy": [],
+  "dependsOn": [],
+  "discovery": {
+    "codeFiles": [
+      "packages/logistics-engine/src/index.test.ts",
+      "packages/logistics-engine/src/index.ts"
+    ],
+    "discovered": true,
+    "entryPoints": [],
+    "languages": [
+      "json",
+      "typescript"
+    ],
+    "parseErrors": [],
+    "publicSymbols": [
+      "FreightCharge",
+      "MaterialAvailabilityRisk",
+      "MaterialAvailabilityRiskInput",
+      "ShipmentTiming",
+      "TimelinessResult",
+      "Timestamp",
+      "actualTransitMinutes",
+      "evaluateDeliveryTimeliness",
+      "evaluateMaterialAvailabilityRisk",
+      "evaluatePickupTimeliness",
+      "plannedTransitMinutes",
+      "totalFreightByCurrency",
+      "transitVarianceMinutes"
+    ],
+    "sourceFiles": [
+      "packages/logistics-engine/kaaf.module.json",
+      "packages/logistics-engine/package.json",
+      "packages/logistics-engine/src/index.test.ts",
+      "packages/logistics-engine/src/index.ts",
+      "packages/logistics-engine/tsconfig.json"
+    ]
+  },
+  "driftFindings": [
+    {
+      "evidence": [
+        "FreightCharge",
+        "MaterialAvailabilityRisk",
+        "MaterialAvailabilityRiskInput",
+        "ShipmentTiming",
+        "TimelinessResult",
+        "Timestamp",
+        "actualTransitMinutes",
+        "evaluateDeliveryTimeliness",
+        "evaluateMaterialAvailabilityRisk",
+        "evaluatePickupTimeliness"
+      ],
+      "module": "analytics-logistics-engine",
+      "recommendation": "Consider whether this module is really two (docs/kaaf/STANDARDS.md §1).",
+      "severity": "info",
+      "summary": "13 public symbols at the entry points (guideline is 10).",
+      "type": "large-public-surface"
+    }
+  ],
+  "externalIntegrations": [],
+  "id": "analytics-logistics-engine",
+  "ownedEntities": [
+    "freight-total-by-currency",
+    "material-availability-risk",
+    "shipment-timeliness-result",
+    "transit-variance"
+  ],
+  "owner": "Data",
+  "path": "packages/logistics-engine",
+  "permissions": [],
+  "publicEntryPoints": [
+    "packages/logistics-engine/package.json",
+    "packages/logistics-engine/src/index.ts"
+  ],
+  "purpose": "Compute bounded Logistics Intelligence metrics as pure, evidence-oriented functions without owning warehouse execution, project/WBS truth, or transport execution.",
+  "readNext": [
+    "packages/logistics-engine/package.json",
+    "packages/logistics-engine/src/index.ts"
+  ],
+  "sourceManifest": "packages/logistics-engine/kaaf.module.json"
+}

@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "architecture.json",
-    "bodyDigest": "00d3ebdace3e3d02fabcaa0dce640ff7729ca42ec5e61fbb8fb9fc795d7bf3eb",
+    "bodyDigest": "8faff56f025c8d64ba62d489180fe7300254d4545cc7cec14a57f2b1ebf2ce17",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "aea036e862c2a592995ef2beaf159b76a4625efdb9992e36eaf09f3b3abdf398",
+    "inputDigest": "c93df42b992dfc5d25848a0ac47b1d360ee506e2c444308181a035bbf7dc8a56",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -275,7 +275,7 @@
   "drift": {
     "counts": {
       "error": 0,
-      "info": 1,
+      "info": 2,
       "warning": 0
     },
     "detail": ".ai/drift.json",
@@ -618,6 +618,55 @@
       ],
       "purpose": "Generate and validate this repository's KAAF architecture context. Vendored from Islamce/KAAF; see VENDORED.md before changing anything here.",
       "sourceManifest": "scripts/architecture/kaaf.module.json"
+    },
+    {
+      "confidence": "verified",
+      "confidenceReason": "Declared and corroborated by 2 discovered code file(s).",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependedOnBy": [],
+      "dependsOn": [],
+      "discovery": {
+        "codeFileCount": 2,
+        "discovered": true,
+        "entryPoints": [],
+        "languages": [
+          "json",
+          "typescript"
+        ],
+        "parseErrors": [],
+        "publicSymbols": [
+          "FreightCharge",
+          "MaterialAvailabilityRisk",
+          "MaterialAvailabilityRiskInput",
+          "ShipmentTiming",
+          "TimelinessResult",
+          "Timestamp",
+          "actualTransitMinutes",
+          "evaluateDeliveryTimeliness",
+          "evaluateMaterialAvailabilityRisk",
+          "evaluatePickupTimeliness",
+          "plannedTransitMinutes",
+          "totalFreightByCurrency",
+          "transitVarianceMinutes"
+        ],
+        "sourceFileCount": 5
+      },
+      "id": "analytics-logistics-engine",
+      "ownedEntities": [
+        "freight-total-by-currency",
+        "material-availability-risk",
+        "shipment-timeliness-result",
+        "transit-variance"
+      ],
+      "owner": "Data",
+      "path": "packages/logistics-engine",
+      "publicEntryPoints": [
+        "packages/logistics-engine/package.json",
+        "packages/logistics-engine/src/index.ts"
+      ],
+      "purpose": "Compute bounded Logistics Intelligence metrics as pure, evidence-oriented functions without owning warehouse execution, project/WBS truth, or transport execution.",
+      "sourceManifest": "packages/logistics-engine/kaaf.module.json"
     },
     {
       "confidence": "verified",

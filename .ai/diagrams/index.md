@@ -15,6 +15,7 @@ same commit that makes it.
 | [component-analytics-engine.md](component-analytics-engine.md) | Component (L3) |
 | [component-analytics-fixtures.md](component-analytics-fixtures.md) | Component (L3) |
 | [component-analytics-kaaf-tooling.md](component-analytics-kaaf-tooling.md) | Component (L3) |
+| [component-analytics-logistics-engine.md](component-analytics-logistics-engine.md) | Component (L3) |
 | [component-analytics-runtime-entry.md](component-analytics-runtime-entry.md) | Component (L3) |
 | [component-analytics-shared-types.md](component-analytics-shared-types.md) | Component (L3) |
 | [component-analytics-web.md](component-analytics-web.md) | Component (L3) |
@@ -32,4 +33,4 @@ never committed.
 - Solid arrow: a dependency declared in a `kaaf.module.json` manifest.
 - Dotted arrow: a real import discovered in the source that no manifest declares — see `.ai/drift.json`.
 - Node outline reflects confidence: solid = `verified`, dashed = `documented` or `derived`.
-<!-- kaaf:bodyDigest=0804f1908bc75d12877875a179a706a6c4fb8966bba25f46ad1a23d6fc05bd9b -->
+<!-- kaaf:bodyDigest=c558d43dafd2484a96fc60d8f2e23af8a4c0e2e51917ea6ca54f51d1fab1bac4 -->

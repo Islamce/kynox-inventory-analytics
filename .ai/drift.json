@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "drift.json",
-    "bodyDigest": "ea9e2ed9b4657689441ab542941484788e1bbb682a6eb7fbf77ed6ed47636339",
+    "bodyDigest": "d879a2483e2e21f73eed92edeb5c6083b03fdce9836d306da9964558e723282f",
     "confidence": "derived",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "aea036e862c2a592995ef2beaf159b76a4625efdb9992e36eaf09f3b3abdf398",
+    "inputDigest": "c93df42b992dfc5d25848a0ac47b1d360ee506e2c444308181a035bbf7dc8a56",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -39,6 +39,10 @@
       "level": "verified",
       "reason": "Declared and corroborated by 31 discovered code file(s)."
     },
+    "analytics-logistics-engine": {
+      "level": "verified",
+      "reason": "Declared and corroborated by 2 discovered code file(s)."
+    },
     "analytics-runtime-entry": {
       "level": "verified",
       "reason": "Declared and corroborated by 2 discovered code file(s)."
@@ -54,7 +58,7 @@
   },
   "counts": {
     "error": 0,
-    "info": 1,
+    "info": 2,
     "warning": 0
   },
   "declaredModules": [
@@ -65,6 +69,7 @@
     "analytics-engine",
     "analytics-fixtures",
     "analytics-kaaf-tooling",
+    "analytics-logistics-engine",
     "analytics-runtime-entry",
     "analytics-shared-types",
     "analytics-web"
@@ -156,11 +161,31 @@
     "analytics-engine",
     "analytics-fixtures",
     "analytics-kaaf-tooling",
+    "analytics-logistics-engine",
     "analytics-runtime-entry",
     "analytics-shared-types",
     "analytics-web"
   ],
   "findings": [
+    {
+      "evidence": [
+        "FreightCharge",
+        "MaterialAvailabilityRisk",
+        "MaterialAvailabilityRiskInput",
+        "ShipmentTiming",
+        "TimelinessResult",
+        "Timestamp",
+        "actualTransitMinutes",
+        "evaluateDeliveryTimeliness",
+        "evaluateMaterialAvailabilityRisk",
+        "evaluatePickupTimeliness"
+      ],
+      "module": "analytics-logistics-engine",
+      "recommendation": "Consider whether this module is really two (docs/kaaf/STANDARDS.md §1).",
+      "severity": "info",
+      "summary": "13 public symbols at the entry points (guideline is 10).",
+      "type": "large-public-surface"
+    },
     {
       "evidence": [
         "ALL_ROLES",

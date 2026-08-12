@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "ai-context.json",
-    "bodyDigest": "8662befd7da035b6d22bdd8957500bea8971c8ce516e7bb055b859dff33e479d",
+    "bodyDigest": "c486c7b76e23f339f0116fe8b1787a95cd08f9da46438651b449ea72566775dd",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "aea036e862c2a592995ef2beaf159b76a4625efdb9992e36eaf09f3b3abdf398",
+    "inputDigest": "c93df42b992dfc5d25848a0ac47b1d360ee506e2c444308181a035bbf7dc8a56",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -24,15 +24,15 @@
   "counts": {
     "apis": 8,
     "externalIntegrations": 4,
-    "modules": 10,
-    "modulesDeclared": 10,
+    "modules": 11,
+    "modulesDeclared": 11,
     "modulesUndeclared": 0,
     "permissions": 11
   },
   "drift": {
     "counts": {
       "error": 0,
-      "info": 1,
+      "info": 2,
       "warning": 0
     },
     "detail": ".ai/drift.json",
@@ -163,6 +163,22 @@
         "scripts/architecture/generate.sh"
       ],
       "purpose": "Generate and validate this repository's KAAF architecture context. Vendored from Islamce/KAAF; see VENDORED.md before changing anything here."
+    },
+    {
+      "confidence": "verified",
+      "declared": true,
+      "declaredConfidence": "verified",
+      "dependsOn": [],
+      "detail": "modules/analytics-logistics-engine.json",
+      "hasDiscoveredCode": true,
+      "id": "analytics-logistics-engine",
+      "owner": "Data",
+      "path": "packages/logistics-engine",
+      "publicEntryPoints": [
+        "packages/logistics-engine/package.json",
+        "packages/logistics-engine/src/index.ts"
+      ],
+      "purpose": "Compute bounded Logistics Intelligence metrics as pure, evidence-oriented functions without owning warehouse execution, project/WBS truth, or transport execution."
     },
     {
       "confidence": "verified",
