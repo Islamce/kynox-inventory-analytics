@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "drift.json",
-    "bodyDigest": "33946d3dafec17d03bd9a6a975e1380492a8ff79ee4dd0761e68746b22439d73",
+    "bodyDigest": "9fd52e0194c2b37312b13ca73b34dfe1936227c027964dc85f4f1091bfe8506e",
     "confidence": "derived",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "3e47c5a947b1fee494ce104062f8507ff53cb8863f9381e3c82269d127f34e7b",
+    "inputDigest": "008794a73abe7849ba0f4b7eee587772506452a818c9ba64bfa200d919d97a96",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -41,7 +41,7 @@
     },
     "analytics-logistics-engine": {
       "level": "verified",
-      "reason": "Declared and corroborated by 2 discovered code file(s)."
+      "reason": "Declared and corroborated by 4 discovered code file(s)."
     },
     "analytics-runtime-entry": {
       "level": "verified",

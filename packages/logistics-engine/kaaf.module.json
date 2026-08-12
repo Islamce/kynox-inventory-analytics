@@ -10,7 +10,9 @@
     "shipment-timeliness-result",
     "transit-variance",
     "freight-total-by-currency",
-    "material-availability-risk"
+    "material-availability-risk",
+    "transport-spend-analysis",
+    "freight-cost-indicator"
   ],
   "owner": "Data",
   "permissions": [],
