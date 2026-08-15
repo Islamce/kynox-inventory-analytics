@@ -1,12 +1,12 @@
 {
   "_meta": {
     "artifact": "architecture.json",
-    "bodyDigest": "6a10d3f615d833448a5595ce60c379233471c56730cf845d5fa970822b4c366c",
+    "bodyDigest": "61c301eed8816264ad9d27349d2b91a66e1e592e04d8c26b949033c3a5bc23ec",
     "confidence": "verified",
     "doNotEdit": true,
     "generator": "kaaf",
     "generatorVersion": "0.7.0",
-    "inputDigest": "302055f675593b1cc146684e082823b587d0f3bc39c922ffd71df42abd4bcff1",
+    "inputDigest": "f84fd778aad92924baa48d61d79fd0668f72c4503ae10359692b4dec27aae272",
     "provenanceNote": "Generated from the declared kaaf.repo.json and kaaf.module.json manifests. No wall-clock time or commit SHA is embedded: both would break byte-identical regeneration. Use git history for when and from which commit.",
     "schemaVersion": "1.0.0"
   },
@@ -639,7 +639,7 @@
     },
     {
       "confidence": "verified",
-      "confidenceReason": "Declared and corroborated by 8 discovered code file(s).",
+      "confidenceReason": "Declared and corroborated by 10 discovered code file(s).",
       "declared": true,
       "declaredConfidence": "verified",
       "dependedOnBy": [],
@@ -647,7 +647,7 @@
         "analytics-shared-types"
       ],
       "discovery": {
-        "codeFileCount": 8,
+        "codeFileCount": 10,
         "discovered": true,
         "entryPoints": [],
         "languages": [
@@ -670,7 +670,7 @@
           "totalFreightByCurrency",
           "transitVarianceMinutes"
         ],
-        "sourceFileCount": 11
+        "sourceFileCount": 13
       },
       "id": "analytics-logistics-engine",
       "ownedEntities": [
