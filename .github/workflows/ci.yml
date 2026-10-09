@@ -18,7 +18,7 @@ jobs:
       matrix:
         node: [20, 22]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Verify no secrets or runtime artefacts are committed
         run: |
@@ -99,7 +99,7 @@ jobs:
           --health-cmd "pg_isready -U kynox"
           --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -132,7 +132,7 @@ jobs:
           --health-cmd "mysqladmin ping -h localhost -proot-ci-password"
           --health-interval 5s --health-timeout 5s --health-retries 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -211,7 +211,7 @@ jobs:
       PORT: '4100'
       CORS_ORIGIN: http://localhost:4100
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 22
