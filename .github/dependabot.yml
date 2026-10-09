@@ -1,0 +1,20 @@
+version: 2
+updates:
+  # npm workspaces (api, web, packages). Grouped weekly to keep PR noise low.
+  - package-ecosystem: npm
+    directory: /
+    target-branch: hostinger-uat
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      dev-dependencies:
+        dependency-type: development
+      production-dependencies:
+        dependency-type: production
+
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: hostinger-uat
+    schedule:
+      interval: weekly
